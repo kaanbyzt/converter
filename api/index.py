@@ -1,10 +1,13 @@
-from flask import Flask
+from flask import Flask, render_template
 
 app = Flask(__name__)
 
-@app.route('/')
-def index():
-    return "Kaan Byzt Toolbox - Sunucu Calisiyor!"
 
-# Bu satır Vercel'in uygulamayı tanıması için hayatidir
-app = app
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+
+@app.route("/mikrotik")
+def mikrotik():
+    return "MikroTik aracı yakında burada olacak."
