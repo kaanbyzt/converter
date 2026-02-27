@@ -3,30 +3,192 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kaan Byzt | Software & Networking Toolbox</title>
+    <title>Kaan Byzt | Online Tools & Converters</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <style>
-        body { background-color: #121212; color: #e0e0e0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .tool-card { background: #1e1e1e; border: 1px solid #333; border-radius: 12px; transition: 0.3s; cursor: pointer; height: 100%; }
-        .tool-card:hover { transform: translateY(-5px); border-color: #007bff; }
-        .navbar { background-color: #1a1a1a !important; border-bottom: 1px solid #333; }
+        body {
+            background-color: #05060a;
+            color: #f5f5f5;
+            font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .navbar {
+            background: radial-gradient(circle at top left, #1f2937, #020617);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+        }
+
+        .navbar-brand {
+            font-weight: 600;
+            letter-spacing: 0.08em;
+        }
+
+        .hero {
+            padding: 3.5rem 0 2rem 0;
+        }
+
+        .hero-title {
+            font-size: clamp(2rem, 3vw, 2.6rem);
+            font-weight: 700;
+        }
+
+        .hero-subtitle {
+            color: #9ca3af;
+            max-width: 540px;
+        }
+
+        .category-badge {
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #9ca3af;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .tool-card {
+            background: radial-gradient(circle at top left, #111827, #020617);
+            border-radius: 16px;
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            transition: transform 0.18s ease-out, box-shadow 0.18s ease-out, border-color 0.18s ease-out;
+            cursor: pointer;
+            height: 100%;
+        }
+
+        .tool-card:hover {
+            transform: translateY(-4px);
+            border-color: #3b82f6;
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.9);
+        }
+
+        .tool-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.35rem;
+            background: rgba(37, 99, 235, 0.12);
+            color: #60a5fa;
+        }
+
+        .tool-chip {
+            display: inline-flex;
+            padding: 0.15rem 0.55rem;
+            border-radius: 999px;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            background: rgba(31, 41, 55, 0.9);
+            color: #9ca3af;
+        }
+
+        .tool-card-title {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .footer {
+            border-top: 1px solid rgba(31, 41, 55, 1);
+            color: #6b7280;
+            font-size: 0.8rem;
+        }
     </style>
 </head>
 <body>
     <nav class="navbar navbar-dark">
-        <div class="container"><a class="navbar-brand" href="#">KAAN BYZT TOOLBOX</a></div>
+        <div class="container py-2">
+            <a class="navbar-brand" href="/">KAAN BYZT TOOLBOX</a>
+        </div>
     </nav>
-    <div class="container mt-5">
-        <h2 class="mb-4">Araçlar</h2>
-        <div class="row g-4">
-            <div class="col-md-4">
-                <div class="tool-card p-4">
-                    <h3>📶 MikroTik Script</h3>
-                    <p class="text-secondary">Hızlı router yapılandırma komutları üretin.</p>
-                    <a href="/mikrotik" class="btn btn-outline-primary w-100">Aracı Aç</a>
+
+    <main class="container">
+        <section class="hero">
+            <div class="row align-items-center g-4">
+                <div class="col-lg-7">
+                    <div class="category-badge mb-2">ONLINE ARAÇLAR &amp; DÖNÜŞTÜRÜCÜLER</div>
+                    <h1 class="hero-title mb-3">
+                        Video, ses, PDF ve ağ araçları tek bir yerde.
+                    </h1>
+                    <p class="hero-subtitle">
+                        123apps tarzı, hızlı ve ücretsiz araçlar. Şimdilik temel şablon hazır;
+                        zamanla PDF, medya dönüştürücüleri ve MikroTik script üreticisi gibi
+                        yeni modüller eklenecek.
+                    </p>
                 </div>
             </div>
+        </section>
+
+        <section class="mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="section-title mb-0">Öne çıkan araç kategorileri</h2>
+                <span class="tool-chip">Yakında daha fazlası</span>
+            </div>
+            <div class="row g-3 g-md-4">
+                <div class="col-sm-6 col-lg-3">
+                    <div class="tool-card p-3 p-md-4">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <div class="tool-icon">🎬</div>
+                            <span class="tool-chip">Video</span>
+                        </div>
+                        <div class="tool-card-title mb-1">Video Araçları</div>
+                        <p class="text-secondary mb-3 small">
+                            Kırpma, birleştirme, sesi ayırma ve format dönüştürme araçları (planlandı).
+                        </p>
+                        <button class="btn btn-outline-secondary btn-sm w-100" disabled>Yakında</button>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <div class="tool-card p-3 p-md-4">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <div class="tool-icon">🎧</div>
+                            <span class="tool-chip">Audio</span>
+                        </div>
+                        <div class="tool-card-title mb-1">Ses Araçları</div>
+                        <p class="text-secondary mb-3 small">
+                            MP3 kesme, ses seviyesi ayarı ve dönüştürücüler (planlandı).
+                        </p>
+                        <button class="btn btn-outline-secondary btn-sm w-100" disabled>Yakında</button>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <div class="tool-card p-3 p-md-4">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <div class="tool-icon">📄</div>
+                            <span class="tool-chip">PDF</span>
+                        </div>
+                        <div class="tool-card-title mb-1">PDF Araçları</div>
+                        <p class="text-secondary mb-3 small">
+                            Birleştirme, bölme, sıkıştırma ve PDF ↔ diğer formatlar (planlandı).
+                        </p>
+                        <button class="btn btn-outline-secondary btn-sm w-100" disabled>Yakında</button>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <div class="tool-card p-3 p-md-4">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <div class="tool-icon">📶</div>
+                            <span class="tool-chip">Network</span>
+                        </div>
+                        <div class="tool-card-title mb-1">MikroTik Script</div>
+                        <p class="text-secondary mb-3 small">
+                            RouterOS için hızlı yapılandırma scriptleri. İlk gerçek araç buraya gelecek.
+                        </p>
+                        <a href="/mikrotik" class="btn btn-primary btn-sm w-100">Mevcut taslağı aç</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer py-3 mt-4">
+        <div class="container d-flex flex-column flex-md-row justify-content-between">
+            <span>Kaan Byzt Toolbox &mdash; deneme aşamasında</span>
+            <span>Yeni araç fikirleri için: MikroTik, PDF, medya ve daha fazlası</span>
         </div>
-    </div>
+    </footer>
 </body>
 </html>
