@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>toolboxquick | PDF Araçları</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #05060a;
+            color: #f5f5f5;
+            font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .navbar {
+            background: radial-gradient(circle at top left, #1f2937, #020617);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+        }
+
+        .page-title {
+            font-size: 1.7rem;
+            font-weight: 650;
+        }
+
+        .tool-card {
+            background: radial-gradient(circle at top left, #111827, #020617);
+            border-radius: 18px;
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            padding: 1.75rem;
+        }
+
+        .dropzone {
+            border: 1px dashed rgba(148, 163, 184, 0.7);
+            border-radius: 12px;
+            padding: 1.5rem;
+            background: rgba(15, 23, 42, 0.7);
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .dropzone:hover {
+            border-color: #3b82f6;
+        }
+
+        .file-list {
+            font-size: 0.9rem;
+        }
+
+        .badge-index {
+            background-color: #1d4ed8;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-dark">
+        <div class="container py-2">
+            <a class="navbar-brand" href="/">toolboxquick</a>
+        </div>
+    </nav>
+
+    <main class="container py-4">
+        <header class="mb-4">
+            <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem;">PDF Araçları</p>
+            <h1 class="page-title mb-1">PDF Birleştirici</h1>
+            <p class="text-secondary mb-0">
+                Birden fazla PDF dosyasını yükleyin, sıralamasını kontrol edin ve tek bir PDF olarak indirin.
+            </p>
+        </header>
+
+        <section class="tool-card">
+            {% if error %}
+            <div class="alert alert-danger py-2 mb-3" role="alert">
+                {{ error }}
+            </div>
+            {% endif %}
+
+            <form action="/pdf-tools" method="post" enctype="multipart/form-data">
+                <label class="form-label fw-semibold mb-2">PDF dosyalarınız</label>
+                <div class="dropzone mb-3">
+                    <div class="mb-2">Dosyalarınızı buraya bırakın veya tıklayıp seçin</div>
+                    <input type="file" name="pdf_files" id="pdf_files" class="form-control form-control-sm" multiple accept="application/pdf">
+                    <small class="text-secondary d-block mt-2">
+                        En az 2 PDF dosyası seçin. Sıralama, dosya adlarına göre yapılır.
+                    </small>
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    PDF'leri birleştir ve indir
+                </button>
+            </form>
+        </section>
+
+        <section class="mt-4">
+            <a href="/" class="text-secondary small">&larr; Ana sayfaya dön</a>
+        </section>
+    </main>
+</body>
+</html>
