@@ -131,7 +131,8 @@
                 padding-bottom: 3rem;
             }
             .sidebar.open { transform: translateX(0); }
-            .sidebar-backdrop { display: block; }
+            .sidebar-backdrop { display: block; pointer-events: none; }
+            .sidebar-backdrop.visible { pointer-events: auto; }
             .main-content { overflow-y: auto; }
             .page { padding: 1.25rem 1rem; }
         }
