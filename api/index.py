@@ -2,6 +2,7 @@ import os
 import zipfile
 import uuid
 import tarfile
+import tempfile
 from flask import Flask, render_template, request, send_file, jsonify
 from io import BytesIO
 from PyPDF2 import PdfMerger, PdfReader, PdfWriter
@@ -237,7 +238,7 @@ def convert_image():
 
 
 # Temporary directory setup for ZIP extractor
-TEMP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "temp_zips")
+TEMP_DIR = os.path.join(tempfile.gettempdir(), "toolboxquick_zips")
 os.makedirs(TEMP_DIR, exist_ok=True)
 
 
