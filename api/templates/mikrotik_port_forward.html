@@ -1,0 +1,80 @@
+{% extends "mikrotik_base.html" %}
+{% block title %}Port Yönlendirme (NAT){% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Port Yönlendirme (NAT) Sihirbazı</h1>
+    <p>Kameralar, web sunucuları veya oyunlar için dışarıdan gelen istekleri iç ağınıza güvenle yönlendirin.</p>
+</div>
+<div class="tool-grid">
+    <div class="card card-space">
+        <div>
+            <label class="form-label">Kural Adı (Yorum)</label>
+            <input type="text" id="comment" class="form-input" value="Web Sunucusu" oninput="update()" placeholder="Örn: Kamera Sistemi">
+        </div>
+        <div>
+            <label class="form-label">Gelen (WAN) Arayüz</label>
+            <input type="text" id="wan" class="form-input" value="pppoe-out1" oninput="update()" placeholder="Örn: ether1 veya pppoe-out1">
+        </div>
+        <div>
+            <label class="form-label">Protokol</label>
+            <select id="proto" class="form-select" onchange="update()">
+                <option value="tcp">TCP</option>
+                <option value="udp">UDP</option>
+                <option value="tcp,udp">Hem TCP Hem UDP</option>
+            </select>
+        </div>
+        <div>
+            <label class="form-label">Dış Port (Gelen)</label>
+            <input type="text" id="extport" class="form-input" value="80" oninput="update()" placeholder="Örn: 8080">
+        </div>
+        <div>
+            <label class="form-label">İç IP Adresi (Hedef)</label>
+            <input type="text" id="intip" class="form-input" value="192.168.1.50" oninput="update()" placeholder="Örn: 192.168.1.50">
+        </div>
+        <div>
+            <label class="form-label">İç Port (Hedef)</label>
+            <input type="text" id="intport" class="form-input" value="80" oninput="update()" placeholder="Örn: 80">
+        </div>
+        <div class="form-divider"></div>
+        <div>
+            <label class="checkbox-row">
+                <input type="checkbox" id="hairpin" onchange="update()">
+                <span>Hairpin NAT (Loopback) Ekle</span>
+            </label>
+            <p class="form-hint">İç ağdaki kullanıcıların dış statik IP adresinizi yazarak bu cihaza ulaşabilmesini sağlar.</p>
+        </div>
+    </div>
+    <div class="script-card">
+        <div class="script-header">
+            <div class="script-title"><span class="dot"></span> Üretilen NAT Kuralı</div>
+            <button class="copy-btn" onclick="copy()">Kopyala</button>
+        </div>
+        <pre id="out" class="script-pre"></pre>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function update() {
+    const wan = document.getElementById('wan').value;
+    const proto = document.getElementById('proto').value;
+    const extport = document.getElementById('extport').value;
+    const intip = document.getElementById('intip').value;
+    const intport = document.getElementById('intport').value;
+    const comment = document.getElementById('comment').value;
+    const hairpin = document.getElementById('hairpin').checked;
+    const cstr = comment ? ` comment="${comment}"` : '';
+    let s = `/ip firewall nat\nadd action=dst-nat chain=dstnat${cstr} dst-port=${extport} in-interface=${wan} protocol=${proto} to-addresses=${intip} to-ports=${intport}\n`;
+    if (hairpin) {
+        s += `\n# Hairpin NAT (Loopback) Kuralı - İç ağdan dış IP ile erişim için\nadd action=masquerade chain=srcnat dst-address=${intip} dst-port=${intport} out-interface=bridge-local protocol=${proto} src-address=192.168.1.0/24\n`;
+    }
+    document.getElementById('out').textContent = s;
+}
+function copy() {
+    navigator.clipboard.writeText(document.getElementById('out').textContent);
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = 'Kopyalandı!'; setTimeout(() => btn.textContent = 'Kopyala', 1500);
+}
+update();
+</script>
+{% endblock %}

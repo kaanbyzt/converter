@@ -1,0 +1,81 @@
+{% extends "mikrotik_base.html" %}
+{% block title %}Subnet Hesaplayıcı{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Subnet (Alt Ağ) Hesaplayıcı</h1>
+    <p>IPv4 adresleri için ağ aralığını, kullanılabilir IP sayısını ve subnet maskesini hesaplayın.</p>
+</div>
+<div class="tool-grid">
+    <div class="card card-space">
+        <div>
+            <label class="form-label">IP Adresi</label>
+            <input type="text" id="ip" class="form-input" value="192.168.1.1" oninput="update()" placeholder="Örn: 192.168.1.1">
+        </div>
+        <div>
+            <label class="form-label">CIDR (Alt Ağ Maskesi)</label>
+            <select id="cidr" class="form-select" onchange="update()">
+                <option value="8">/8</option><option value="16">/16</option>
+                <option value="24" selected>/24</option>
+                <option value="25">/25</option><option value="26">/26</option>
+                <option value="27">/27</option><option value="28">/28</option>
+                <option value="29">/29</option><option value="30">/30</option>
+            </select>
+        </div>
+        <div>
+            <label class="form-label" style="font-size:0.7rem;color:#6b7280;margin-bottom:0.5rem;">YA DA ÖZEL CIDR GİRİN</label>
+            <select id="cidr-full" class="form-select" onchange="document.getElementById('cidr').value=this.value;update()"></select>
+        </div>
+    </div>
+    <div class="card">
+        <h2 style="font-size:1rem;font-weight:600;color:#f9fafb;margin-bottom:1rem;padding-bottom:0.5rem;border-bottom:1px solid #374151;">Ağ Detayları</h2>
+        <div id="results" style="display:flex;flex-direction:column;gap:0.5rem;"></div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+// Populate full CIDR dropdown
+const cidrFull = document.getElementById('cidr-full');
+for (let i = 1; i <= 32; i++) {
+    const o = document.createElement('option');
+    o.value = i; o.textContent = '/' + i;
+    if (i === 24) o.selected = true;
+    cidrFull.appendChild(o);
+}
+cidrFull.addEventListener('change', function() {
+    document.getElementById('cidr').value = this.value;
+    update();
+});
+
+function isValid(ip) {
+    return /^(\d{1,3}\.){3}\d{1,3}$/.test(ip) && ip.split('.').every(o => parseInt(o) <= 255);
+}
+function numToIp(n) {
+    return [(n>>>24)&255,(n>>>16)&255,(n>>>8)&255,n&255].join('.');
+}
+function update() {
+    const ip = document.getElementById('ip').value.trim();
+    const cidr = parseInt(document.getElementById('cidr').value || document.getElementById('cidr-full').value);
+    const res = document.getElementById('results');
+    if (!isValid(ip)) {
+        res.innerHTML = '<div style="text-align:center;padding:2rem;color:#f87171;">Geçerli bir IPv4 adresi girin.</div>';
+        return;
+    }
+    const ipNum = ip.split('.').reduce((a,o) => (a<<8)+parseInt(o), 0) >>> 0;
+    const maskNum = cidr === 0 ? 0 : (0xffffffff << (32-cidr)) >>> 0;
+    const netNum = (ipNum & maskNum) >>> 0;
+    const bcastNum = (netNum | ~maskNum) >>> 0;
+    const total = cidr < 31 ? Math.pow(2, 32-cidr) - 2 : 0;
+    const first = cidr < 31 ? numToIp(netNum+1) : 'Yok';
+    const last = cidr < 31 ? numToIp(bcastNum-1) : 'Yok';
+    res.innerHTML = `
+        <div class="result-row"><span class="result-label">Ağ Adresi (Network)</span><span class="result-value val-blue">${numToIp(netNum)}</span></div>
+        <div class="result-row"><span class="result-label">Yayın Adresi (Broadcast)</span><span class="result-value val-orange">${numToIp(bcastNum)}</span></div>
+        <div class="result-row"><span class="result-label">Subnet Maskesi</span><span class="result-value val-green">${numToIp(maskNum)}</span></div>
+        <div class="result-row"><span class="result-label">Kullanılabilir IP Aralığı</span><span class="result-value val-white">${first} &ndash; ${last}</span></div>
+        <div class="result-highlight"><span class="result-label" style="color:#93c5fd;font-weight:500;">Toplam Kullanılabilir Host</span><span class="result-value" style="font-size:1.4rem;color:#f9fafb;">${total.toLocaleString('tr-TR')}</span></div>
+    `;
+}
+update();
+</script>
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "mikrotik_base.html" %}
+{% block title %}Log & Uyarı Asistanı{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Log ve Uyarı Asistanı</h1>
+    <p>RouterOS üzerindeki kritik logları takip edin ve otomatik bildirim sistemleri kurun.</p>
+</div>
+<div class="tool-grid">
+    <div class="card card-space">
+        <div>
+            <label class="form-label">Takip Edilecek Log Türü</label>
+            <select id="alert" class="form-select" onchange="update()">
+                <option value="error">Error (Sistem Hataları)</option>
+                <option value="critical">Critical (Kritik Donanım/Yazılım Sorunları)</option>
+                <option value="warning">Warning (Genel Uyarılar)</option>
+                <option value="account">Account (Kullanıcı Giriş Denemeleri)</option>
+            </select>
+        </div>
+        <div>
+            <label class="form-label">Bildirim Kanalı</label>
+            <select id="action" class="form-select" onchange="toggleAction()">
+                <option value="email">E-Posta (SMTP)</option>
+                <option value="telegram">Telegram Bot API</option>
+            </select>
+        </div>
+        <div>
+            <label class="form-label" id="contact-label">Yönetici E-Posta Adresi</label>
+            <input type="text" id="contact" class="form-input" value="admin@firma.com" oninput="update()">
+        </div>
+    </div>
+    <div class="script-card">
+        <div class="script-header">
+            <div class="script-title"><span class="dot"></span> Otomasyon Scripti ve Zamanlayıcı</div>
+            <button class="copy-btn" onclick="copy()">Kopyala</button>
+        </div>
+        <pre id="out" class="script-pre"></pre>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function toggleAction() {
+    const a = document.getElementById('action').value;
+    const lbl = document.getElementById('contact-label');
+    const inp = document.getElementById('contact');
+    if (a === 'email') { lbl.textContent = 'Yönetici E-Posta Adresi'; inp.value = 'admin@firma.com'; }
+    else { lbl.textContent = 'Telegram Chat ID'; inp.value = 'CHAT_ID'; }
+    update();
+}
+function update() {
+    const alert = document.getElementById('alert').value;
+    const action = document.getElementById('action').value;
+    const contact = document.getElementById('contact').value;
+    let s = `# 1. Log İzleme İçin Komut Dosyası (Script) Oluştur\n/system script\nadd name="Log_Uyarici" source={\n  :local logMessage "";\n  :foreach i in=[/log find topics~"${alert}"] do={\n    :set logMessage [/log get $i message];\n  }\n  :if ($logMessage != "") do={\n`;
+    if (action === 'email') {
+        s += `    /tool e-mail send to="${contact}" subject="MikroTik Log Uyarisi: ${alert.toUpperCase()}" body=$logMessage;\n`;
+    } else {
+        s += `    /tool fetch url="https://api.telegram.org/botBOT_TOKEN_BURAYA/sendMessage?chat_id=${contact}&text=MikroTik+Kritik+Hata:+$logMessage" keep-result=no;\n`;
+    }
+    s += `  }\n}\n\n# 2. Bu Betiği Her 5 Dakikada Bir Çalışacak Şekilde Zamanla (Scheduler)\n/system scheduler\nadd interval=5m name="Log_Kontrol_Zamanlayici" on-event="Log_Uyarici" start-time=startup\n`;
+    document.getElementById('out').textContent = s;
+}
+function copy() {
+    navigator.clipboard.writeText(document.getElementById('out').textContent);
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = 'Kopyalandı!'; setTimeout(() => btn.textContent = 'Kopyala', 1500);
+}
+update();
+</script>
+{% endblock %}

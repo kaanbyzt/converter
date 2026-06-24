@@ -1,0 +1,49 @@
+{% extends "mikrotik_base.html" %}
+{% block title %}Load Balance{% endblock %}
+{% block content %}
+<div class="page-header"><h1>PCC Load Balance Sihirbazı</h1><p>Çoklu internet hatlarınızı (WAN) birleştirmek için RouterOS komutlarınızı otomatik oluşturun.</p></div>
+<div class="tool-grid">
+    <div class="card card-space">
+        <div>
+            <label class="form-label">WAN (İnternet) Hat Sayısı</label>
+            <select id="wanc" class="form-select" onchange="update()">
+                <option value="2">2 Hat (Dual WAN)</option>
+                <option value="3">3 Hat</option>
+                <option value="4">4 Hat</option>
+            </select>
+        </div>
+        <div>
+            <label class="form-label">Yerel Ağ (LAN) Arayüzü</label>
+            <input type="text" id="lan" class="form-input" value="bridge-local" oninput="update()" placeholder="Örn: bridge-local veya ether5">
+        </div>
+    </div>
+    <div class="script-card">
+        <div class="script-header"><div class="script-title"><span class="dot"></span>Üretilen RouterOS Komutları</div><button class="copy-btn" onclick="copy()">Kopyala</button></div>
+        <pre id="out" class="script-pre"></pre>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function update() {
+    const wc = parseInt(document.getElementById('wanc').value);
+    const lan = document.getElementById('lan').value;
+    const wans = Array.from({length:wc},(_,i)=>`ether${i+1}`);
+    let s = `/ip firewall mangle\nadd action=accept chain=prerouting in-interface=${lan}\n`;
+    wans.forEach(w => s += `add action=accept chain=prerouting in-interface=${w}\n`);
+    s += '\n';
+    wans.forEach(w => s += `add action=mark-connection chain=input in-interface=${w} new-connection-mark=${w}_conn passthrough=yes\n`);
+    s += '\n';
+    wans.forEach(w => s += `add action=mark-routing chain=output connection-mark=${w}_conn new-routing-mark=to_${w} passthrough=yes\n`);
+    s += '\n';
+    wans.forEach((w,i) => s += `add action=mark-connection chain=prerouting dst-address-type=!local in-interface=${lan} new-connection-mark=${w}_conn passthrough=yes per-connection-classifier=both-addresses-and-ports:${wc}/${i}\n`);
+    s += '\n';
+    wans.forEach(w => s += `add action=mark-routing chain=prerouting connection-mark=${w}_conn in-interface=${lan} new-routing-mark=to_${w} passthrough=yes\n`);
+    s += '\n/ip route\n';
+    wans.forEach((w,i) => s += `add check-gateway=ping distance=1 gateway=192.168.${i+1}.1 routing-mark=to_${w}\n`);
+    document.getElementById('out').textContent = s;
+}
+function copy() { navigator.clipboard.writeText(document.getElementById('out').textContent); const b=document.querySelector('.copy-btn');b.textContent='Kopyalandı!';setTimeout(()=>b.textContent='Kopyala',1500); }
+update();
+</script>
+{% endblock %}

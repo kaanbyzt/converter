@@ -1,0 +1,33 @@
+{% extends "mikrotik_base.html" %}
+{% block title %}Yönlendirme Asistanı{% endblock %}
+{% block content %}
+<div class="page-header"><h1>Yönlendirme (Routing) Asistanı</h1><p>Statik rotalar oluşturun, internet çıkışlarınızı belirleyin ve hat yedekleme (Failover) mimarilerini kurgulayın.</p></div>
+<div class="tool-grid">
+    <div class="card card-space">
+        <div><label class="form-label">Kural Adı (Yorum)</label><input type="text" id="comment" class="form-input" value="Ana_Internet_Hatti" oninput="update()" placeholder="Örn: Ana_Internet"></div>
+        <div><label class="form-label">Hedef Ağ (Dst. Address)</label><input type="text" id="dst" class="form-input" value="0.0.0.0/0" oninput="update()" placeholder="Örn: 0.0.0.0/0 veya 10.0.0.0/8"></div>
+        <div><label class="form-label">Gateway (Geçit / Modem IP)</label><input type="text" id="gw" class="form-input" value="192.168.1.1" oninput="update()" placeholder="Örn: 192.168.1.1"></div>
+        <div><label class="form-label">Mesafe (Distance / Öncelik)</label><input type="number" id="dist" class="form-input" value="1" min="1" max="255" oninput="update()"></div>
+        <div class="form-divider"></div>
+        <label class="checkbox-row"><input type="checkbox" id="chkgw" checked onchange="update()"><span>Gateway Kontrolü Yap (Ping)</span></label>
+        <p class="form-hint">Modem koptuğunda routerın bu rotayı otomatik olarak devre dışı bırakmasını sağlar.</p>
+    </div>
+    <div class="script-card">
+        <div class="script-header"><div class="script-title"><span class="dot"></span>Yönlendirme Komut Satırı</div><button class="copy-btn" onclick="copy()">Kopyala</button></div>
+        <pre id="out" class="script-pre"></pre>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function update() {
+    const comment=document.getElementById('comment').value,dst=document.getElementById('dst').value,gw=document.getElementById('gw').value,dist=document.getElementById('dist').value,chk=document.getElementById('chkgw').checked;
+    const ck=chk?' check-gateway=ping':'',cm=comment?` comment="${comment}"`:'' ;
+    let s=`# 1. Statik Yönlendirme (Route) Kuralı Ekle\n/ip route\nadd dst-address=${dst} gateway=${gw} distance=${dist}${ck}${cm}\n`;
+    if (parseInt(dist)>1&&chk) s+=`\n# Not: Mesafe (Distance) değeri 1'den büyük seçildiği için bu hat otomatik olarak bir YEDEK (Failover) hat olarak çalışacaktır.\n`;
+    document.getElementById('out').textContent=s;
+}
+function copy(){navigator.clipboard.writeText(document.getElementById('out').textContent);const b=document.querySelector('.copy-btn');b.textContent='Kopyalandı!';setTimeout(()=>b.textContent='Kopyala',1500);}
+update();
+</script>
+{% endblock %}

@@ -1,0 +1,81 @@
+{% extends "mikrotik_base.html" %}
+{% block title %}Nasıl Kullanılır?{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Kullanım Kılavuzu & Yardım</h1>
+    <p>Üretilen MikroTik scriptlerinin ve web sitesindeki araçların nasıl kullanılacağını adım adım öğrenin.</p>
+</div>
+
+<div class="card card-space mb-4" style="background: radial-gradient(circle at top left, #1f2937, #0b0f17); border-color: rgba(59, 130, 246, 0.4);">
+    <h2 style="color: #60a5fa; font-size: 1.25rem; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+        🚀 MikroTik Scriptleri Nasıl Uygulanır?
+    </h2>
+    <p style="color: #d1d5db; font-size: 0.9rem; line-height: 1.6;">
+        Bu sitedeki tüm MikroTik araçları (Subnet, Firewall, Port Yönlendirme vb.) sizin için RouterOS terminal komutları (script) üretir. Bu scriptleri cihazınıza uygulamak için en kolay yöntem <strong>Winbox Terminali</strong>'ni kullanmaktır.
+    </p>
+
+    <div class="form-divider" style="margin: 1rem 0;"></div>
+
+    <div class="info-grid">
+        <div class="info-block" style="background: #111827; border: 1px solid #374151;">
+            <div class="info-block-label" style="color: #60a5fa;">ADIM 1: Kodu Kopyalayın</div>
+            <div style="font-size: 0.85rem; color: #d1d5db; margin-top: 0.5rem; line-height: 1.5;">
+                Oluşturmak istediğiniz aracın sayfasına gidin, gerekli alanları doldurun ve sağ tarafta üretilen scriptin üstündeki <strong>"Kopyala"</strong> butonuna tıklayın.
+            </div>
+        </div>
+
+        <div class="info-block" style="background: #111827; border: 1px solid #374151;">
+            <div class="info-block-label" style="color: #60a5fa;">ADIM 2: Winbox ile Bağlanın</div>
+            <div style="font-size: 0.85rem; color: #d1d5db; margin-top: 0.5rem; line-height: 1.5;">
+                MikroTik yönlendiricinize bağlanmak için bilgisayarınızda <strong>Winbox</strong> uygulamasını açın ve cihazınızın IP adresi veya MAC adresi ile giriş yapın.
+            </div>
+        </div>
+
+        <div class="info-block" style="background: #111827; border: 1px solid #374151;">
+            <div class="info-block-label" style="color: #60a5fa;">ADIM 3: Terminal Penceresini Açın</div>
+            <div style="font-size: 0.85rem; color: #d1d5db; margin-top: 0.5rem; line-height: 1.5;">
+                Winbox sol menüsünde bulunan <strong>"New Terminal"</strong> butonuna tıklayarak MikroTik komut satırı arayüzünü (CLI) açın.
+            </div>
+        </div>
+
+        <div class="info-block" style="background: #111827; border: 1px solid #374151;">
+            <div class="info-block-label" style="color: #60a5fa;">ADIM 4: Kodu Yapıştırın ve Çalıştırın</div>
+            <div style="font-size: 0.85rem; color: #d1d5db; margin-top: 0.5rem; line-height: 1.5;">
+                Açılan siyah terminal ekranında boş bir yere sağ tıklayıp <strong>"Paste"</strong> (Yapıştır) seçeneğine tıklayın. Komutlar otomatik olarak satır satır işlenecektir.
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="grid-2" style="margin-bottom: 1.5rem;">
+    <div class="card card-space">
+        <h3 style="color: #fb923c; font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">
+            ⚠️ Önemli Güvenlik Uyarıları
+        </h3>
+        <ul style="padding-left: 1.2rem; font-size: 0.85rem; color: #d1d5db; display: flex; flex-direction: column; gap: 0.5rem; line-height: 1.5;">
+            <li><strong>Yedek Alın:</strong> Herhangi bir scripti çalıştırmadan önce mutlaka <em>Files -> Backup</em> yolundan router yedeklemenizi alın.</li>
+            <li><strong>Arayüz İsimleri:</strong> Scriptlerde geçen arayüz isimlerinin (örn: <code>ether1</code>, <code>bridge</code>) kendi router'ınızdaki isimlerle eşleştiğinden emin olun.</li>
+            <li><strong>Güvenlik Duvarı:</strong> Güvenlik duvarı scriptlerini uygularken kendi yönetici IP adresinizi veya bağlantınızı engellememeye dikkat edin.</li>
+        </ul>
+    </div>
+
+    <div class="card card-space">
+        <h3 style="color: #34d399; font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">
+            📄 PDF Birleştirici Nasıl Kullanılır?
+        </h3>
+        <ul style="padding-left: 1.2rem; font-size: 0.85rem; color: #d1d5db; display: flex; flex-direction: column; gap: 0.5rem; line-height: 1.5;">
+            <li>Ana sayfadaki <strong>PDF Araçları</strong> bölümüne gidin veya doğrudan PDF Birleştiriciyi açın.</li>
+            <li><strong>"Dosya Seç"</strong> butonuna tıklayarak birleştirmek istediğiniz en az iki PDF dosyasını seçin.</li>
+            <li>Dosyaları seçtikten sonra <strong>"PDF Dosyalarını Birleştir"</strong> butonuna tıklayın.</li>
+            <li>Birleştirilmiş PDF dosyanız otomatik olarak bilgisayarınıza indirilecektir.</li>
+        </ul>
+    </div>
+</div>
+
+<div class="card card-space" style="background: rgba(30, 58, 138, 0.1); border-color: rgba(59, 130, 246, 0.2);">
+    <h3 style="color: #93c5fd; font-size: 1rem; margin-bottom: 0.35rem;">💬 AI Asistanı Etkili Kullanma</h3>
+    <p style="color: #93c5fd; font-size: 0.85rem; line-height: 1.5;">
+        AI Asistanı bölümü, MikroTik RouterOS ile ilgili özel sorularınızı yanıtlamak ve ihtiyacınıza özel komut blokları üretmek için tasarlanmıştır. Sorularınızı sorarken RouterOS sürümünüzü (v6 veya v7) belirtmek daha doğru komutlar almanızı sağlar.
+    </p>
+</div>
+{% endblock %}

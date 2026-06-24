@@ -1,0 +1,35 @@
+{% extends "mikrotik_base.html" %}
+{% block title %}Arayüz & IP Yönetimi{% endblock %}
+{% block content %}
+<div class="page-header"><h1>Arayüz ve IP Adres Yönetimi</h1><p>RouterBOARD üzerindeki fiziksel veya sanal portlara IP atamaları yapın ve port durumlarını kontrol edin.</p></div>
+<div class="tool-grid">
+    <div class="card card-space">
+        <div><label class="form-label">Arayüz Adı (Interface)</label><input type="text" id="iface" class="form-input" value="ether2" oninput="update()" placeholder="Örn: ether2 veya bridge-lan"></div>
+        <div><label class="form-label">Atanacak IP & Subnet</label><input type="text" id="ip" class="form-input" value="192.168.10.1/24" oninput="update()" placeholder="Örn: 192.168.10.1/24"></div>
+        <div><label class="form-label">Kural Açıklaması (Comment)</label><input type="text" id="comment" class="form-input" value="Sirket_Yerel_Agi" oninput="update()" placeholder="Örn: Muhasebe_Blogu"></div>
+        <div>
+            <label class="form-label">Port Durumu</label>
+            <select id="status" class="form-select" onchange="update()">
+                <option value="enable">Arayüzü Aktif Et (Enable)</option>
+                <option value="disable">Arayüzü Kapat (Disable / Shutdown)</option>
+            </select>
+        </div>
+    </div>
+    <div class="script-card">
+        <div class="script-header"><div class="script-title"><span class="dot"></span>Arayüz ve IP Komut Satırı</div><button class="copy-btn" onclick="copy()">Kopyala</button></div>
+        <pre id="out" class="script-pre"></pre>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function update(){
+    const iface=document.getElementById('iface').value,ip=document.getElementById('ip').value,comment=document.getElementById('comment').value,status=document.getElementById('status').value;
+    const cm=comment?` comment="${comment}"`:'' ;
+    let s=`# 1. Arayüz Durumunu Yapılandır\n/interface\n${status} ${iface}\n\n# 2. Belirtilen Arayüze IP Adresi Ata\n/ip address\nadd address=${ip} interface=${iface}${cm}\n`;
+    document.getElementById('out').textContent=s;
+}
+function copy(){navigator.clipboard.writeText(document.getElementById('out').textContent);const b=document.querySelector('.copy-btn');b.textContent='Kopyalandı!';setTimeout(()=>b.textContent='Kopyala',1500);}
+update();
+</script>
+{% endblock %}

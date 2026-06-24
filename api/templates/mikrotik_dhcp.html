@@ -1,0 +1,30 @@
+{% extends "mikrotik_base.html" %}
+{% block title %}DHCP Sunucusu{% endblock %}
+{% block content %}
+<div class="page-header"><h1>DHCP Sunucu ve IP Havuzu Oluşturucu</h1><p>Cihazlarınızın ağdan otomatik IP, Gateway ve DNS alabilmesi için servis kurulum kodlarını hazırlayın.</p></div>
+<div class="tool-grid">
+    <div class="card card-space">
+        <div><label class="form-label">IP Havuz Adı</label><input type="text" id="pool" class="form-input" value="dhcp_havuzu" oninput="update()"></div>
+        <div><label class="form-label">Dağıtılacak IP Aralığı</label><input type="text" id="range" class="form-input" value="192.168.1.100-192.168.1.200" oninput="update()" placeholder="Örn: 192.168.1.100-192.168.1.200"></div>
+        <div><label class="form-label">Arayüz (Interface)</label><input type="text" id="iface" class="form-input" value="bridge-local" oninput="update()"></div>
+        <div><label class="form-label">Varsayılan Geçit (Gateway)</label><input type="text" id="gw" class="form-input" value="192.168.1.1" oninput="update()"></div>
+        <div><label class="form-label">DNS Sunucuları (Virgülle Ayır)</label><input type="text" id="dns" class="form-input" value="8.8.8.8,1.1.1.1" oninput="update()"></div>
+    </div>
+    <div class="script-card">
+        <div class="script-header"><div class="script-title"><span class="dot"></span>DHCP Konfigürasyon Scripti</div><button class="copy-btn" onclick="copy()">Kopyala</button></div>
+        <pre id="out" class="script-pre"></pre>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function update(){
+    const pool=document.getElementById('pool').value,range=document.getElementById('range').value,iface=document.getElementById('iface').value,gw=document.getElementById('gw').value,dns=document.getElementById('dns').value;
+    const base=gw.substring(0,gw.lastIndexOf('.'))+'.0/24';
+    let s=`# 1. IP Havuzunu (IP Pool) Tanımla\n/ip pool\nadd name=${pool} ranges=${range}\n\n# 2. DHCP Sunucusunu Oluştur ve Havuza Bağla\n/ip dhcp-server\nadd address-pool=${pool} disabled=no interface=${iface} lease-time=10h name="DHCP_Sunucusu"\n\n# 3. Dağıtılacak Ağ Detaylarını (Gateway ve DNS) Belirt\n/ip dhcp-server network\nadd address=${base} comment="Yerel LAN Agi" dns-server=${dns} gateway=${gw}\n`;
+    document.getElementById('out').textContent=s;
+}
+function copy(){navigator.clipboard.writeText(document.getElementById('out').textContent);const b=document.querySelector('.copy-btn');b.textContent='Kopyalandı!';setTimeout(()=>b.textContent='Kopyala',1500);}
+update();
+</script>
+{% endblock %}

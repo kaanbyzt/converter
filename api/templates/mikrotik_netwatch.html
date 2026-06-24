@@ -1,0 +1,41 @@
+{% extends "mikrotik_base.html" %}
+{% block title %}Netwatch İzleme{% endblock %}
+{% block content %}
+<div class="page-header"><h1>Netwatch İzleme Asistanı</h1><p>Belirli IP adreslerinin erişilebilirlik durumlarını otomatik izleyin, hat kopmalarında senaryolar tetikleyin.</p></div>
+<div class="tool-grid">
+    <div class="card card-space">
+        <div><label class="form-label">İzlenecek IP / Host</label><input type="text" id="host" class="form-input" value="8.8.8.8" oninput="update()" placeholder="Örn: 8.8.8.8"></div>
+        <div class="grid-2">
+            <div><label class="form-label" style="font-size:0.7rem;">Sıklık (Interval)</label><input type="text" id="intv" class="form-input form-input-sm" value="1m" oninput="update()" placeholder="Örn: 30s veya 1m"></div>
+            <div><label class="form-label" style="font-size:0.7rem;">Zaman Aşımı (ms)</label><input type="number" id="tout" class="form-input form-input-sm" value="1000" oninput="update()"></div>
+        </div>
+        <div class="form-divider"></div>
+        <div>
+            <label class="form-label">Aksiyon Senaryosu</label>
+            <select id="scen" class="form-select" onchange="update()">
+                <option value="logging">Sadece Log Defterine Yaz (Bilgilendirme)</option>
+                <option value="failover">Otomatik Yedek Hat Değişimi (Failover)</option>
+                <option value="reset">Bağlantı Kopunca Portu Yeniden Başlat</option>
+            </select>
+        </div>
+    </div>
+    <div class="script-card">
+        <div class="script-header"><div class="script-title"><span class="dot"></span>Netwatch Komut Satırı</div><button class="copy-btn" onclick="copy()">Kopyala</button></div>
+        <pre id="out" class="script-pre"></pre>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function update(){
+    const host=document.getElementById('host').value,intv=document.getElementById('intv').value,tout=document.getElementById('tout').value,scen=document.getElementById('scen').value;
+    let s=`# 1. Netwatch ile İzleme Noktası Oluştur\n/tool netwatch\nadd host=${host} interval=${intv} timeout=${tout}ms \\\n`;
+    if(scen==='logging') s+=`    up-script={ :log info "Netwatch: ${host} erisilebilir durumda." } \\\n    down-script={ :log error "Netwatch: ${host} erisilemez oldu! Hat kesintisi var." }\n`;
+    else if(scen==='failover') s+=`    up-script={ /ip route enable [find comment="Ana_Hat"] ; :log info "Ana hat geri geldi, aktif edildi." } \\\n    down-script={ /ip route disable [find comment="Ana_Hat"] ; :log warning "Ana hat koptu, yedek hatta geciliyor!" }\n`;
+    else s+=`    up-script={ :log info "Arayuz stabil." } \\\n    down-script={ /interface disable ether1 ; :delay 5s ; /interface enable ether1 ; :log warning "Hat koptugu icin ether1 arayuzu kapatilip tekrar acildi!" }\n`;
+    document.getElementById('out').textContent=s;
+}
+function copy(){navigator.clipboard.writeText(document.getElementById('out').textContent);const b=document.querySelector('.copy-btn');b.textContent='Kopyalandı!';setTimeout(()=>b.textContent='Kopyala',1500);}
+update();
+</script>
+{% endblock %}

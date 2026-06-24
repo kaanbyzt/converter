@@ -1,0 +1,57 @@
+{% extends "mikrotik_base.html" %}
+{% block title %}Wi-Fi Kanal Rehberi{% endblock %}
+{% block content %}
+<div class="page-header"><h1>Wi-Fi Frekans ve Kanal Rehberi</h1><p>MikroTik kablosuz arayüzlerinde çakışmaları önlemek için en temiz frekansları bulun.</p></div>
+<div class="tool-grid-4">
+    <div class="card card-space">
+        <div>
+            <label class="form-label">Frekans Bandı</label>
+            <div class="grid-2" style="margin-top:0.25rem;">
+                <button id="btn24" class="filter-btn active" style="width:100%;border:1px solid #374151;border-radius:0.4rem;background:#2563eb;color:#fff;" onclick="setBand('2.4')">2.4 GHz</button>
+                <button id="btn5" class="filter-btn" style="width:100%;border:1px solid #374151;border-radius:0.4rem;" onclick="setBand('5')">5 GHz</button>
+            </div>
+        </div>
+        <div>
+            <label class="form-label">Kanal Genişliği (Width)</label>
+            <select id="width" class="form-select" onchange="render()">
+                <option value="20">20 MHz (Standart / Kararlı)</option>
+                <option value="40">40 MHz (Hızlı / Geniş)</option>
+            </select>
+        </div>
+    </div>
+    <div>
+        <h2 style="font-size:1rem;font-weight:600;color:#f9fafb;margin-bottom:1rem;">📡 Önerilen Çakışmayan Kanallar</h2>
+        <div id="channels"></div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+let band='2.4';
+const DATA={
+    '2.4':{20:[{ch:'1',freq:'2412 MHz',s:'ok',desc:'Tamamen bağımsız, çakışmayan ana kanal.'},{ch:'6',freq:'2437 MHz',s:'ok',desc:'Tamamen bağımsız, çakışmayan ana kanal.'},{ch:'11',freq:'2462 MHz',s:'ok',desc:'Tamamen bağımsız, çakışmayan ana kanal.'}],40:[{ch:'1 eC / Ce',freq:'2412 MHz',s:'warn',desc:'40 MHz genişlik 2.4 GHz bandında yoğun çevre kirliliğine neden olabilir.'},{ch:'6 eC / Ce',freq:'2437 MHz',s:'warn',desc:'Çevrede çok fazla Wi-Fi varsa bağlantı kalitesi ciddi düşebilir.'}]},
+    '5':{20:[{ch:'36',freq:'5180 MHz',s:'ok',desc:'DFS kontrolü gerektirmez, dış mekanlar için uygundur.'},{ch:'40',freq:'5200 MHz',s:'ok',desc:'İç mekanlar için temiz ve stabil frekans.'},{ch:'44',freq:'5220 MHz',s:'ok',desc:'Yüksek hızlar için ideal parazitsiz kanal.'},{ch:'48',freq:'5240 MHz',s:'ok',desc:'Uyum sorunu yaşamayan standart UNII-1 kanalı.'}],40:[{ch:'36-40',freq:'5180-5200 MHz',s:'ok',desc:'İki kanalı birleştiren 40 MHz Bond, iç mekanlarda tercih edilir.'},{ch:'44-48',freq:'5220-5240 MHz',s:'ok',desc:'İkinci 40 MHz Bond seçeneği, parazitsiz UNII-1 bandı.'}]}
+};
+function setBand(b){
+    band=b;
+    document.getElementById('btn24').style.background=b==='2.4'?'#2563eb':'';document.getElementById('btn24').style.color=b==='2.4'?'#fff':'#9ca3af';
+    document.getElementById('btn5').style.background=b==='5'?'#2563eb':'';document.getElementById('btn5').style.color=b==='5'?'#fff':'#9ca3af';
+    const ws=document.getElementById('width');ws.innerHTML='<option value="20">20 MHz (Standart / Kararlı)</option><option value="40">40 MHz (Hızlı / Geniş)</option>';
+    if(b==='5') ws.innerHTML+='<option value="80">80 MHz (Ultra Hız / Sadece 5GHz)</option>';
+    render();
+}
+function render(){
+    const w=document.getElementById('width').value;
+    const chs=(w==='80')?[{ch:'36-48 (Ceee)',freq:'5180-5240 MHz',s:'fast',desc:'AC/AX cihazlarda maksimum hız sunar ancak duvar geçişlerinde sinyal kaybı artar.'}]:(DATA[band][w]||DATA[band][20]);
+    document.getElementById('channels').innerHTML=chs.map(c=>`
+        <div class="channel-card">
+            <div style="display:flex;align-items:center;gap:1rem;">
+                <div class="channel-num"><small>Kanal</small><span>${c.ch}</span></div>
+                <div class="channel-info"><small>${c.freq}</small><p>${c.desc}</p></div>
+            </div>
+            <span class="status-badge ${c.s==='ok'?'badge-ok':c.s==='fast'?'badge-fast':'badge-warn'}">${c.s==='ok'?'Mükemmel':c.s==='fast'?'Ultra Hız':'Riskli'}</span>
+        </div>`).join('');
+}
+render();
+</script>
+{% endblock %}

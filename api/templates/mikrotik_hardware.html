@@ -1,0 +1,72 @@
+{% extends "mikrotik_base.html" %}
+{% block title %}Donanım Seçici{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>MikroTik Donanım Seçici</h1>
+    <p>Projenizin veya işletmenizin ihtiyaçlarına en uygun RouterBOARD modelini hızlıca filtreleyin.</p>
+</div>
+<div class="tool-grid-4">
+    <div class="card card-space">
+        <div>
+            <label class="form-label">Ağ Ölçeği / Tipi</label>
+            <select id="type" class="form-select" onchange="filter()">
+                <option value="all">Tüm Cihazlar</option>
+                <option value="home-office">Ev / Küçük Ofis (SOHO)</option>
+                <option value="medium-business">Orta Ölçekli İşletme</option>
+                <option value="enterprise">Kurumsal / Veri Merkezi / ISP</option>
+            </select>
+        </div>
+        <div class="form-divider"></div>
+        <label class="checkbox-row">
+            <input type="checkbox" id="sfp" onchange="filter()">
+            <span>10G SFP+ Portu Olsun</span>
+        </label>
+    </div>
+    <div>
+        <h2 id="count-title" style="font-size:1rem;font-weight:600;color:#f9fafb;margin-bottom:1rem;">Uygun Modeller</h2>
+        <div id="devices"></div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const DEVICES = [
+    { model:"hEX (RB750Gr3)", type:"home-office", ports:"1G", sfp:"Yok", ipsec:"Var", desc:"Ev ve küçük ofisler için fiyat performans canavarı standart kablolu router." },
+    { model:"hAP ax3", type:"home-office", ports:"1G & 2.5G", sfp:"Yok", ipsec:"Var", desc:"Güçlü işlemcili, Wi-Fi 6 destekli üst düzey ev/ofis routerı." },
+    { model:"RB4011 iGS+RM", type:"medium-business", ports:"1G", sfp:"1x 10G SFP+", ipsec:"Çok Güçlü", desc:"Orta ölçekli işletmeler, siber kafeler ve yoğun ağlar için 10 çekirdek gücünde router." },
+    { model:"RB5009 UG+S+IN", type:"medium-business", ports:"1G & 2.5G", sfp:"1x 10G SFP+", ipsec:"Mükemmel", desc:"Yeni nesil kompakt güç. Ağır yükler ve modern 2.5G/10G ağlar için mükemmel seçim." },
+    { model:"CCR2004-16G-2S+", type:"enterprise", ports:"1G", sfp:"2x 10G SFP+", ipsec:"Donanımsal", desc:"Büyük işletmeler ve veri merkezleri için tam donanımlı Cloud Core Router." },
+    { model:"CCR2116-12G-4S+", type:"enterprise", ports:"1G", sfp:"4x 10G SFP+", ipsec:"Ultra Güçlü", desc:"Büyük ISP'ler ve devasa trafik yönetimi için geliştirilmiş ekstrem performans routerı." },
+];
+function filter() {
+    const t = document.getElementById('type').value;
+    const needSfp = document.getElementById('sfp').checked;
+    const list = DEVICES.filter(d => {
+        const tm = t === 'all' || d.type === t;
+        const sm = !needSfp || d.sfp !== 'Yok';
+        return tm && sm;
+    });
+    document.getElementById('count-title').textContent = `Uygun Modeller (${list.length})`;
+    const cont = document.getElementById('devices');
+    if (list.length === 0) {
+        cont.innerHTML = '<div class="empty-state">Aradığınız kriterlere uygun cihaz bulunamadı. Filtreleri esnetmeyi deneyebilirsiniz.</div>';
+        return;
+    }
+    cont.innerHTML = list.map(d => `
+        <div class="device-card">
+            <div class="device-header">
+                <div class="device-model">${d.model}</div>
+                <div class="device-type">${d.type.replace('-',' ')}</div>
+            </div>
+            <div class="device-desc">${d.desc}</div>
+            <div class="device-specs">
+                <div class="spec-block"><small>Port Hızları</small><span>${d.ports}</span></div>
+                <div class="spec-block"><small>SFP+ Desteği</small><span>${d.sfp}</span></div>
+                <div class="spec-block"><small>IPsec Hızl.</small><span class="val-green">${d.ipsec}</span></div>
+            </div>
+        </div>
+    `).join('');
+}
+filter();
+</script>
+{% endblock %}

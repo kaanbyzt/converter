@@ -1,0 +1,43 @@
+{% extends "mikrotik_base.html" %}
+{% block title %}FastTrack Optimizer{% endblock %}
+{% block content %}
+<div class="page-header"><h1>FastTrack Performans Optimizasyonu</h1><p>Yüksek hızlı internet hatlarında RouterBOARD işlemci (CPU) kullanımını düşürmek için donanımsal hızlandırma kuralları oluşturun.</p></div>
+<div class="tool-grid">
+    <div class="card card-space">
+        <div>
+            <label class="form-label">FastTrack Durumu</label>
+            <select id="mode" class="form-select" onchange="toggleMode()">
+                <option value="enable">Aktif Et (İşlemci Yükünü Azalt)</option>
+                <option value="disable">Devre Dışı Bırak / Temizle</option>
+            </select>
+        </div>
+        <div id="vpn-opt">
+            <label class="checkbox-row"><input type="checkbox" id="exvpn" checked onchange="update()"><span>VPN Trafiğini Hariç Tut (Önerilen)</span></label>
+            <p class="form-hint" style="margin-left:1.5rem;">IPsec veya WireGuard gibi VPN tünelleri FastTrack ile çakışabilir ve bağlantı kopmalarına yol açabilir.</p>
+        </div>
+    </div>
+    <div class="script-card">
+        <div class="script-header"><div class="script-title"><span class="dot"></span>Firewall Optimizasyon Komutları</div><button class="copy-btn" onclick="copy()">Kopyala</button></div>
+        <pre id="out" class="script-pre"></pre>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function toggleMode(){document.getElementById('vpn-opt').style.display=document.getElementById('mode').value==='enable'?'block':'none';update();}
+function update(){
+    const mode=document.getElementById('mode').value,exvpn=document.getElementById('exvpn').checked;
+    let s=`# MikroTik FastTrack CPU Performans Optimizasyonu\n/ip firewall filter\n`;
+    if(mode==='enable'){
+        if(exvpn) s+=`# NOT: VPN trafiğinin FastTrack yüzünden bozulmaması için VPN paketleri hariç tutulmuştur.\nadd action=fasttrack-connection chain=forward connection-state=established,related comment="CPU Yukunu Hafiflet (FastTrack) - VPN Haric" connection-mark=!VPN_Trafigi\n`;
+        else s+=`add action=fasttrack-connection chain=forward connection-state=established,related comment="CPU Yukunu Hafiflet (FastTrack) - Tum Trafik"\n`;
+        s+=`add action=accept chain=forward connection-state=established,related comment="FastTrack sonrasi kalan guvenli paketlere izin ver"\n`;
+    } else {
+        s+=`# FastTrack Kurallarını Kaldırma / Pasife Alma\ndisable [find comment~"FastTrack"]\n`;
+    }
+    document.getElementById('out').textContent=s;
+}
+function copy(){navigator.clipboard.writeText(document.getElementById('out').textContent);const b=document.querySelector('.copy-btn');b.textContent='Kopyalandı!';setTimeout(()=>b.textContent='Kopyala',1500);}
+update();
+</script>
+{% endblock %}
