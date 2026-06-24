@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+{% block title %}Ses Kaydedici | toolboxquick{% endblock %}
+{% block head %}
+<style>
+    .record-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1.5rem;
+        padding: 2.5rem 1.5rem;
+        background: rgba(15, 23, 42, 0.2);
+        border: 2px dashed var(--btn-outline-border);
+        border-radius: 12px;
+    }
+    .record-btn {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        border: none;
+        background: #ef4444;
+        color: white;
+        font-size: 1.8rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+        transition: transform 0.15s, background-color 0.15s, box-shadow 0.15s;
+    }
+    .record-btn:hover {
+        transform: scale(1.05);
+    }
+    .record-btn.recording {
+        background: #1e293b;
+        color: #ef4444;
+        box-shadow: 0 4px 15px rgba(30, 41, 59, 0.4);
+        animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+    .visualizer-box {
+        width: 100%;
+        height: 100px;
+        background: #090d16;
+        border: 1px solid #1f2937;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    .duration-display {
+        font-family: monospace;
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--text-color);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<header class="mb-4">
+    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #3b82f6 !important;">Ses Araçları</p>
+    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">Ses Kaydedici (Mikrofon)</h1>
+    <p class="text-secondary mb-0">
+        Tarayıcınızın mikrofon yetkisini açın, kaydı başlatın ve ses kaydınızı yerel olarak kaydedip indirin.
+    </p>
+</header>
+
+<section class="tool-card p-4 mb-4">
+    <div class="record-container">
+        <div class="duration-display" id="duration">00:00</div>
+        
+        <div class="visualizer-box">
+            <canvas id="visualizer-canvas"></canvas>
+        </div>
+
+        <button id="record-button" class="record-btn" onclick="toggleRecord()">🎙️</button>
+        <div id="status" class="text-secondary small">Kayda başlamak için mikrofona tıklayın.</div>
+
+        <div id="playback-section" class="d-none w-100 mt-3 text-center border-top pt-3" style="border-color: var(--navbar-border) !important;">
+            <h4 class="h6 mb-3 text-secondary">Kaydedilen Ses:</h4>
+            <audio id="audio-playback" controls class="mb-3" style="width: 100%; max-width: 400px; margin: 0 auto;"></audio>
+            <div>
+                <button class="btn btn-primary" onclick="downloadRecording()">Kaydı İndir (.webm) 💾</button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="mt-4">
+    <a href="/" class="text-secondary small text-decoration-none">&larr; Ana sayfaya dön</a>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let mediaRecorder = null;
+let audioChunks = [];
+let isRecording = false;
+let recordStartTime = 0;
+let timerInterval = null;
+let audioCtx = null;
+let analyser = null;
+let drawVisual = null;
+let localStream = null;
+
+function toggleRecord() {
+    if (isRecording) {
+        stopRecording();
+    } else {
+        startRecording();
+    }
+}
+
+async function startRecording() {
+    audioChunks = [];
+    document.getElementById('playback-section').classList.add('d-none');
+    
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        localStream = stream;
+        mediaRecorder = new MediaRecorder(stream);
+        
+        mediaRecorder.ondataavailable = event => {
+            audioChunks.push(event.data);
+        };
+
+        mediaRecorder.onstop = () => {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            const audioUrl = URL.createObjectURL(audioBlob);
+            document.getElementById('audio-playback').src = audioUrl;
+            document.getElementById('playback-section').classList.remove('d-none');
+            
+            // Release microphone stream
+            localStream.getTracks().forEach(track => track.stop());
+        };
+
+        mediaRecorder.start();
+        
+        // Start Timer
+        recordStartTime = Date.now();
+        timerInterval = setInterval(updateTimer, 500);
+        
+        // Visualizer Setup
+        setupVisualizer(stream);
+
+        isRecording = true;
+        const btn = document.getElementById('record-button');
+        btn.classList.add('recording');
+        btn.textContent = '⏹️';
+        document.getElementById('status').textContent = 'Kayıt yapılıyor... Durdurmak için tekrar tıklayın.';
+    } catch(err) {
+        alert('Mikrofona erişim sağlanamadı. Lütfen tarayıcı izinlerini kontrol edin.');
+    }
+}
+
+function stopRecording() {
+    if (mediaRecorder && isRecording) {
+        mediaRecorder.stop();
+        clearInterval(timerInterval);
+        isRecording = false;
+        
+        const btn = document.getElementById('record-button');
+        btn.classList.remove('recording');
+        btn.textContent = '🎙️';
+        document.getElementById('status').textContent = 'Kayıt tamamlandı. Aşağıdan dinleyebilir veya indirebilirsiniz.';
+        
+        // Stop visualizer loop
+        if (drawVisual) cancelAnimationFrame(drawVisual);
+    }
+}
+
+function updateTimer() {
+    const elapsed = Math.floor((Date.now() - recordStartTime) / 1000);
+    const min = String(Math.floor(elapsed / 60)).padStart(2, '0');
+    const sec = String(elapsed % 60).padStart(2, '0');
+    document.getElementById('duration').textContent = `${min}:${sec}`;
+}
+
+function setupVisualizer(stream) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const source = audioCtx.createMediaStreamSource(stream);
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 256;
+    source.connect(analyser);
+
+    const canvas = document.getElementById('visualizer-canvas');
+    canvas.width = canvas.parentElement.clientWidth;
+    canvas.height = canvas.parentElement.clientHeight;
+    const canvasCtx = canvas.getContext('2d');
+    
+    const bufferLength = analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+
+    canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+
+    function draw() {
+        if (!isRecording) return;
+        drawVisual = requestAnimationFrame(draw);
+
+        analyser.getByteFrequencyData(dataArray);
+
+        canvasCtx.fillStyle = '#090d16';
+        canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+
+        const barWidth = (canvas.width / bufferLength) * 2.5;
+        let barHeight;
+        let x = 0;
+
+        for(let i = 0; i < bufferLength; i++) {
+            barHeight = dataArray[i]/2.5;
+
+            // Gradient bar colors
+            canvasCtx.fillStyle = `rgb(59, 130, ${Math.floor(barHeight + 100)})`;
+            canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+
+            x += barWidth + 1;
+        }
+    }
+    draw();
+}
+
+function downloadRecording() {
+    if (audioChunks.length === 0) return;
+    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+    const url = URL.createObjectURL(audioBlob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'toolboxquick-kayit.webm';
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+window.addEventListener('resize', () => {
+    const canvas = document.getElementById('visualizer-canvas');
+    if (canvas) {
+        canvas.width = canvas.parentElement.clientWidth;
+        canvas.height = canvas.parentElement.clientHeight;
+    }
+});
+</script>
+{% endblock %}

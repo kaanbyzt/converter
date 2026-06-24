@@ -1,7 +1,7 @@
 import os
 from flask import Flask, render_template, request, send_file, jsonify
 from io import BytesIO
-from PyPDF2 import PdfMerger
+from PyPDF2 import PdfMerger, PdfReader, PdfWriter
 
 app = Flask(__name__)
 
@@ -156,3 +156,78 @@ def pdf_tools():
         as_attachment=True,
         download_name="toolboxquick-merged.pdf",
     )
+
+
+@app.route("/pdf-tools/split", methods=["GET", "POST"])
+def pdf_split():
+    if request.method == "GET":
+        return render_template("pdf_split.html", error=None)
+
+    file = request.files.get("pdf_file")
+    range_str = request.form.get("page_range", "").strip()
+
+    if not file or not file.filename.lower().endswith(".pdf"):
+        return render_template("pdf_split.html", error="Lütfen geçerli bir PDF dosyası seçin.")
+
+    if not range_str:
+        return render_template("pdf_split.html", error="Lütfen ayıklanacak sayfa aralığını belirtin.")
+
+    try:
+        reader = PdfReader(file.stream)
+        max_pages = len(reader.pages)
+        
+        # Parse range
+        pages_to_keep = set()
+        for part in range_str.split(','):
+            part = part.strip()
+            if '-' in part:
+                start, end = part.split('-')
+                start_idx = int(start.strip()) - 1
+                end_idx = int(end.strip()) - 1
+                for p in range(max(0, start_idx), min(max_pages, end_idx + 1)):
+                    pages_to_keep.add(p)
+            else:
+                p_idx = int(part) - 1
+                if 0 <= p_idx < max_pages:
+                    pages_to_keep.add(p_idx)
+                    
+        sorted_pages = sorted(list(pages_to_keep))
+        if not sorted_pages:
+            return render_template("pdf_split.html", error="Belirtilen aralıkta geçerli sayfa bulunamadı.")
+
+        writer = PdfWriter()
+        for p in sorted_pages:
+            writer.add_page(reader.pages[p])
+
+        output = BytesIO()
+        writer.write(output)
+        output.seek(0)
+
+        return send_file(
+            output,
+            mimetype="application/pdf",
+            as_attachment=True,
+            download_name="toolboxquick-split.pdf",
+        )
+    except Exception as e:
+        return render_template("pdf_split.html", error=f"Hata oluştu: {str(e)}")
+
+
+@app.route("/audio-tools/trim")
+def audio_trim():
+    return render_template("audio_trim.html")
+
+
+@app.route("/audio-tools/record")
+def audio_record():
+    return render_template("audio_record.html")
+
+
+@app.route("/video-tools/screen-record")
+def video_screen_record():
+    return render_template("video_screen_record.html")
+
+
+@app.route("/convert/image")
+def convert_image():
+    return render_template("convert_image.html")

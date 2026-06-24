@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}Görüntü Dönüştürücü | toolboxquick{% endblock %}
+{% block head %}
+<style>
+    .dropzone {
+        border: 2px dashed var(--btn-outline-border);
+        border-radius: 12px;
+        padding: 2.5rem 1.5rem;
+        background: rgba(15, 23, 42, 0.2);
+        text-align: center;
+        cursor: pointer;
+        transition: border-color 0.15s, background-color 0.15s;
+    }
+    .dropzone:hover {
+        border-color: #3b82f6;
+        background: rgba(59, 130, 246, 0.05);
+    }
+    .file-input {
+        display: none;
+    }
+    .preview-box {
+        max-width: 300px;
+        max-height: 300px;
+        border-radius: 8px;
+        border: 1px solid var(--navbar-border);
+        display: block;
+        margin: 0 auto 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<header class="mb-4">
+    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #10b981 !important;">Dönüştürücüler</p>
+    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">Görüntü Dönüştürücü</h1>
+    <p class="text-secondary mb-0">
+        Resimlerinizi yükleyin, istediğiniz yeni dosya formatını seçin ve yerel olarak anında dönüştürüp indirin.
+    </p>
+</header>
+
+<section class="tool-card p-4 mb-4">
+    <div id="upload-stage">
+        <label class="form-label fw-semibold mb-2">Resim Dosyanızı Seçin (PNG, JPG, WebP, BMP, GIF, vb.)</label>
+        <div class="dropzone" onclick="document.getElementById('image_file').click()">
+            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🖼️</div>
+            <div class="fw-semibold mb-1" style="color: var(--text-color);">Bir resim seçin veya sürükleyin</div>
+            <div class="text-secondary small">Dönüştürme işlemi tamamen tarayıcınızda yerel olarak yapılır.</div>
+            <input type="file" id="image_file" class="file-input" accept="image/*" onchange="loadImage(this)">
+        </div>
+    </div>
+
+    <div id="editor-stage" class="d-none text-center">
+        <div class="mb-3 d-flex justify-content-between align-items-center">
+            <span id="file-name" class="fw-semibold text-success">resim.png</span>
+            <button class="btn btn-sm btn-outline-danger" onclick="resetConverter()">Yeni Resim Seç</button>
+        </div>
+
+        <img id="image-preview" class="preview-box" alt="Önizleme">
+
+        <div class="mb-4" style="max-width: 300px; margin: 0 auto text-align: left;">
+            <label class="form-label fw-semibold mb-2">Hedef Dosya Formatı</label>
+            <select id="target-format" class="form-select" style="border-radius: 8px;">
+                <option value="image/png">PNG (.png)</option>
+                <option value="image/jpeg">JPEG (.jpg)</option>
+                <option value="image/webp">WEBP (.webp)</option>
+                <option value="image/bmp">BMP (.bmp)</option>
+            </select>
+        </div>
+
+        <button class="btn btn-success px-5 py-2" onclick="convertAndDownload()" style="border-radius: 8px; font-weight: 600;">
+            Dönüştür ve İndir 💾
+        </button>
+    </div>
+</section>
+
+<section class="mt-4">
+    <a href="/" class="text-secondary small text-decoration-none">&larr; Ana sayfaya dön</a>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let originalImage = null;
+let originalFileName = "";
+
+function resetConverter() {
+    originalImage = null;
+    originalFileName = "";
+    document.getElementById('upload-stage').classList.remove('d-none');
+    document.getElementById('editor-stage').classList.add('d-none');
+    document.getElementById('image_file').value = '';
+    document.getElementById('image-preview').src = '';
+}
+
+function loadImage(input) {
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+    originalFileName = file.name.substring(0, file.name.lastIndexOf('.'));
+    
+    document.getElementById('file-name').textContent = file.name;
+    document.getElementById('upload-stage').classList.add('d-none');
+    document.getElementById('editor-stage').classList.remove('d-none');
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            originalImage = img;
+            document.getElementById('image-preview').src = e.target.result;
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+function convertAndDownload() {
+    if (!originalImage) return;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = originalImage.naturalWidth;
+    canvas.height = originalImage.naturalHeight;
+    
+    const ctx = canvas.getContext('2d');
+    
+    // For JPEG, fill background with white (since JPEG doesn't support alpha channel)
+    const format = document.getElementById('target-format').value;
+    if (format === 'image/jpeg') {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    
+    ctx.drawImage(originalImage, 0, 0);
+
+    const extMap = {
+        'image/png': '.png',
+        'image/jpeg': '.jpg',
+        'image/webp': '.webp',
+        'image/bmp': '.bmp'
+    };
+
+    const downloadUrl = canvas.toDataURL(format);
+    const a = document.createElement('a');
+    a.href = downloadUrl;
+    a.download = originalFileName + extMap[format];
+    a.click();
+}
+</script>
+{% endblock %}

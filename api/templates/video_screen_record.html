@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% block title %}Ekran Kaydedici | toolboxquick{% endblock %}
+{% block head %}
+<style>
+    .record-box {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1.5rem;
+        padding: 2rem 1.5rem;
+        background: rgba(15, 23, 42, 0.2);
+        border: 2px dashed var(--btn-outline-border);
+        border-radius: 12px;
+    }
+    .video-preview {
+        width: 100%;
+        max-width: 600px;
+        aspect-ratio: 16/9;
+        background: #090d16;
+        border: 1px solid #1f2937;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    .duration-text {
+        font-family: monospace;
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--text-color);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<header class="mb-4">
+    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #a855f7 !important;">Video Araçları</p>
+    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">Ekran Kaydedici</h1>
+    <p class="text-secondary mb-0">
+        Tarayıcınızın ekran paylaşımı iznini vererek tüm ekranınızı veya seçtiğiniz bir pencereyi yerel olarak kaydedin.
+    </p>
+</header>
+
+<section class="tool-card p-4 mb-4">
+    <div class="record-box">
+        <div class="duration-text" id="duration">00:00</div>
+        
+        <video id="video-preview" class="video-preview" autoplay muted playsinline></video>
+
+        <div class="d-flex gap-2">
+            <button id="start-btn" class="btn btn-primary px-4 py-2" onclick="startCapture()" style="border-radius: 8px; font-weight: 600;">
+                Ekran Paylaşımını Başlat 🎥
+            </button>
+            <button id="record-btn" class="btn btn-danger px-4 py-2 d-none" onclick="startRecording()" style="border-radius: 8px; font-weight: 600;">
+                Kaydı Başlat 🔴
+            </button>
+            <button id="stop-btn" class="btn btn-dark px-4 py-2 d-none" onclick="stopRecording()" style="border-radius: 8px; font-weight: 600;">
+                Kaydı Durdur ⏹️
+            </button>
+        </div>
+
+        <div id="status" class="text-secondary small">Öncelikle ekran paylaşımını başlatmak için butona tıklayın.</div>
+
+        <div id="download-section" class="d-none w-100 text-center border-top pt-3" style="border-color: var(--navbar-border) !important;">
+            <button class="btn btn-success px-4 py-2" onclick="downloadVideo()" style="border-radius: 8px; font-weight: 600;">
+                Kaydedilen Videoyu İndir (.webm) 💾
+            </button>
+        </div>
+    </div>
+</section>
+
+<section class="mt-4">
+    <a href="/" class="text-secondary small text-decoration-none">&larr; Ana sayfaya dön</a>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let captureStream = null;
+let mediaRecorder = null;
+let videoChunks = [];
+let isRecording = false;
+let recordStartTime = 0;
+let timerInterval = null;
+
+async function startCapture() {
+    try {
+        captureStream = await navigator.mediaDevices.getDisplayMedia({
+            video: true,
+            audio: true
+        });
+        
+        const videoElement = document.getElementById('video-preview');
+        videoElement.srcObject = captureStream;
+        videoElement.muted = true; // Always mute preview to prevent loopback/echo
+
+        document.getElementById('start-btn').classList.add('d-none');
+        document.getElementById('record-btn').classList.remove('d-none');
+        document.getElementById('status').textContent = 'Ekran yakalanıyor. Kayda başlamak için kırmızı butona tıklayın.';
+
+        // Handle if user stops sharing via browser bar
+        captureStream.getVideoTracks()[0].onended = () => {
+            resetRecorder();
+        };
+
+    } catch (err) {
+        alert('Ekran paylaşımı başlatılamadı: ' + err.message);
+    }
+}
+
+function startRecording() {
+    if (!captureStream) return;
+    videoChunks = [];
+
+    mediaRecorder = new MediaRecorder(captureStream, {
+        mimeType: 'video/webm; codecs=vp9'
+    });
+
+    mediaRecorder.ondataavailable = event => {
+        if (event.data.size > 0) {
+            videoChunks.push(event.data);
+        }
+    };
+
+    mediaRecorder.onstop = () => {
+        const videoBlob = new Blob(videoChunks, { type: 'video/webm' });
+        const videoUrl = URL.createObjectURL(videoBlob);
+        
+        // Show video download section
+        const videoElement = document.getElementById('video-preview');
+        videoElement.srcObject = null;
+        videoElement.src = videoUrl;
+        videoElement.controls = true;
+        videoElement.muted = false;
+
+        document.getElementById('download-section').classList.remove('d-none');
+        document.getElementById('stop-btn').classList.add('d-none');
+        document.getElementById('start-btn').classList.remove('d-none');
+        document.getElementById('status').textContent = 'Ekran kaydı tamamlandı. Aşağıdan videoyu indirebilirsiniz.';
+        
+        // Stop stream tracks
+        if (captureStream) {
+            captureStream.getTracks().forEach(track => track.stop());
+        }
+    };
+
+    mediaRecorder.start();
+
+    // Start Timer
+    recordStartTime = Date.now();
+    timerInterval = setInterval(updateTimer, 500);
+
+    isRecording = true;
+    document.getElementById('record-btn').classList.add('d-none');
+    document.getElementById('stop-btn').classList.remove('d-none');
+    document.getElementById('status').textContent = 'Ekranınız kaydediliyor...';
+}
+
+function stopRecording() {
+    if (mediaRecorder && isRecording) {
+        mediaRecorder.stop();
+        clearInterval(timerInterval);
+        isRecording = false;
+    }
+}
+
+function updateTimer() {
+    const elapsed = Math.floor((Date.now() - recordStartTime) / 1000);
+    const min = String(Math.floor(elapsed / 60)).padStart(2, '0');
+    const sec = String(elapsed % 60).padStart(2, '0');
+    document.getElementById('duration').textContent = `${min}:${sec}`;
+}
+
+function downloadVideo() {
+    if (videoChunks.length === 0) return;
+    const videoBlob = new Blob(videoChunks, { type: 'video/webm' });
+    const url = URL.createObjectURL(videoBlob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'toolboxquick-ekran-kaydi.webm';
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function resetRecorder() {
+    clearInterval(timerInterval);
+    document.getElementById('duration').textContent = '00:00';
+    document.getElementById('start-btn').classList.remove('d-none');
+    document.getElementById('record-btn').classList.add('d-none');
+    document.getElementById('stop-btn').classList.add('d-none');
+    document.getElementById('download-section').classList.add('d-none');
+    
+    const videoElement = document.getElementById('video-preview');
+    videoElement.srcObject = null;
+    videoElement.src = '';
+    videoElement.controls = false;
+
+    document.getElementById('status').textContent = 'Ekran paylaşımı sonlandırıldı.';
+    if (captureStream) {
+        captureStream.getTracks().forEach(track => track.stop());
+    }
+}
+</script>
+{% endblock %}

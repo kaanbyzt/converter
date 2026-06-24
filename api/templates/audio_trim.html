@@ -1,0 +1,343 @@
+{% extends "base.html" %}
+{% block title %}Ses Kesici | toolboxquick{% endblock %}
+{% block head %}
+<style>
+    .dropzone {
+        border: 2px dashed var(--btn-outline-border);
+        border-radius: 12px;
+        padding: 2.5rem 1.5rem;
+        background: rgba(15, 23, 42, 0.2);
+        text-align: center;
+        cursor: pointer;
+        transition: border-color 0.15s, background-color 0.15s;
+    }
+    .dropzone:hover {
+        border-color: #3b82f6;
+        background: rgba(59, 130, 246, 0.05);
+    }
+    .file-input {
+        display: none;
+    }
+    .waveform-container {
+        position: relative;
+        background: #090d16;
+        border: 1px solid #1f2937;
+        border-radius: 8px;
+        height: 150px;
+        width: 100%;
+        overflow: hidden;
+    }
+    canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+    }
+    .control-inputs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<header class="mb-4">
+    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #3b82f6 !important;">Ses Araçları</p>
+    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">Ses Kesici &amp; Kırpıcı</h1>
+    <p class="text-secondary mb-0">
+        Müzik veya ses dosyalarınızı yükleyin, kesilecek bölgeyi seçin ve yerel olarak kırpıp indirin.
+    </p>
+</header>
+
+<section class="tool-card p-4 mb-4">
+    <div id="upload-stage">
+        <label class="form-label fw-semibold mb-2">Ses Dosyanızı Seçin (MP3, WAV, OGG, vb.)</label>
+        <div class="dropzone" onclick="document.getElementById('audio_file').click()">
+            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🎵</div>
+            <div class="fw-semibold mb-1" style="color: var(--text-color);">Dosya yüklemek için tıklayın</div>
+            <div class="text-secondary small">Tüm ses işlemleri tamamen tarayıcınızda yapılır.</div>
+            <input type="file" id="audio_file" class="file-input" accept="audio/*" onchange="loadAudio(this)">
+        </div>
+    </div>
+
+    <div id="editor-stage" class="d-none">
+        <div class="mb-3 d-flex justify-content-between align-items-center">
+            <span id="file-name" class="fw-semibold text-blue-400">ses-dosyasi.mp3</span>
+            <button class="btn btn-sm btn-outline-danger" onclick="resetEditor()">Yeni Dosya Yükle</button>
+        </div>
+
+        <div class="waveform-container mb-4">
+            <canvas id="waveform-canvas"></canvas>
+        </div>
+
+        <div class="control-inputs mb-4">
+            <div>
+                <label class="form-label small text-secondary mb-1">Başlangıç Saniyesi</label>
+                <input type="number" id="start-time" class="form-control" value="0" step="0.1" min="0" onchange="updateSliders()">
+            </div>
+            <div>
+                <label class="form-label small text-secondary mb-1">Bitiş Saniyesi</label>
+                <input type="number" id="end-time" class="form-control" value="10" step="0.1" min="0" onchange="updateSliders()">
+            </div>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button id="play-btn" class="btn btn-secondary px-4" onclick="togglePlay()">Oynat ▶️</button>
+            <button class="btn btn-primary px-4" onclick="trimAndDownload()">Kırp &amp; İndir 💾</button>
+        </div>
+    </div>
+</section>
+
+<section class="mt-4">
+    <a href="/" class="text-secondary small text-decoration-none">&larr; Ana sayfaya dön</a>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let audioCtx = null;
+let audioBuffer = null;
+let sourceNode = null;
+let isPlaying = false;
+let startTimeVal = 0;
+let endTimeVal = 10;
+let duration = 0;
+let playStartTime = 0;
+let playOffset = 0;
+
+function resetEditor() {
+    isPlaying = false;
+    if (sourceNode) {
+        try { sourceNode.stop(); } catch(e) {}
+    }
+    document.getElementById('upload-stage').classList.remove('d-none');
+    document.getElementById('editor-stage').classList.add('d-none');
+    document.getElementById('audio_file').value = '';
+}
+
+async function loadAudio(input) {
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+    document.getElementById('file-name').textContent = file.name;
+    
+    document.getElementById('upload-stage').classList.add('d-none');
+    const editorStage = document.getElementById('editor-stage');
+    editorStage.classList.remove('d-none');
+
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    // Draw loading status on canvas
+    const canvas = document.getElementById('waveform-canvas');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#6b7280';
+    ctx.font = '16px Segoe UI';
+    ctx.textAlign = 'center';
+    ctx.fillText('Ses dalgası çiziliyor, lütfen bekleyin...', canvas.width/2, canvas.height/2);
+
+    try {
+        const arrayBuffer = await file.arrayBuffer();
+        audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+        duration = audioBuffer.duration;
+        
+        startTimeVal = 0;
+        endTimeVal = duration;
+        document.getElementById('start-time').value = 0;
+        document.getElementById('end-time').value = duration.toFixed(2);
+        document.getElementById('end-time').max = duration.toFixed(2);
+        
+        drawWaveform();
+    } catch(err) {
+        alert('Ses dosyası çözümlenemedi. Lütfen geçerli bir dosya yükleyin.');
+        resetEditor();
+    }
+}
+
+function drawWaveform() {
+    const canvas = document.getElementById('waveform-canvas');
+    // Ensure canvas dimensions match parent element
+    canvas.width = canvas.parentElement.clientWidth;
+    canvas.height = canvas.parentElement.clientHeight;
+    
+    const ctx = canvas.getContext('2d');
+    const data = audioBuffer.getChannelData(0);
+    const step = Math.ceil(data.length / canvas.width);
+    const amp = canvas.height / 2;
+
+    ctx.fillStyle = '#090d16';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.strokeStyle = '#3b82f6';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+
+    for (let i = 0; i < canvas.width; i++) {
+        let min = 1.0;
+        let max = -1.0;
+        for (let j = 0; j < step; j++) {
+            const datum = data[(i * step) + j];
+            if (datum < min) min = datum;
+            if (datum > max) max = datum;
+        }
+        ctx.moveTo(i, (1 + min) * amp);
+        ctx.lineTo(i, (1 + max) * amp);
+    }
+    ctx.stroke();
+
+    // Draw selection overlay
+    const startX = (startTimeVal / duration) * canvas.width;
+    const endX = (endTimeVal / duration) * canvas.width;
+
+    ctx.fillStyle = 'rgba(59, 130, 246, 0.25)';
+    ctx.fillRect(startX, 0, endX - startX, canvas.height);
+
+    ctx.strokeStyle = '#f97316';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(startX, 0); ctx.lineTo(startX, canvas.height);
+    ctx.moveTo(endX, 0); ctx.lineTo(endX, canvas.height);
+    ctx.stroke();
+}
+
+function updateSliders() {
+    const startInput = document.getElementById('start-time');
+    const endInput = document.getElementById('end-time');
+    
+    startTimeVal = parseFloat(startInput.value) || 0;
+    endTimeVal = parseFloat(endInput.value) || duration;
+
+    if (startTimeVal < 0) startTimeVal = 0;
+    if (endTimeVal > duration) endTimeVal = duration;
+    if (startTimeVal >= endTimeVal) startTimeVal = endTimeVal - 0.5;
+
+    startInput.value = startTimeVal.toFixed(2);
+    endInput.value = endTimeVal.toFixed(2);
+
+    drawWaveform();
+}
+
+function togglePlay() {
+    const btn = document.getElementById('play-btn');
+    if (isPlaying) {
+        if (sourceNode) {
+            sourceNode.stop();
+        }
+        isPlaying = false;
+        btn.textContent = 'Oynat ▶️';
+    } else {
+        playAudioRange();
+    }
+}
+
+function playAudioRange() {
+    if (sourceNode) {
+        try { sourceNode.stop(); } catch(e) {}
+    }
+
+    sourceNode = audioCtx.createBufferSource();
+    sourceNode.buffer = audioBuffer;
+    sourceNode.connect(audioCtx.destination);
+    
+    const playLen = endTimeVal - startTimeVal;
+    sourceNode.start(0, startTimeVal, playLen);
+    
+    isPlaying = true;
+    document.getElementById('play-btn').textContent = 'Durdur ⏹️';
+
+    sourceNode.onended = () => {
+        isPlaying = false;
+        document.getElementById('play-btn').textContent = 'Oynat ▶️';
+    };
+}
+
+// Convert AudioBuffer to WAV format client-side
+function bufferToWav(buffer, optLength) {
+    const numOfChan = buffer.numberOfChannels;
+    const length = optLength || buffer.length;
+    const sampleRate = buffer.sampleRate;
+    const bufferLen = length * numOfChan * 2 + 44;
+    const outBuffer = new ArrayBuffer(bufferLen);
+    const view = new DataView(outBuffer);
+
+    // Write WAV header
+    writeString(view, 0, 'RIFF');
+    view.setUint32(4, 36 + length * numOfChan * 2, true);
+    writeString(view, 8, 'WAVE');
+    writeString(view, 12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, numOfChan, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * numOfChan * 2, true);
+    view.setUint16(32, numOfChan * 2, true);
+    view.setUint16(34, 16, true);
+    writeString(view, 36, 'data');
+    view.setUint32(40, length * numOfChan * 2, true);
+
+    // Write samples
+    const offset = 44;
+    const channels = [];
+    for (let i = 0; i < numOfChan; i++) {
+        channels.push(buffer.getChannelData(i));
+    }
+
+    let pos = offset;
+    for (let i = 0; i < length; i++) {
+        for (let channel = 0; channel < numOfChan; channel++) {
+            let sample = channels[channel][i];
+            // Clamp sample
+            sample = Math.max(-1, Math.min(1, sample));
+            // Convert to 16-bit PCM
+            view.setInt16(pos, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+            pos += 2;
+        }
+    }
+    return new Blob([view], { type: 'audio/wav' });
+}
+
+function writeString(view, offset, string) {
+    for (let i = 0; i < string.length; i++) {
+        view.setUint8(offset + i, string.charCodeAt(i));
+    }
+}
+
+async function trimAndDownload() {
+    const startSample = Math.floor(startTimeVal * audioBuffer.sampleRate);
+    const endSample = Math.floor(endTimeVal * audioBuffer.sampleRate);
+    const frameCount = endSample - startSample;
+
+    if (frameCount <= 0) return;
+
+    // Create a new AudioBuffer for the trimmed segment
+    const trimmedBuffer = audioCtx.createBuffer(
+        audioBuffer.numberOfChannels,
+        frameCount,
+        audioBuffer.sampleRate
+    );
+
+    // Copy channel data
+    for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
+        const sourceData = audioBuffer.getChannelData(channel);
+        const targetData = trimmedBuffer.getChannelData(channel);
+        for (let i = 0; i < frameCount; i++) {
+            targetData[i] = sourceData[startSample + i];
+        }
+    }
+
+    // Convert to WAV blob
+    const wavBlob = bufferToWav(trimmedBuffer);
+    const url = URL.createObjectURL(wavBlob);
+    
+    // Download link trigger
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'toolboxquick-cut.wav';
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+window.addEventListener('resize', () => {
+    if (audioBuffer) drawWaveform();
+});
+</script>
+{% endblock %}

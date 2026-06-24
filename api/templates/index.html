@@ -1,211 +1,319 @@
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>toolboxquick | Online Tools & Converters</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <style>
-        body {
-            background-color: #05060a;
-            color: #f5f5f5;
-            font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-        }
+{% extends "base.html" %}
+{% block title %}toolboxquick | Online Video, Audio, PDF &amp; Converter Tools{% endblock %}
+{% block head %}
+<style>
+    .hero-title {
+        font-size: clamp(2.2rem, 4vw, 3.2rem);
+        font-weight: 850;
+        background: linear-gradient(135deg, var(--text-color), #3b82f6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        line-height: 1.25;
+    }
+    .hero-subtitle {
+        color: var(--text-secondary);
+        font-size: 1.05rem;
+        max-width: 650px;
+    }
 
-        .navbar {
-            background: radial-gradient(circle at top left, #1f2937, #020617);
-            border-bottom: 1px solid rgba(148, 163, 184, 0.3);
-        }
+    .category-section {
+        margin-bottom: 3.5rem;
+    }
+    .category-title {
+        font-size: 1.35rem;
+        font-weight: 700;
+        margin-bottom: 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
 
-        .navbar-brand {
-            font-weight: 600;
-            letter-spacing: 0.08em;
-        }
+    .tools-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 1.25rem;
+    }
 
-        .hero {
-            padding: 3.5rem 0 2rem 0;
-        }
+    .tool-card {
+        padding: 1.25rem;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 150px;
+        text-decoration: none;
+        color: inherit;
+    }
+    .tool-card:hover {
+        transform: translateY(-4px);
+    }
 
-        .hero-title {
-            font-size: clamp(2rem, 3vw, 2.6rem);
-            font-weight: 700;
-        }
+    .tool-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 0.75rem;
+    }
+    
+    .tool-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
 
-        .hero-subtitle {
-            color: #9ca3af;
-            max-width: 540px;
-        }
+    .tool-badge {
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 0.15rem 0.5rem;
+        border-radius: 999px;
+        font-weight: 700;
+    }
+    .badge-active {
+        background-color: rgba(34, 197, 94, 0.15);
+        color: #22c55e;
+        border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+    .badge-soon {
+        background-color: rgba(148, 163, 184, 0.15);
+        color: #94a3b8;
+        border: 1px solid rgba(148, 163, 184, 0.3);
+    }
 
-        .category-badge {
-            font-size: 0.78rem;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: #9ca3af;
-        }
+    .tool-title {
+        font-size: 0.95rem;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+        color: var(--text-color);
+    }
+    .tool-desc {
+        font-size: 0.78rem;
+        color: var(--text-secondary);
+        line-height: 1.4;
+    }
 
-        .section-title {
-            font-size: 1.2rem;
-            font-weight: 600;
-        }
+    /* Category Specific Theme Styles */
+    .cat-video { color: #a855f7; }
+    .card-video:hover { border-color: #a855f7 !important; box-shadow: 0 4px 20px rgba(168, 85, 247, 0.08) !important; }
+    .icon-video { background-color: rgba(168, 85, 247, 0.1); color: #a855f7; }
 
-        .tool-card {
-            background: radial-gradient(circle at top left, #111827, #020617);
-            border-radius: 16px;
-            border: 1px solid rgba(148, 163, 184, 0.25);
-            transition: transform 0.18s ease-out, box-shadow 0.18s ease-out, border-color 0.18s ease-out;
-            cursor: pointer;
-            height: 100%;
-        }
+    .cat-audio { color: #3b82f6; }
+    .card-audio:hover { border-color: #3b82f6 !important; box-shadow: 0 4px 20px rgba(59, 130, 246, 0.08) !important; }
+    .icon-audio { background-color: rgba(59, 130, 246, 0.1); color: #3b82f6; }
 
-        .tool-card:hover {
-            transform: translateY(-4px);
-            border-color: #3b82f6;
-            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.9);
-        }
+    .cat-pdf { color: #f97316; }
+    .card-pdf:hover { border-color: #f97316 !important; box-shadow: 0 4px 20px rgba(249, 115, 22, 0.08) !important; }
+    .icon-pdf { background-color: rgba(249, 115, 22, 0.1); color: #f97316; }
 
-        .tool-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 12px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.35rem;
-            background: rgba(37, 99, 235, 0.12);
-            color: #60a5fa;
-        }
+    .cat-converter { color: #10b981; }
+    .card-converter:hover { border-color: #10b981 !important; box-shadow: 0 4px 20px rgba(16, 185, 129, 0.08) !important; }
+    .icon-converter { background-color: rgba(16, 185, 129, 0.1); color: #10b981; }
+</style>
+{% endblock %}
 
-        .tool-chip {
-            display: inline-flex;
-            padding: 0.15rem 0.55rem;
-            border-radius: 999px;
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            background: rgba(31, 41, 55, 0.9);
-            color: #9ca3af;
-        }
-
-        .tool-card-title {
-            font-size: 1rem;
-            font-weight: 600;
-        }
-
-        .footer {
-            border-top: 1px solid rgba(31, 41, 55, 1);
-            color: #6b7280;
-            font-size: 0.8rem;
-        }
-    </style>
-</head>
-<body>
-    <nav class="navbar navbar-dark">
-        <div class="container py-2 d-flex justify-content-between align-items-center">
-            <a class="navbar-brand" href="/">toolboxquick</a>
-            <a class="btn btn-outline-light btn-sm" href="/mikrotik/nasil-kullanilir">Kullanım Kılavuzu 📖</a>
+{% block content %}
+<section class="py-5 text-center text-md-start">
+    <div class="row align-items-center">
+        <div class="col-lg-8">
+            <h1 class="hero-title mb-3">
+                Video, ses, PDF ve dönüştürme araçları tek bir yerde.
+            </h1>
+            <p class="hero-subtitle mb-4">
+                123apps tarzı, yerel çalışan, hızlı ve ücretsiz araçlar koleksiyonu. Dosyalarınız tamamen güvendedir ve tarayıcınızda veya yerel sunucunuzda işlenir.
+            </p>
         </div>
-    </nav>
+    </div>
+</section>
 
-    <main class="container">
-        <section class="hero">
-            <div class="row align-items-center g-4">
-                <div class="col-lg-7">
-                    <div class="category-badge mb-2">ONLINE ARAÇLAR &amp; DÖNÜŞTÜRÜCÜLER</div>
-                    <h1 class="hero-title mb-3">
-                        Video, ses, PDF ve ağ araçları tek bir yerde.
-                    </h1>
-                    <p class="hero-subtitle">
-                        123apps tarzı, hızlı ve ücretsiz araçlar. Şimdilik temel şablon hazır;
-                        zamanla PDF, medya dönüştürücüleri ve MikroTik script üreticisi gibi
-                        yeni modüller eklenecek.
-                    </p>
-                </div>
+<!-- VIDEO TOOLS -->
+<section class="category-section">
+    <h2 class="category-title cat-video">🎬 Video Araçları</h2>
+    <div class="tools-grid">
+        <a href="/video-tools/screen-record" class="tool-card card-video">
+            <div class="tool-header">
+                <div class="tool-icon icon-video">🎥</div>
+                <span class="tool-badge badge-active">Aktif</span>
             </div>
-        </section>
-
-        <section class="mb-4">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2 class="section-title mb-0">Öne çıkan araç kategorileri</h2>
-                <span class="tool-chip">Yakında daha fazlası</span>
+            <div>
+                <h3 class="tool-title">Ekran Kaydedici</h3>
+                <p class="tool-desc">Tarayıcı üzerinden ekranınızı veya belirli pencereleri yerel olarak kaydedin.</p>
             </div>
-            <div class="row g-3 g-md-4">
-                <div class="col-sm-6 col-lg-3">
-                    <div class="tool-card p-3 p-md-4">
-                        <div class="d-flex align-items-center justify-content-between mb-3">
-                            <div class="tool-icon">🎬</div>
-                            <span class="tool-chip">Video</span>
-                        </div>
-                        <div class="tool-card-title mb-1">Video Araçları</div>
-                        <p class="text-secondary mb-3 small">
-                            Kırpma, birleştirme, sesi ayırma ve format dönüştürme araçları (planlandı).
-                        </p>
-                        <a href="/video-tools" class="btn btn-outline-secondary btn-sm w-100">Sayfayı aç</a>
-                    </div>
-                </div>
-                <div class="col-sm-6 col-lg-3">
-                    <div class="tool-card p-3 p-md-4">
-                        <div class="d-flex align-items-center justify-content-between mb-3">
-                            <div class="tool-icon">🎧</div>
-                            <span class="tool-chip">Audio</span>
-                        </div>
-                        <div class="tool-card-title mb-1">Ses Araçları</div>
-                        <p class="text-secondary mb-3 small">
-                            MP3 kesme, ses seviyesi ayarı ve dönüştürücüler (planlandı).
-                        </p>
-                        <a href="/audio-tools" class="btn btn-outline-secondary btn-sm w-100">Sayfayı aç</a>
-                    </div>
-                </div>
-                <div class="col-sm-6 col-lg-3">
-                    <div class="tool-card p-3 p-md-4">
-                        <div class="d-flex align-items-center justify-content-between mb-3">
-                            <div class="tool-icon">📄</div>
-                            <span class="tool-chip">PDF</span>
-                        </div>
-                        <div class="tool-card-title mb-1">PDF Araçları</div>
-                        <p class="text-secondary mb-3 small">
-                            Birleştirme, bölme, sıkıştırma ve PDF ↔ diğer formatlar (planlandı).
-                        </p>
-                        <a href="/pdf-tools" class="btn btn-outline-secondary btn-sm w-100">PDF birleştiriciyi aç</a>
-                    </div>
-                </div>
-                <div class="col-sm-6 col-lg-3">
-                    <div class="tool-card p-3 p-md-4">
-                        <div class="d-flex align-items-center justify-content-between mb-3">
-                            <div class="tool-icon">📶</div>
-                            <span class="tool-chip">Network</span>
-                        </div>
-                        <div class="tool-card-title mb-1">MikroTik Script</div>
-                        <p class="text-secondary mb-3 small">
-                            RouterOS için hızlı yapılandırma scriptleri. İlk gerçek araç buraya gelecek.
-                        </p>
-                        <a href="/mikrotik" class="btn btn-primary btn-sm w-100">Araçları aç</a>
-                    </div>
-                </div>
+        </a>
+        <div class="tool-card card-video">
+            <div class="tool-header">
+                <div class="tool-icon icon-video">✂️</div>
+                <span class="tool-badge badge-soon">Planlandı</span>
             </div>
-        </section>
-
-        <section class="mt-5 mb-5 p-4 rounded-4" style="background: radial-gradient(circle at top left, #111827, #020617); border: 1px solid rgba(148, 163, 184, 0.2);">
-            <div class="row align-items-center">
-                <div class="col-md-8">
-                    <h3 class="h5 mb-2" style="color: #60a5fa; font-weight: 600;">💡 Araçlar Nasıl Kullanılır?</h3>
-                    <p class="text-secondary small mb-md-0">
-                        Üretilen MikroTik terminal scriptlerinin router'a nasıl uygulanacağını, PDF birleştiriciyi ve diğer araçları nasıl kullanacağınızı adım adım anlatan rehberimizi inceleyin.
-                    </p>
-                </div>
-                <div class="col-md-4 text-md-end">
-                    <a href="/mikrotik/nasil-kullanilir" class="btn btn-primary btn-sm px-4 py-2" style="border-radius: 8px;">
-                        Kılavuzu Görüntüle &rarr;
-                    </a>
-                </div>
+            <div>
+                <h3 class="tool-title">Video Kırpıcı</h3>
+                <p class="tool-desc">Video dosyalarınızın belirli bölümlerini kesin ve düzenleyin.</p>
             </div>
-        </section>
-    </main>
-
-    <footer class="footer py-3 mt-4">
-        <div class="container d-flex flex-column flex-md-row justify-content-between">
-            <span>toolboxquick &mdash; deneme aşamasında</span>
-            <span>Kaan Byzt tarafından geliştirildi &middot; MikroTik, PDF, medya ve daha fazlası</span>
         </div>
-    </footer>
-</body>
-</html>
+        <div class="tool-card card-video">
+            <div class="tool-header">
+                <div class="tool-icon icon-video">🔀</div>
+                <span class="tool-badge badge-soon">Planlandı</span>
+            </div>
+            <div>
+                <h3 class="tool-title">Videoları Birleştir</h3>
+                <p class="tool-desc">Birden fazla video klibini tek bir dosyada bir araya getirin.</p>
+            </div>
+        </div>
+        <div class="tool-card card-video">
+            <div class="tool-header">
+                <div class="tool-icon icon-video">🔄</div>
+                <span class="tool-badge badge-soon">Planlandı</span>
+            </div>
+            <div>
+                <h3 class="tool-title">Video Döndür / Çevir</h3>
+                <p class="tool-desc">Dikey veya yan çekilmiş videoları döndürün veya yatay aynalayın.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- AUDIO TOOLS -->
+<section class="category-section">
+    <h2 class="category-title cat-audio">🎵 Ses Araçları</h2>
+    <div class="tools-grid">
+        <a href="/audio-tools/trim" class="tool-card card-audio">
+            <div class="tool-header">
+                <div class="tool-icon icon-audio">✂️</div>
+                <span class="tool-badge badge-active">Aktif</span>
+            </div>
+            <div>
+                <h3 class="tool-title">Ses Kesici</h3>
+                <p class="tool-desc">Müzik veya ses dosyalarınızı görsel dalga boyutu üzerinden kesip indirin.</p>
+            </div>
+        </a>
+        <a href="/audio-tools/record" class="tool-card card-audio">
+            <div class="tool-header">
+                <div class="tool-icon icon-audio">🎙️</div>
+                <span class="tool-badge badge-active">Aktif</span>
+            </div>
+            <div>
+                <h3 class="tool-title">Ses Kaydedici</h3>
+                <p class="tool-desc">Mikrofonunuzu kullanarak ses kaydı yapın ve anında indirin.</p>
+            </div>
+        </a>
+        <div class="tool-card card-audio">
+            <div class="tool-header">
+                <div class="tool-icon icon-audio">📢</div>
+                <span class="tool-badge badge-soon">Planlandı</span>
+            </div>
+            <div>
+                <h3 class="tool-title">Ses Seviyesi Değiştirici</h3>
+                <p class="tool-desc">Ses dosyalarınızın desibel (volüm) oranını artırın veya azaltın.</p>
+            </div>
+        </div>
+        <div class="tool-card card-audio">
+            <div class="tool-header">
+                <div class="tool-icon icon-audio">⚡</div>
+                <span class="tool-badge badge-soon">Planlandı</span>
+            </div>
+            <div>
+                <h3 class="tool-title">Ses Hızlandırıcı</h3>
+                <p class="tool-desc">Müzik veya podcast konuşma hızını ton bozulması olmadan değiştirin.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- PDF TOOLS -->
+<section class="category-section">
+    <h2 class="category-title cat-pdf">📄 PDF Araçları</h2>
+    <div class="tools-grid">
+        <a href="/pdf-tools" class="tool-card card-pdf">
+            <div class="tool-header">
+                <div class="tool-icon icon-pdf">📚</div>
+                <span class="tool-badge badge-active">Aktif</span>
+            </div>
+            <div>
+                <h3 class="tool-title">PDF Birleştirici</h3>
+                <p class="tool-desc">Farklı PDF dosyalarını yükleyin, sıralayın ve tek dosyada birleştirin.</p>
+            </div>
+        </a>
+        <a href="/pdf-tools/split" class="tool-card card-pdf">
+            <div class="tool-header">
+                <div class="tool-icon icon-pdf">✂️</div>
+                <span class="tool-badge badge-active">Aktif</span>
+            </div>
+            <div>
+                <h3 class="tool-title">PDF Bölücü</h3>
+                <p class="tool-desc">Büyük PDF dosyalarınızı sayfa numaralarına göre bölüp ayrı dosyalar yapın.</p>
+            </div>
+        </a>
+        <div class="tool-card card-pdf">
+            <div class="tool-header">
+                <div class="tool-icon icon-pdf">🔒</div>
+                <span class="tool-badge badge-soon">Planlandı</span>
+            </div>
+            <div>
+                <h3 class="tool-title">PDF Şifrele (Protect)</h3>
+                <p class="tool-desc">PDF dosyalarınıza yönetici veya okuyucu şifresi ekleyerek koruyun.</p>
+            </div>
+        </div>
+        <div class="tool-card card-pdf">
+            <div class="tool-header">
+                <div class="tool-icon icon-pdf">🔓</div>
+                <span class="tool-badge badge-soon">Planlandı</span>
+            </div>
+            <div>
+                <h3 class="tool-title">PDF Şifre Çöz (Unlock)</h3>
+                <p class="tool-desc">Şifreli PDF dosyalarının kilitlerini açıp düzenlenebilir yapın.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CONVERTERS -->
+<section class="category-section">
+    <h2 class="category-title cat-converter">🔄 Dönüştürücüler (Converters)</h2>
+    <div class="tools-grid">
+        <a href="/convert/image" class="tool-card card-converter">
+            <div class="tool-header">
+                <div class="tool-icon icon-converter">🖼️</div>
+                <span class="tool-badge badge-active">Aktif</span>
+            </div>
+            <div>
+                <h3 class="tool-title">Görüntü Dönüştürücü</h3>
+                <p class="tool-desc">Resimlerinizi JPG, PNG, WebP, BMP formatları arasında yerel dönüştürün.</p>
+            </div>
+        </a>
+        <div class="tool-card card-converter">
+            <div class="tool-header">
+                <div class="tool-icon icon-converter">🎵</div>
+                <span class="tool-badge badge-soon">Planlandı</span>
+            </div>
+            <div>
+                <h3 class="tool-title">Ses Dönüştürücü</h3>
+                <p class="tool-desc">MP3, WAV, M4A, OGG formatları arasında hızlı çevrim.</p>
+            </div>
+        </div>
+        <div class="tool-card card-converter">
+            <div class="tool-header">
+                <div class="tool-icon icon-converter">🎬</div>
+                <span class="tool-badge badge-soon">Planlandı</span>
+            </div>
+            <div>
+                <h3 class="tool-title">Video Dönüştürücü</h3>
+                <p class="tool-desc">MP4, WEBM, AVI formatları arasında çözünürlük ayarlı dönüştürme.</p>
+            </div>
+        </div>
+        <div class="tool-card card-converter">
+            <div class="tool-header">
+                <div class="tool-icon icon-converter">🗄️</div>
+                <span class="tool-badge badge-soon">Planlandı</span>
+            </div>
+            <div>
+                <h3 class="tool-title">Arşiv Açıcı (Extractor)</h3>
+                <p class="tool-desc">ZIP, RAR, 7Z arşiv dosyalarını ayıklayıp içindekileri indirin.</p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
