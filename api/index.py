@@ -2,11 +2,8 @@ import os
 from flask import Flask, render_template, request, send_file, jsonify
 from io import BytesIO
 from PyPDF2 import PdfMerger
-import groq as groq_sdk
 
 app = Flask(__name__)
-
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 
 
 @app.route("/")
@@ -16,42 +13,12 @@ def index():
 
 @app.route("/mikrotik")
 def mikrotik():
-    return render_template("mikrotik_ai.html", active_page="ai")
+    return render_template("mikrotik.html", active_page="dashboard")
 
 
 @app.route("/mikrotik/nasil-kullanilir")
 def mikrotik_guide():
     return render_template("mikrotik_guide.html", active_page="nasil-kullanilir")
-
-
-@app.route("/mikrotik/api/ai", methods=["POST"])
-def mikrotik_ai_api():
-    data = request.get_json(silent=True) or {}
-    prompt = data.get("prompt", "").strip()
-    if not prompt:
-        return jsonify({"success": False, "error": "Lütfen bir soru veya komut girin."}), 400
-    try:
-        client = groq_sdk.Groq(api_key=GROQ_API_KEY)
-        completion = client.chat.completions.create(
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "Sen profesyonel bir MikroTik RouterOS uzmanı ve ağ mühendisisin. "
-                        "Sadece ağ yönetimi, RouterOS v6/v7 komutları, firewall, routing ve kablosuz ağlar hakkında teknik destek sağla. "
-                        "Cevaplarında mutlaka terminale kopyalanıp yapıştırılabilecek kod blokları kullan. "
-                        "Başka konularda soru gelirse alanının olmadığını kibarca belirt. Türkçe cevap ver."
-                    ),
-                },
-                {"role": "user", "content": prompt},
-            ],
-            model="llama3-70b-8192",
-            temperature=0.5,
-        )
-        text = completion.choices[0].message.content or "Cevap üretilemedi."
-        return jsonify({"success": True, "text": text})
-    except Exception as e:
-        return jsonify({"success": False, "error": "AI servisine ulaşılamıyor."}), 500
 
 
 @app.route("/mikrotik/subnet")

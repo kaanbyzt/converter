@@ -3,14 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Cpu,
+  LayoutDashboard,
   Calculator,
   BookUser,
   Share2,
 } from "lucide-react";
 
 const navItems = [
-  { href: "/", label: "AI Asistan", icon: Cpu },
+  { href: "/", label: "Araçlar Paneli", icon: LayoutDashboard },
   { href: "/subnet", label: "Subnet Hesaplayıcı", icon: Calculator },
   { href: "/port-forward", label: "Port Yönlendirme", icon: Share2 },
   { href: "/kilavuz", label: "Kullanım Kılavuzu", icon: BookUser },

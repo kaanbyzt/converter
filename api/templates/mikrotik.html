@@ -1,28 +1,215 @@
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>toolboxquick | MikroTik Script Aracı</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-</head>
-<body class="bg-dark text-light">
-    <nav class="navbar navbar-dark bg-dark border-bottom border-secondary">
-        <div class="container py-2">
-            <a class="navbar-brand" href="/">toolboxquick</a>
-        </div>
-    </nav>
+{% extends "mikrotik_base.html" %}
+{% block title %}Araçlar Paneli{% endblock %}
+{% block content %}
+<div class="page-header" style="margin-bottom: 2.5rem; text-align: center; max-width: 800px; margin-left: auto; margin-right: auto;">
+    <h1 style="font-size: 2.2rem; font-weight: 800; background: linear-gradient(to right, #60a5fa, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+        MikroTik RouterOS Yapılandırma Paneli
+    </h1>
+    <p style="color: #9ca3af; font-size: 0.95rem; margin-top: 0.5rem; line-height: 1.6;">
+        Ağınızı optimize etmek, güvenlik duvarı kuralları oluşturmak ve otomasyon scriptleri üretmek için yerel ve matematiksel araç kutusunu kullanın. Herhangi bir yapay zeka bağlantısı olmadan, tüm hesaplamalar tarayıcınızda güvenli bir şekilde yapılır.
+    </p>
+</div>
 
-    <main class="container py-4">
-        <h1 class="h3 mb-3">MikroTik Script Aracı</h1>
-        <p class="text-secondary">
-            RouterOS için hızlı yapılandırma scriptleri oluşturmak için taslak sayfa.
-            WAN tipi, Wi‑Fi ayarları ve güvenlik kuralları gibi parametrelere göre script üretecek.
-        </p>
-        <div class="alert alert-info small">
-            Script üretici henüz eklenmedi. İleride burada tam özellikli bir MikroTik aracı olacak.
-        </div>
-        <a href="/" class="text-secondary small">&larr; Ana sayfaya dön</a>
-    </main>
-</body>
-</html>
+<style>
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    .dash-category {
+        background: #1f2937;
+        border: 1px solid rgba(55, 65, 81, 0.7);
+        border-radius: 1rem;
+        padding: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+    .dash-category-title {
+        font-size: 0.9rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #60a5fa;
+        border-bottom: 1px solid #374151;
+        padding-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .dash-list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    .dash-item a {
+        display: flex;
+        flex-direction: column;
+        padding: 0.6rem 0.75rem;
+        border-radius: 0.5rem;
+        background: #111827;
+        border: 1px solid #374151;
+        text-decoration: none;
+        color: #e5e7eb;
+        transition: transform 0.15s, border-color 0.15s, background 0.15s;
+    }
+    .dash-item a:hover {
+        transform: translateX(4px);
+        border-color: #3b82f6;
+        background: rgba(37, 99, 235, 0.1);
+        color: #fff;
+    }
+    .dash-item-title {
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+    .dash-item-desc {
+        font-size: 0.75rem;
+        color: #9ca3af;
+        margin-top: 0.15rem;
+    }
+</style>
+
+<div class="dashboard-grid">
+    <!-- Category 1: Ağ Yönetimi -->
+    <div class="dash-category">
+        <div class="dash-category-title">🌐 Ağ Yönetimi</div>
+        <ul class="dash-list">
+            <li class="dash-item">
+                <a href="/mikrotik/subnet">
+                    <span class="dash-item-title">Subnet Hesaplayıcı</span>
+                    <span class="dash-item-desc">CIDR, IP aralıkları ve host sayısını yerel matematiksel olarak hesaplayın.</span>
+                </a>
+            </li>
+            <li class="dash-item">
+                <a href="/mikrotik/ip-guide">
+                    <span class="dash-item-title">IPv4 Adresleme Rehberi</span>
+                    <span class="dash-item-desc">A, B, C sınıfı IP blokları ve alt ağ maskeleri hakkında teknik kılavuz.</span>
+                </a>
+            </li>
+            <li class="dash-item">
+                <a href="/mikrotik/dhcp-server">
+                    <span class="dash-item-title">DHCP Sunucu Kurulumu</span>
+                    <span class="dash-item-desc">Cihazların otomatik IP alabilmesi için DHCP Pool, Server ve Network komutları.</span>
+                </a>
+            </li>
+            <li class="dash-item">
+                <a href="/mikrotik/interface-ip">
+                    <span class="dash-item-title">Arayüz & IP Yönetimi</span>
+                    <span class="dash-item-desc">Fiziksel ve sanal portlara (LAN, WAN, Bridge) IP atama sihirbazı.</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Category 2: NAT & Yönlendirme -->
+    <div class="dash-category">
+        <div class="dash-category-title">🔀 NAT & Yönlendirme</div>
+        <ul class="dash-list">
+            <li class="dash-item">
+                <a href="/mikrotik/port-forward">
+                    <span class="dash-item-title">Port Yönlendirme (Dst-NAT)</span>
+                    <span class="dash-item-desc">Dış ağdaki istekleri yerel sunucularınıza (RDP, Web, vb.) yönlendirme kuralları.</span>
+                </a>
+            </li>
+            <li class="dash-item">
+                <a href="/mikrotik/src-nat">
+                    <span class="dash-item-title">İnternet Çıkış (Src-NAT/Masquerade)</span>
+                    <span class="dash-item-desc">Yerel ağdaki cihazların dış dünyaya güvenle açılması için NAT konfigürasyonu.</span>
+                </a>
+            </li>
+            <li class="dash-item">
+                <a href="/mikrotik/routing">
+                    <span class="dash-item-title">Statik Yönlendirme (Routing)</span>
+                    <span class="dash-item-desc">Farklı ağ geçitleri ve yedek hatlar (Failover) için yönlendirme tabloları.</span>
+                </a>
+            </li>
+            <li class="dash-item">
+                <a href="/mikrotik/load-balance">
+                    <span class="dash-item-title">Load Balance (PCC)</span>
+                    <span class="dash-item-desc">Birden fazla WAN (İnternet) hattını birleştirme ve yük paylaşımı yapma.</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Category 3: Güvenlik & VPN -->
+    <div class="dash-category">
+        <div class="dash-category-title">🛡️ Güvenlik & VPN</div>
+        <ul class="dash-list">
+            <li class="dash-item">
+                <a href="/mikrotik/firewall">
+                    <span class="dash-item-title">Güvenlik Duvarı Şablonları</span>
+                    <span class="dash-item-desc">DDoS koruması, tarama engelleme ve genel RouterOS filtre kuralları.</span>
+                </a>
+            </li>
+            <li class="dash-item">
+                <a href="/mikrotik/dns-security">
+                    <span class="dash-item-title">DNS Güvenliği (Sinkhole)</span>
+                    <span class="dash-item-desc">Reklam, zararlı yazılım ve telemetri domainlerini router seviyesinde engelleme.</span>
+                </a>
+            </li>
+            <li class="dash-item">
+                <a href="/mikrotik/port-services">
+                    <span class="dash-item-title">Port & Servis Yönetimi</span>
+                    <span class="dash-item-desc">Winbox, Webfig, SSH gibi varsayılan yönetim portlarını kapatma veya değiştirme.</span>
+                </a>
+            </li>
+            <li class="dash-item">
+                <a href="/mikrotik/vpn">
+                    <span class="dash-item-title">WireGuard VPN Kurulumu</span>
+                    <span class="dash-item-desc">RouterOS v7 ile gelen yüksek hızlı, şifreli VPN tünelleri oluşturma.</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Category 4: İzleme & Optimizasyon -->
+    <div class="dash-category">
+        <div class="dash-category-title">⚡ Optimizasyon & İzleme</div>
+        <ul class="dash-list">
+            <li class="dash-item">
+                <a href="/mikrotik/netwatch">
+                    <span class="dash-item-title">Netwatch İzleme Scriptleri</span>
+                    <span class="dash-item-desc">Hedef IP kesintisinde otomatik mail veya telegram bildirimi gönderen scriptler.</span>
+                </a>
+            </li>
+            <li class="dash-item">
+                <a href="/mikrotik/log-helper">
+                    <span class="dash-item-title">Log & Uyarı Asistanı</span>
+                    <span class="dash-item-desc">Kritik sistem loglarını izleme ve SMTP/Telegram entegrasyon zamanlayıcıları.</span>
+                </a>
+            </li>
+            <li class="dash-item">
+                <a href="/mikrotik/bandwidth-pcq">
+                    <span class="dash-item-title">PCQ Bant Genişliği (QoS)</span>
+                    <span class="dash-item-desc">Kullanıcılar arası internet hızını dinamik ve adil şekilde paylaştırma kuralları.</span>
+                </a>
+            </li>
+            <li class="dash-item">
+                <a href="/mikrotik/fasttrack">
+                    <span class="dash-item-title">FastTrack Optimizer</span>
+                    <span class="dash-item-desc">İşlemci yükünü azaltarak veri paketlerinin çok daha hızlı yönlendirilmesini sağlama.</span>
+                </a>
+            </li>
+            <li class="dash-item">
+                <a href="/mikrotik/wifi-channels">
+                    <span class="dash-item-title">Wi-Fi Frekans Kılavuzu</span>
+                    <span class="dash-item-desc">Kablosuz ağlarda çakışmaları önlemek için en uygun kanal ve frekans seçimi.</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+</div>
+
+<div class="card card-space" style="background: rgba(59, 130, 246, 0.05); border-color: rgba(59, 130, 246, 0.2); text-align: center; padding: 1.5rem;">
+    <h3 style="color: #93c5fd; font-size: 1.05rem; margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+        📖 Scriptler Nasıl Çalıştırılır?
+    </h3>
+    <p style="color: #d1d5db; font-size: 0.85rem; max-width: 700px; margin: 0 auto; line-height: 1.6;">
+        Araçlar tarafından üretilen konfigürasyon kodlarını router'ınıza uygulamak için Winbox'tan <strong>New Terminal</strong> açıp yapıştırmanız yeterlidir. Daha fazla detaylı yönergeler için <a href="/mikrotik/nasil-kullanilir" style="color: #60a5fa; text-decoration: underline;">Kullanım Kılavuzunu</a> inceleyebilirsiniz.
+    </p>
+</div>
+{% endblock %}

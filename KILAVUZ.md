@@ -1,78 +1,84 @@
-# Web Araçları Kullanım Kılavuzu
+# Web Araçları & MikroTik Script Jeneratörü Kullanım Kılavuzu
 
-Bu proje, ağ yöneticileri ve genel kullanıcılar için çeşitli web tabanlı araçlar sunan bir koleksiyondur. Proje, iki ana bölümden oluşmaktadır:
-1.  **Flask Tabanlı Ana Uygulama**: MikroTik, PDF, video ve ses araçlarını içeren ana sunucu uygulaması.
-2.  **Next.js Tabanlı MikroTik Araçları**: Modern bir arayüze sahip, yeniden yazılmış MikroTik araçları.
+Bu proje; ağ yöneticileri, sistem mühendisleri ve genel kullanıcılar için hazırlanmış, **%100 yerel çalışan, yapay zekasız ve güvenli** bir web araçları koleksiyonudur. Tüm hesaplamalar tarayıcınızda veya yerel sunucunuzda matematiksel yöntemlerle yapılır.
 
----
-
-## 1. Flask Tabanlı Ana Uygulama (`/api`)
-
-Bu web uygulamasını yerel makinenizde çalıştırmak için aşağıdaki adımları izleyin:
-
-1.  **Gereksinimleri Yükleyin**: Projenin Python bağımlılıklarını yüklemeniz gerekir. Terminal veya komut istemcisinde şu komutu çalıştırın:
-    ```bash
-    pip install -r requirements.txt
-    ```
-    *(Not: Projede bir `requirements.txt` dosyası olduğu varsayılmıştır. Eğer yoksa, `pip install Flask PyPDF2 groq` komutu ile kütüphaneler manuel olarak yüklenebilir.)*
-
-2.  **API Anahtarını Ayarlayın**: MikroTik AI asistanını kullanmak için bir Groq API anahtarına ihtiyacınız vardır. `api/index.py` dosyasında `GROQ_API_KEY` ortam değişkeni olarak ayarlanmıştır. Terminalde şu şekilde ayarlayabilirsiniz:
-    *   **Windows (CMD)**: `set GROQ_API_KEY=sizin_api_anahtarınız`
-    *   **Windows (PowerShell)**: `$env:GROQ_API_KEY="sizin_api_anahtarınız"`
-    *   **Linux/macOS**: `export GROQ_API_KEY=sizin_api_anahtarınız`
-
-3.  **Uygulamayı Başlatın**: Flask uygulamasını başlatmak için terminalde `api` klasörüne gidin ve şu komutu çalıştırın:
-    ```bash
-    flask --app index run
-    ```
-
-4.  **Tarayıcıda Açın**: Uygulama varsayılan olarak `http://127.0.0.1:5000` adresinde çalışacaktır. Bu adresi web tarayıcınızda açarak araçları kullanmaya başlayabilirsiniz.
-
-### Flask Uygulamasındaki Araçlar
-
--   **MikroTik AI Asistanı (`/mikrotik`)**: MikroTik ile ilgili sorularınıza komut setleri ve açıklamalar üretir.
--   **PDF Araçları (`/pdf-tools`)**: Birden fazla PDF dosyasını tek bir dosyada birleştirir.
--   **Video ve Ses Araçları (`/video-tools`, `/audio-tools`)**: Geliştirme aşamasındadır.
--   **Diğer MikroTik Araçları**: Subnet hesaplayıcı, port yönlendirme, DHCP sunucu kurulumu gibi birçok otomasyon aracı `/mikrotik/...` altında mevcuttur.
+Proje iki bölümden oluşmaktadır:
+1.  **Flask Tabanlı Ana Uygulama (`/api`)**: PDF birleştirici, ses/video taslak araçları ve zengin MikroTik script oluşturucu seti.
+2.  **Next.js Tabanlı MikroTik Araçları (`/mikrotik-tools`)**: Modern React arayüzü ile yeniden tasarlanmış yerel ağ yönetim araçları.
 
 ---
 
-## 2. Next.js Tabanlı MikroTik Araçları (`/mikrotik-tools`)
+## 🚀 1. MikroTik Scriptleri Cihaza Nasıl Uygulanır?
 
-Bu bölüm, daha modern bir teknoloji yığını (Next.js, React, Tailwind CSS) ile geliştirilmiş MikroTik araçlarını içerir.
+Sitedeki tüm MikroTik araçları, girdileriniz doğrultusunda RouterOS uyumlu terminal scriptleri üretir. Bu kodları yönlendiricinize uygulamak için en pratik yöntem şudur:
 
-### Projeyi Çalıştırma
+1.  **Kodu Kopyalayın**: İlgili aracın sayfasında ayarlarınızı yapın ve script kutusunun sağ üstündeki **"Kopyala"** butonuna tıklayın.
+2.  **Winbox ile Bağlanın**: Bilgisayarınızda Winbox uygulamasını açın ve router cihazınızın IP/MAC adresi ile giriş yapın.
+3.  **New Terminal Ekranını Açın**: Winbox sol menüsündeki **"New Terminal"** butonuna tıklayarak komut satırını açın.
+4.  **Kodu Yapıştırın**: Terminal ekranına sağ tıklayıp **"Paste"** (Yapıştır) seçeneğine tıklayın. Komutlar otomatik olarak satır satır işlenecektir.
 
-1.  **Klasöre Gidin**: Terminalde `mikrotik-tools` klasörüne gidin.
-    ```bash
-    cd mikrotik-tools
-    ```
-
-2.  **Bağımlılıkları Yükleyin**:
-    ```bash
-    npm install
-    ```
-
-3.  **API Anahtarını Ayarlayın**: Bu projenin AI asistanı da Groq API kullanır. Proje ana dizininde (`mikrotik-tools`) `.env.local` adında bir dosya oluşturun ve içine API anahtarınızı ekleyin:
-    ```
-    GROQ_API_KEY=sizin_api_anahtarınız
-    ```
-
-4.  **Geliştirme Sunucusunu Başlatın**:
-    ```bash
-    npm run dev
-    ```
-
-5.  **Tarayıcıda Açın**: Uygulamayı `http://localhost:3000` adresinde görüntüleyebilirsiniz.
-
-### Next.js Uygulamasındaki Araçlar
-
-Bu uygulama, Flask projesindeki MikroTik araçlarının daha gelişmiş ve interaktif versiyonlarını sunmayı hedefler. Mevcut araçlar:
-
--   **MikroTik AI Asistanı**: `/` ana sayfasında yer alır.
--   **Subnet Hesaplayıcı**: `/subnet` adresindedir.
--   **Port Yönlendirme Sihirbazı**: `/port-forward` adresindedir.
+> [!IMPORTANT]
+> **Güvenlik Önemlidir:** Herhangi bir scripti çalıştırmadan önce mutlaka Winbox'ta **Files -> Backup** yolunu izleyerek cihazınızın yedeğini alın. Arayüz isimlerinin (örn: `ether1`, `bridge`) cihazınızla eşleştiğinden emin olun.
 
 ---
 
-Bu kılavuz, projedeki araçları etkili bir şekilde kullanmanıza yardımcı olmak için hazırlanmıştır. Yeni araçlar eklendikçe kılavuz güncellenecektir.
+## 🛠️ 2. MikroTik Araçları Detaylı Kullanım Kılavuzu
+
+### 🌐 2.1. Subnet (Alt Ağ) Hesaplayıcı
+IP adresinizi ve CIDR alt ağ maskesini girerek ağın tüm sınırlarını hesaplamanızı sağlar.
+*   **Girişler**: IP Adresi (örn: `192.168.1.50`) ve CIDR (örn: `24` -> `255.255.255.0`).
+*   **Çıktılar**: Ağ Adresi (Network), Yayın Adresi (Broadcast), Subnet Maskesi, Kullanılabilir IP Aralığı ve Toplam Kullanılabilir Host Sayısı.
+*   **Uç Durumlar**: `/31` (Noktadan noktaya bağlantı) ve `/32` (Tek host) durumlarında sistem kullanılabilir hostları otomatik olarak algılar ve "Yok" olarak işaretler.
+
+### 🔌 2.2. Port Yönlendirme (Dst-NAT)
+Dış ağdan (İnternet) yerel ağınızdaki bir sunucuya veya cihaza erişmek için gereken yönlendirme kodlarını hazırlar.
+*   **Kullanım Adımları**: 
+    1.  Dış ağdan gelecek isteklerin dinleneceği arayüzü (WAN Interface, örn: `ether1`) seçin.
+    2.  Dış portu (örn: `80` HTTP veya `3389` RDP) belirleyin.
+    3.  İsteklerin yönlendirileceği yerel IP adresini (örn: `192.168.1.100`) ve yerel port numarasını girin.
+*   **Script Sonucu**: `/ip firewall nat` altında `dst-nat` kuralını oluşturur.
+
+### 🔋 2.3. DHCP Sunucu ve IP Havuzu Oluşturucu
+Yerel ağa bağlanan cihazların IP, Gateway ve DNS adreslerini otomatik alabilmesi için gereken servisleri kurar.
+*   **Kullanım Adımları**: 
+    1.  Ağda dağıtılacak IP adres havuzunun adını ve aralığını (örn: `192.168.1.100-192.168.1.200`) tanımlayın.
+    2.  DHCP servisinin çalışacağı yerel arayüzü (örn: `bridge-local`) belirtin.
+    3.  Ağ geçidi (Gateway) ve DNS sunucularını (virgülle ayırarak) girin.
+*   **Script Sonucu**: IP havuzu (Pool) oluşturur, DHCP Server ekler ve DHCP Network yapılandırmasını tamamlar.
+
+### 🛡️ 2.4. Güvenlik Duvarı (Firewall) Şablonları
+RouterOS cihazınızı dışarıdan gelecek saldırılara karşı korumak için optimize edilmiş güvenlik şablonları üretir.
+*   **Seçenekler**:
+    *   *DDoS Saldırı Koruması*: Aşırı paket gönderimi yapan IP adreslerini geçici olarak engeller.
+    *   *Port Tarama Engelleme (Port Scanner)*: Cihazın açık portlarını bulmaya çalışan saldırganları kara listeye alır.
+    *   *DNS Amplification Koruması*: DNS servisinizin dış saldırılarda aracı olarak kullanılmasını önler.
+*   **Script Sonucu**: `/ip firewall filter` altına koruma kuralları yazar.
+
+### 🔒 2.5. DNS Güvenliği (Sinkhole)
+Ağ seviyesinde istenmeyen alan adlarını (reklamlar, izleyiciler, telemetri verileri) engeller ve güvenli DNS sağlayıcıları atar.
+*   **Kullanım Adımları**:
+    1.  Güvenli yukarı akış DNS sağlayıcısını (Cloudflare Family, Quad9 veya AdGuard) seçin.
+    2.  Reklam engelleme seçeneğini aktif ettiğinizde, sistem popüler reklam ağlarını `0.0.0.0` IP'sine yönlendirerek (Sinkhole) ağ genelinde engeller.
+
+### 📡 2.6. WireGuard VPN Jeneratörü (RouterOS v7)
+MikroTik yönlendiriciniz üzerinde modern, hızlı ve şifreli bir WireGuard tüneli oluşturur.
+*   **Kullanım Adımları**:
+    1.  WireGuard servis portunu (varsayılan: `13231`) girin.
+    2.  Sunucunun yerel tünel IP adresini (örn: `10.0.0.1/24`) belirleyin.
+    3.  Bağlanacak istemciye (Peer) atanacak IP adresini tanımlayın.
+*   **Script Sonucu**: WireGuard arayüzünü açar, portu dinler, yerel IP'leri tanımlar ve istemci erişim profilini ekler.
+
+### 📊 2.7. Netwatch & Log İzleme (Otomasyon)
+Cihazınızda ping izlemesi veya sistem günlüğü (log) takibi yaparak otomatik bildirim (E-Posta veya Telegram) almanızı sağlar.
+*   **Telegram Bot Entegrasyonu**: Kodu çalıştırmadan önce script içeriğindeki `BOT_TOKEN_BURAYA` alanına kendi bot tokeninizi yazmanız gerekir.
+*   **E-Posta Entegrasyonu**: RouterOS e-posta ayarlarınızın önceden yapılmış olması gerekmektedir.
+
+---
+
+## 📄 3. PDF Birleştirici Nasıl Kullanılır?
+
+Ana sayfadaki **PDF Araçları** sekmesi altından erişebileceğiniz bu araç, birden fazla PDF dosyasını yükleme sıranıza göre tek bir PDF dosyası haline getirir.
+
+1.  **PDF Birleştiriciyi Açın**: Arayüzden PDF araçları sayfasına gidin.
+2.  **Dosyaları Yükleyin**: **"Dosya Seç"** butonuna basarak bilgisayarınızdan en az iki adet PDF dosyası seçin.
+3.  **Birleştirin**: **"PDF Dosyalarını Birleştir"** butonuna basın. Birleştirilmiş dosyanız otomatik olarak `toolboxquick-merged.pdf` adıyla tarayıcınıza indirilecektir.
