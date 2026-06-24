@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% block title %}Belge Dönüştürücü | toolboxquick{% endblock %}
+{% block head %}
+<style>
+    .dropzone {
+        border: 2px dashed var(--btn-outline-border);
+        border-radius: 12px;
+        padding: 2.5rem 1.5rem;
+        background: rgba(15, 23, 42, 0.2);
+        text-align: center;
+        cursor: pointer;
+        transition: border-color 0.15s, background-color 0.15s;
+    }
+    .dropzone:hover {
+        border-color: #10b981;
+        background: rgba(16, 185, 129, 0.05);
+    }
+    .file-input {
+        display: none;
+    }
+</style>
+<!-- Load mammoth and jsPDF CDNs -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<header class="mb-4">
+    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #10b981 !important;">Dönüştürücüler</p>
+    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">Belge Dönüştürücü</h1>
+    <p class="text-secondary mb-0">
+        Belgelerinizi (DOCX, TXT, HTML) seçin, hedef formatı belirleyin ve yerel tarayıcınızda dönüştürüp indirin.
+    </p>
+</header>
+
+<section class="tool-card p-4 mb-4">
+    <div id="upload-stage">
+        <label class="form-label fw-semibold mb-2">Belge Dosyanızı Seçin</label>
+        <div class="dropzone" onclick="document.getElementById('doc_file').click()">
+            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">📄</div>
+            <div class="fw-semibold mb-1" style="color: var(--text-color);">Bir belge dosyası seçin (DOCX, TXT, HTML)</div>
+            <input type="file" id="doc_file" class="file-input" accept=".docx,.txt,.html,.htm" onchange="loadDocFile(this)">
+        </div>
+    </div>
+
+    <div id="editor-stage" class="d-none text-center">
+        <div class="mb-3 d-flex justify-content-between align-items-center">
+            <span id="file-name" class="fw-semibold text-success">belge.docx</span>
+            <button class="btn btn-sm btn-outline-danger" onclick="resetEditor()">Yeni Belge Yükle</button>
+        </div>
+
+        <div class="mb-4" style="max-width: 300px; margin: 0 auto; text-align: left;">
+            <label class="form-label fw-semibold mb-2">Hedef Format</label>
+            <select id="target-format" class="form-select" style="border-radius: 8px;">
+                <option value="pdf">PDF Belgesi (.pdf)</option>
+                <option value="txt">Düz Metin (.txt)</option>
+                <option value="html">HTML Kodu (.html)</option>
+            </select>
+        </div>
+
+        <div id="processing-msg" class="text-warning small mb-3 d-none">Lütfen bekleyin, dönüştürme yapılıyor...</div>
+
+        <button class="btn btn-success px-5 py-2" id="process-btn" onclick="processAndDownload()" style="border-radius: 8px; font-weight: 600;">
+            Dönüştür ve İndir 💾
+        </button>
+    </div>
+</section>
+
+<section class="mt-4">
+    <a href="/" class="text-secondary small text-decoration-none">&larr; Ana sayfaya dön</a>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let selectedFile = null;
+let originalFileName = "";
+let fileExtension = "";
+
+function resetEditor() {
+    selectedFile = null;
+    originalFileName = "";
+    fileExtension = "";
+    document.getElementById('upload-stage').classList.remove('d-none');
+    document.getElementById('editor-stage').classList.add('d-none');
+    document.getElementById('doc_file').value = '';
+}
+
+function loadDocFile(input) {
+    if (!input.files || !input.files[0]) return;
+    selectedFile = input.files[0];
+    const dotIdx = selectedFile.name.lastIndexOf('.');
+    originalFileName = selectedFile.name.substring(0, dotIdx);
+    fileExtension = selectedFile.name.substring(dotIdx + 1).toLowerCase();
+    
+    document.getElementById('file-name').textContent = selectedFile.name;
+    document.getElementById('upload-stage').classList.add('d-none');
+    document.getElementById('editor-stage').classList.remove('d-none');
+}
+
+async function processAndDownload() {
+    if (!selectedFile) return;
+
+    document.getElementById('processing-msg').classList.remove('d-none');
+    document.getElementById('process-btn').disabled = true;
+
+    const targetFormat = document.getElementById('target-format').value;
+
+    try {
+        let text = "";
+        let html = "";
+
+        if (fileExtension === 'docx') {
+            const arrayBuffer = await selectedFile.arrayBuffer();
+            const result = await mammoth.convertToHtml({ arrayBuffer: arrayBuffer });
+            html = result.value;
+            const textResult = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+            text = textResult.value;
+        } else if (fileExtension === 'txt') {
+            text = await selectedFile.text();
+            html = `<p>${text.replace(/\n/g, '</p><p>')}</p>`;
+        } else if (fileExtension === 'html' || fileExtension === 'htm') {
+            html = await selectedFile.text();
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            text = tempDiv.innerText;
+        }
+
+        if (targetFormat === 'pdf') {
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF();
+            pdf.setFontSize(11);
+            let y = 15;
+            const lines = text.split('\n');
+            lines.forEach(line => {
+                if (y > 280) {
+                    pdf.addPage();
+                    y = 15;
+                }
+                if (line.trim() !== '') {
+                    pdf.text(line.trim(), 15, y);
+                    y += 8;
+                }
+            });
+            pdf.save(originalFileName + '.pdf');
+        } else if (targetFormat === 'txt') {
+            const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = originalFileName + '.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+        } else if (targetFormat === 'html') {
+            const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = originalFileName + '.html';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    } catch (e) {
+        alert('Dönüştürme işlemi sırasında hata oluştu.');
+        console.error(e);
+    } finally {
+        document.getElementById('processing-msg').classList.add('d-none');
+        document.getElementById('process-btn').disabled = false;
+    }
+}
+</script>
+{% endblock %}

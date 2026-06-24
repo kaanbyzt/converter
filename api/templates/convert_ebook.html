@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block title %}E-kitap Dönüştürücü | toolboxquick{% endblock %}
+{% block head %}
+<style>
+    .dropzone {
+        border: 2px dashed var(--btn-outline-border);
+        border-radius: 12px;
+        padding: 2.5rem 1.5rem;
+        background: rgba(15, 23, 42, 0.2);
+        text-align: center;
+        cursor: pointer;
+        transition: border-color 0.15s, background-color 0.15s;
+    }
+    .dropzone:hover {
+        border-color: #10b981;
+        background: rgba(16, 185, 129, 0.05);
+    }
+    .file-input {
+        display: none;
+    }
+</style>
+<!-- Load JSZip and jsPDF CDNs -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<header class="mb-4">
+    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #10b981 !important;">Dönüştürücüler</p>
+    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">E-kitap Dönüştürücü</h1>
+    <p class="text-secondary mb-0">
+        E-kitaplarınızı (EPUB) yükleyin, yerel tarayıcınızda PDF veya Düz Metin (TXT) biçimine dönüştürüp indirin.
+    </p>
+</header>
+
+<section class="tool-card p-4 mb-4">
+    <div id="upload-stage">
+        <label class="form-label fw-semibold mb-2">E-kitap Dosyanızı Seçin (.epub)</label>
+        <div class="dropzone" onclick="document.getElementById('epub_file').click()">
+            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">📚</div>
+            <div class="fw-semibold mb-1" style="color: var(--text-color);">Bir EPUB dosyası seçin</div>
+            <input type="file" id="epub_file" class="file-input" accept=".epub" onchange="loadEpub(this)">
+        </div>
+    </div>
+
+    <div id="editor-stage" class="d-none text-center">
+        <div class="mb-3 d-flex justify-content-between align-items-center">
+            <span id="file-name" class="fw-semibold text-success">kitap.epub</span>
+            <button class="btn btn-sm btn-outline-danger" onclick="resetEditor()">Yeni E-kitap Yükle</button>
+        </div>
+
+        <div class="mb-4" style="max-width: 300px; margin: 0 auto; text-align: left;">
+            <label class="form-label fw-semibold mb-2">Hedef Format</label>
+            <select id="target-format" class="form-select" style="border-radius: 8px;">
+                <option value="pdf">PDF Belgesi (.pdf)</option>
+                <option value="txt">Düz Metin (.txt)</option>
+            </select>
+        </div>
+
+        <div id="processing-msg" class="text-warning small mb-3 d-none">Lütfen bekleyin, e-kitap dönüştürülüyor...</div>
+
+        <button class="btn btn-success px-5 py-2" id="process-btn" onclick="processAndDownload()" style="border-radius: 8px; font-weight: 600;">
+            Dönüştür ve İndir 💾
+        </button>
+    </div>
+</section>
+
+<section class="mt-4">
+    <a href="/" class="text-secondary small text-decoration-none">&larr; Ana sayfaya dön</a>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let selectedFile = null;
+let originalFileName = "";
+
+function resetEditor() {
+    selectedFile = null;
+    originalFileName = "";
+    document.getElementById('upload-stage').classList.remove('d-none');
+    document.getElementById('editor-stage').classList.add('d-none');
+    document.getElementById('epub_file').value = '';
+}
+
+function loadEpub(input) {
+    if (!input.files || !input.files[0]) return;
+    selectedFile = input.files[0];
+    originalFileName = selectedFile.name.substring(0, selectedFile.name.lastIndexOf('.'));
+    
+    document.getElementById('file-name').textContent = selectedFile.name;
+    document.getElementById('upload-stage').classList.add('d-none');
+    document.getElementById('editor-stage').classList.remove('d-none');
+}
+
+async function processAndDownload() {
+    if (!selectedFile) return;
+
+    document.getElementById('processing-msg').classList.remove('d-none');
+    document.getElementById('process-btn').disabled = true;
+
+    const targetFormat = document.getElementById('target-format').value;
+
+    try {
+        const arrayBuffer = await selectedFile.arrayBuffer();
+        const zip = await JSZip.loadAsync(arrayBuffer);
+        
+        let fullText = "";
+        
+        // EPUB is a zip file. We locate all .html, .xhtml, .htm files inside and merge their texts.
+        const fileNames = Object.keys(zip.files).filter(name => 
+            name.endsWith('.html') || name.endsWith('.xhtml') || name.endsWith('.htm')
+        ).sort(); // Sort sequentially
+
+        for (let i = 0; i < fileNames.length; i++) {
+            const rawContent = await zip.files[fileNames[i]].async("string");
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = rawContent;
+            
+            // Extract textual content
+            fullText += tempDiv.innerText + "\n\n";
+        }
+
+        if (targetFormat === 'txt') {
+            const blob = new Blob([fullText], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = originalFileName + '.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+        } else if (targetFormat === 'pdf') {
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF();
+            pdf.setFontSize(10);
+            
+            let y = 15;
+            const lines = fullText.split('\n');
+            lines.forEach(line => {
+                if (y > 280) {
+                    pdf.addPage();
+                    y = 15;
+                }
+                if (line.trim() !== '') {
+                    pdf.text(line.trim(), 15, y);
+                    y += 7;
+                }
+            });
+            
+            pdf.save(originalFileName + '.pdf');
+        }
+    } catch (e) {
+        alert('Dönüştürme işlemi sırasında hata oluştu.');
+        console.error(e);
+    } finally {
+        document.getElementById('processing-msg').classList.add('d-none');
+        document.getElementById('process-btn').disabled = false;
+    }
+}
+</script>
+{% endblock %}

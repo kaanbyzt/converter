@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}Kamera Kaydedici (Video Recorder) | toolboxquick{% endblock %}
+{% block head %}
+<style>
+    .recorder-container {
+        max-width: 650px;
+        margin: 0 auto;
+        background: #090d16;
+        border: 1px solid #1f2937;
+        border-radius: 12px;
+        overflow: hidden;
+        position: relative;
+    }
+    video {
+        display: block;
+        width: 100%;
+        max-height: 480px;
+        background: #000;
+    }
+    .status-badge {
+        position: absolute;
+        top: 15px;
+        left: 15px;
+        background: rgba(239, 68, 68, 0.85);
+        color: #fff;
+        padding: 0.25rem 0.75rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+    .status-dot {
+        width: 8px;
+        height: 8px;
+        background: #fff;
+        border-radius: 50%;
+        animation: pulse 1s infinite alternate;
+    }
+    @keyframes pulse {
+        from { opacity: 0.3; }
+        to { opacity: 1; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<header class="mb-4">
+    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #a855f7 !important;">Video Araçları</p>
+    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">Kamera Kaydedici (Video Recorder)</h1>
+    <p class="text-secondary mb-0">
+        Web kameranızı ve mikrofonunuzu kullanarak tarayıcınız üzerinden yerel, güvenli ve ücretsiz video kaydedin.
+    </p>
+</header>
+
+<section class="tool-card p-4 mb-4 text-center">
+    <div class="recorder-container mb-4">
+        <div class="status-badge d-none" id="recording-badge">
+            <span class="status-dot"></span>
+            <span>Kayıt Yapılıyor</span>
+        </div>
+        <video id="preview-video" autoplay muted playsinline></video>
+    </div>
+
+    <div class="d-flex justify-content-center gap-3">
+        <button class="btn btn-purple text-white px-4 py-2" id="start-btn" onclick="startCamera()" style="border-radius: 8px; font-weight: 600; background-color: #a855f7; border-color: #a855f7;">
+            Kamerayı Aç 🎥
+        </button>
+        <button class="btn btn-danger px-4 py-2 d-none" id="record-btn" onclick="toggleRecord()" style="border-radius: 8px; font-weight: 600;">
+            Kaydı Başlat ⏺️
+        </button>
+    </div>
+</section>
+
+<section class="mt-4">
+    <a href="/" class="text-secondary small text-decoration-none">&larr; Ana sayfaya dön</a>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let stream = null;
+let mediaRecorder = null;
+let recordedChunks = [];
+let isRecording = false;
+
+async function startCamera() {
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({
+            video: { width: 1280, height: 720 },
+            audio: true
+        });
+        
+        const videoEl = document.getElementById('preview-video');
+        videoEl.srcObject = stream;
+        
+        document.getElementById('start-btn').classList.add('d-none');
+        document.getElementById('record-btn').classList.remove('d-none');
+    } catch (e) {
+        alert('Kamera veya mikrofona erişilemedi. Lütfen izin verdiğinizden emin olun.');
+        console.error(e);
+    }
+}
+
+function toggleRecord() {
+    const recordBtn = document.getElementById('record-btn');
+    const badge = document.getElementById('recording-badge');
+    
+    if (!isRecording) {
+        // Start recording
+        recordedChunks = [];
+        mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+        
+        mediaRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+                recordedChunks.push(event.data);
+            }
+        };
+        
+        mediaRecorder.onstop = () => {
+            const blob = new Blob(recordedChunks, { type: 'video/webm' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `video-kaydi-${Date.now()}.webm`;
+            a.click();
+            URL.revokeObjectURL(url);
+        };
+        
+        mediaRecorder.start();
+        isRecording = true;
+        recordBtn.textContent = 'Kaydı Durdur ⏹️';
+        recordBtn.className = 'btn btn-outline-danger px-4 py-2';
+        badge.classList.remove('d-none');
+    } else {
+        // Stop recording
+        mediaRecorder.stop();
+        isRecording = false;
+        recordBtn.textContent = 'Kaydı Başlat ⏺️';
+        recordBtn.className = 'btn btn-danger px-4 py-2';
+        badge.classList.add('d-none');
+    }
+}
+
+// Clean up streams on window unload
+window.onbeforeunload = () => {
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+    }
+};
+</script>
+{% endblock %}

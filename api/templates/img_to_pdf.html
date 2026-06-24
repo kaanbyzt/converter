@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+{% block title %}Görselden PDF'e Dönüştür | toolboxquick{% endblock %}
+{% block head %}
+<style>
+    .dropzone {
+        border: 2px dashed var(--btn-outline-border);
+        border-radius: 12px;
+        padding: 2.5rem 1.5rem;
+        background: rgba(15, 23, 42, 0.2);
+        text-align: center;
+        cursor: pointer;
+        transition: border-color 0.15s, background-color 0.15s;
+    }
+    .dropzone:hover {
+        border-color: #f97316;
+        background: rgba(249, 115, 22, 0.05);
+    }
+    .file-input {
+        display: none;
+    }
+    .img-list {
+        background: rgba(15, 23, 42, 0.3);
+        border-radius: 12px;
+        padding: 1rem;
+        border: 1px solid var(--navbar-border);
+    }
+    .img-item {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--navbar-border);
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        margin-bottom: 0.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .img-item:last-child {
+        margin-bottom: 0;
+    }
+</style>
+<!-- Load jsPDF CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<header class="mb-4">
+    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #f97316 !important;">PDF Araçları</p>
+    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">Görselleri PDF'e Dönüştür (Image to PDF)</h1>
+    <p class="text-secondary mb-0">
+        Resimlerinizi (JPG, PNG) yükleyin ve yerel tarayıcınızda tek bir PDF dosyasında birleştirip indirin.
+    </p>
+</header>
+
+<section class="tool-card p-4 mb-4">
+    <div class="mb-4">
+        <label class="form-label fw-semibold mb-2">Görselleri Ekleyin (Çoklu Seçim Desteklenir)</label>
+        <div class="dropzone" onclick="document.getElementById('image_files').click()">
+            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🖼️</div>
+            <div class="fw-semibold mb-1" style="color: var(--text-color);">Resimleri seçmek için tıklayın</div>
+            <input type="file" id="image_files" class="file-input" accept="image/jpeg, image/png" multiple onchange="addImages(this)">
+        </div>
+    </div>
+
+    <div id="images-stage" class="d-none">
+        <h3 class="h6 fw-semibold mb-3">PDF'e Eklenecek Görseller</h3>
+        <div class="img-list mb-4" id="img-list-container">
+            <!-- Dynamically populated -->
+        </div>
+
+        <div id="processing-msg" class="text-warning small mb-3 d-none">Lütfen bekleyin, PDF dosyası oluşturuluyor...</div>
+
+        <div class="d-flex justify-content-between align-items-center">
+            <button class="btn btn-outline-danger" onclick="clearImages()">Tümünü Temizle</button>
+            <button class="btn btn-warning text-white px-5 py-2" id="convert-btn" onclick="convertToPDF()" style="border-radius: 8px; font-weight: 600; background-color: #f97316; border-color: #f97316;">
+                Dönüştür ve İndir 💾
+            </button>
+        </div>
+    </div>
+</section>
+
+<section class="mt-4">
+    <a href="/" class="text-secondary small text-decoration-none">&larr; Ana sayfaya dön</a>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let images = [];
+
+function clearImages() {
+    images = [];
+    renderImages();
+}
+
+function addImages(input) {
+    if (!input.files || input.files.length === 0) return;
+
+    for (let i = 0; i < input.files.length; i++) {
+        const file = input.files[i];
+        const imgId = Date.now() + '-' + Math.random();
+        
+        images.push({
+            id: imgId,
+            file: file,
+            name: file.name,
+            size: (file.size / 1024 / 1024).toFixed(2) + ' MB'
+        });
+    }
+
+    input.value = '';
+    renderImages();
+}
+
+function removeImage(id) {
+    images = images.filter(img => img.id !== id);
+    renderImages();
+}
+
+function moveImage(id, direction) {
+    const idx = images.findIndex(img => img.id === id);
+    if (idx === -1) return;
+    
+    const targetIdx = idx + direction;
+    if (targetIdx < 0 || targetIdx >= images.length) return;
+    
+    const temp = images[idx];
+    images[idx] = images[targetIdx];
+    images[targetIdx] = temp;
+    
+    renderImages();
+}
+
+function renderImages() {
+    const container = document.getElementById('img-list-container');
+    const stage = document.getElementById('images-stage');
+    
+    container.innerHTML = '';
+    
+    if (images.length === 0) {
+        stage.classList.add('d-none');
+        return;
+    }
+    
+    stage.classList.remove('d-none');
+    
+    images.forEach((img, idx) => {
+        const item = document.createElement('div');
+        item.className = 'img-item';
+        item.innerHTML = `
+            <div class="d-flex align-items-center gap-3">
+                <span class="text-secondary fw-semibold">#${idx + 1}</span>
+                <div>
+                    <div class="fw-semibold text-orange-400 small">${img.name}</div>
+                    <div class="text-secondary" style="font-size: 0.7rem;">${img.size}</div>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-sm btn-outline-secondary py-1" onclick="moveImage('${img.id}', -1)" ${idx === 0 ? 'disabled' : ''}>▲</button>
+                <button class="btn btn-sm btn-outline-secondary py-1" onclick="moveImage('${img.id}', 1)" ${idx === images.length - 1 ? 'disabled' : ''}>▼</button>
+                <button class="btn btn-sm btn-outline-danger py-1" onclick="removeImage('${img.id}')">Sil</button>
+            </div>
+        `;
+        container.appendChild(item);
+    });
+}
+
+function readFileAsDataURL(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+    });
+}
+
+async function convertToPDF() {
+    if (images.length === 0) return;
+    
+    document.getElementById('processing-msg').classList.remove('d-none');
+    document.getElementById('convert-btn').disabled = true;
+
+    try {
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF();
+
+        for (let i = 0; i < images.length; i++) {
+            const dataUrl = await readFileAsDataURL(images[i].file);
+            
+            if (i > 0) {
+                pdf.addPage();
+            }
+
+            const img = new Image();
+            await new Promise((resolve) => {
+                img.onload = resolve;
+                img.src = dataUrl;
+            });
+
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            
+            // Calculate scale to fit image to page
+            const ratio = Math.min(pdfWidth / img.width, pdfHeight / img.height);
+            const w = img.width * ratio;
+            const h = img.height * ratio;
+            const x = (pdfWidth - w) / 2;
+            const y = (pdfHeight - h) / 2;
+
+            pdf.addImage(dataUrl, 'JPEG', x, y, w, h);
+        }
+
+        pdf.save('toolboxquick-converted.pdf');
+    } catch (e) {
+        alert('PDF oluşturulurken hata meydana geldi.');
+        console.error(e);
+    } finally {
+        document.getElementById('processing-msg').classList.add('d-none');
+        document.getElementById('convert-btn').disabled = false;
+    }
+}
+</script>
+{% endblock %}

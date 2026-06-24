@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+{% block title %}Ses Birleştirici (Audio Joiner) | toolboxquick{% endblock %}
+{% block head %}
+<style>
+    .dropzone {
+        border: 2px dashed var(--btn-outline-border);
+        border-radius: 12px;
+        padding: 2.5rem 1.5rem;
+        background: rgba(15, 23, 42, 0.2);
+        text-align: center;
+        cursor: pointer;
+        transition: border-color 0.15s, background-color 0.15s;
+    }
+    .dropzone:hover {
+        border-color: #3b82f6;
+        background: rgba(59, 130, 246, 0.05);
+    }
+    .file-input {
+        display: none;
+    }
+    .track-list {
+        background: rgba(15, 23, 42, 0.3);
+        border-radius: 12px;
+        padding: 1rem;
+        border: 1px solid var(--navbar-border);
+    }
+    .track-item {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--navbar-border);
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        margin-bottom: 0.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .track-item:last-child {
+        margin-bottom: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<header class="mb-4">
+    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #3b82f6 !important;">Ses Araçları</p>
+    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">Ses Birleştirici (Audio Joiner)</h1>
+    <p class="text-secondary mb-0">
+        Birden fazla ses dosyasını yükleyin, sıraya dizin ve yerel olarak tek bir WAV dosyası halinde birleştirin.
+    </p>
+</header>
+
+<section class="tool-card p-4 mb-4">
+    <div class="mb-4">
+        <label class="form-label fw-semibold mb-2">Ses Dosyalarını Ekleyin (Çoklu Seçim Desteklenir)</label>
+        <div class="dropzone" onclick="document.getElementById('audio_files').click()">
+            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔗</div>
+            <div class="fw-semibold mb-1" style="color: var(--text-color);">Dosyaları seçmek için tıklayın</div>
+            <input type="file" id="audio_files" class="file-input" accept="audio/*" multiple onchange="addTracks(this)">
+        </div>
+    </div>
+
+    <div id="tracks-stage" class="d-none">
+        <h3 class="h6 fw-semibold mb-3">Birleştirilecek Dosyalar</h3>
+        <div class="track-list mb-4" id="track-list-container">
+            <!-- Dynamically populated -->
+        </div>
+
+        <div id="processing-msg" class="text-warning small mb-3 d-none">Lütfen bekleyin, ses dosyaları birleştiriliyor...</div>
+
+        <div class="d-flex justify-content-between align-items-center">
+            <button class="btn btn-outline-danger" onclick="clearTracks()">Tümünü Temizle</button>
+            <button class="btn btn-primary px-5 py-2" id="join-btn" onclick="joinAndDownload()" style="border-radius: 8px; font-weight: 600;">
+                Birleştir ve İndir 💾
+            </button>
+        </div>
+    </div>
+</section>
+
+<section class="mt-4">
+    <a href="/" class="text-secondary small text-decoration-none">&larr; Ana sayfaya dön</a>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let audioCtx = null;
+let tracks = [];
+
+function clearTracks() {
+    tracks = [];
+    renderTracks();
+}
+
+function addTracks(input) {
+    if (!input.files || input.files.length === 0) return;
+    
+    if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+
+    for (let i = 0; i < input.files.length; i++) {
+        const file = input.files[i];
+        const trackId = Date.now() + '-' + Math.random();
+        
+        tracks.push({
+            id: trackId,
+            file: file,
+            name: file.name,
+            size: (file.size / 1024 / 1024).toFixed(2) + ' MB'
+        });
+    }
+
+    input.value = '';
+    renderTracks();
+}
+
+function removeTrack(id) {
+    tracks = tracks.filter(t => t.id !== id);
+    renderTracks();
+}
+
+function moveTrack(id, direction) {
+    const idx = tracks.findIndex(t => t.id === id);
+    if (idx === -1) return;
+    
+    const targetIdx = idx + direction;
+    if (targetIdx < 0 || targetIdx >= tracks.length) return;
+    
+    // Swap
+    const temp = tracks[idx];
+    tracks[idx] = tracks[targetIdx];
+    tracks[targetIdx] = temp;
+    
+    renderTracks();
+}
+
+function renderTracks() {
+    const container = document.getElementById('track-list-container');
+    const stage = document.getElementById('tracks-stage');
+    
+    container.innerHTML = '';
+    
+    if (tracks.length === 0) {
+        stage.classList.add('d-none');
+        return;
+    }
+    
+    stage.classList.remove('d-none');
+    
+    tracks.forEach((track, idx) => {
+        const item = document.createElement('div');
+        item.className = 'track-item';
+        item.innerHTML = `
+            <div class="d-flex align-items-center gap-3">
+                <span class="text-secondary fw-semibold">#${idx + 1}</span>
+                <div>
+                    <div class="fw-semibold text-blue-400 small">${track.name}</div>
+                    <div class="text-secondary" style="font-size: 0.7rem;">${track.size}</div>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-sm btn-outline-secondary py-1" onclick="moveTrack('${track.id}', -1)" ${idx === 0 ? 'disabled' : ''}>▲</button>
+                <button class="btn btn-sm btn-outline-secondary py-1" onclick="moveTrack('${track.id}', 1)" ${idx === tracks.length - 1 ? 'disabled' : ''}>▼</button>
+                <button class="btn btn-sm btn-outline-danger py-1" onclick="removeTrack('${track.id}')">Sil</button>
+            </div>
+        `;
+        container.appendChild(item);
+    });
+}
+
+function writeString(view, offset, string) {
+    for (let i = 0; i < string.length; i++) {
+        view.setUint8(offset + i, string.charCodeAt(i));
+    }
+}
+
+function bufferToWav(buffer) {
+    const numOfChan = buffer.numberOfChannels;
+    const length = buffer.length;
+    const sampleRate = buffer.sampleRate;
+    const bufferLen = length * numOfChan * 2 + 44;
+    const outBuffer = new ArrayBuffer(bufferLen);
+    const view = new DataView(outBuffer);
+
+    writeString(view, 0, 'RIFF');
+    view.setUint32(4, 36 + length * numOfChan * 2, true);
+    writeString(view, 8, 'WAVE');
+    writeString(view, 12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, numOfChan, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * numOfChan * 2, true);
+    view.setUint16(32, numOfChan * 2, true);
+    view.setUint16(34, 16, true);
+    writeString(view, 36, 'data');
+    view.setUint32(40, length * numOfChan * 2, true);
+
+    const pos = 44;
+    const channels = [];
+    for (let i = 0; i < numOfChan; i++) {
+        channels.push(buffer.getChannelData(i));
+    }
+
+    let p = pos;
+    for (let i = 0; i < length; i++) {
+        for (let channel = 0; channel < numOfChan; channel++) {
+            let sample = channels[channel][i];
+            sample = Math.max(-1, Math.min(1, sample));
+            view.setInt16(p, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+            p += 2;
+        }
+    }
+    return new Blob([view], { type: 'audio/wav' });
+}
+
+async function decodeFile(file) {
+    const arrayBuffer = await file.arrayBuffer();
+    return await audioCtx.decodeAudioData(arrayBuffer);
+}
+
+async function joinAndDownload() {
+    if (tracks.length === 0) return;
+    
+    document.getElementById('processing-msg').classList.remove('d-none');
+    document.getElementById('join-btn').disabled = true;
+
+    try {
+        // Decode all tracks
+        const buffers = [];
+        for (let i = 0; i < tracks.length; i++) {
+            const buf = await decodeFile(tracks[i].file);
+            buffers.push(buf);
+        }
+
+        // Find reference values
+        const sampleRate = buffers[0].sampleRate;
+        const channels = Math.max(...buffers.map(b => b.numberOfChannels));
+        
+        // Sum total length (using the common sample rate)
+        let totalSamples = 0;
+        buffers.forEach(b => {
+            // Adjust length if sample rates mismatch
+            const scale = sampleRate / b.sampleRate;
+            totalSamples += Math.round(b.length * scale);
+        });
+
+        // Create offline context
+        const offlineCtx = new OfflineAudioContext(channels, totalSamples, sampleRate);
+        
+        let currentOffset = 0;
+        buffers.forEach(buf => {
+            const source = offlineCtx.createBufferSource();
+            source.buffer = buf;
+            source.connect(offlineCtx.destination);
+            source.start(currentOffset);
+            
+            const scale = sampleRate / buf.sampleRate;
+            currentOffset += (buf.duration); // start takes time in seconds
+        });
+
+        const renderedBuffer = await offlineCtx.startRendering();
+        const wavBlob = bufferToWav(renderedBuffer);
+        const url = URL.createObjectURL(wavBlob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'toolboxquick-joined.wav';
+        a.click();
+        URL.revokeObjectURL(url);
+    } catch (e) {
+        alert('Dosyalar birleştirilirken bir hata oluştu. Lütfen dosya formatlarını kontrol edin.');
+        console.error(e);
+    } finally {
+        document.getElementById('processing-msg').classList.add('d-none');
+        document.getElementById('join-btn').disabled = false;
+    }
+}
+</script>
+{% endblock %}

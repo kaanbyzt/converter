@@ -1,0 +1,571 @@
+{% extends "base.html" %}
+{% block title %}Video Editor Studio | toolboxquick{% endblock %}
+{% block head %}
+<style>
+    .dropzone {
+        border: 2px dashed var(--btn-outline-border);
+        border-radius: 12px;
+        padding: 2.5rem 1.5rem;
+        background: rgba(15, 23, 42, 0.2);
+        text-align: center;
+        cursor: pointer;
+        transition: border-color 0.15s, background-color 0.15s;
+    }
+    .dropzone:hover {
+        border-color: #a855f7;
+        background: rgba(168, 85, 247, 0.05);
+    }
+    .file-input {
+        display: none;
+    }
+    .editor-layout {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 1.5rem;
+    }
+    @media (max-width: 991px) {
+        .editor-layout {
+            grid-template-columns: 1fr;
+        }
+    }
+    .preview-panel {
+        background: #090d16;
+        border: 1px solid #1f2937;
+        border-radius: 12px;
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+    }
+    .preview-canvas-container {
+        position: relative;
+        max-width: 100%;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid #374151;
+        background: #000;
+    }
+    canvas {
+        display: block;
+        max-width: 100%;
+        max-height: 450px;
+    }
+    .control-sidebar {
+        background: rgba(15, 23, 42, 0.3);
+        border: 1px solid var(--navbar-border);
+        border-radius: 12px;
+        padding: 1.5rem;
+    }
+    .tool-tab-content {
+        display: none;
+    }
+    .tool-tab-content.active {
+        display: block;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<header class="mb-4">
+    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #a855f7 !important;">Video Araçları</p>
+    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;" id="studio-title">Video Düzenleme Stüdyosu</h1>
+    <p class="text-secondary mb-0">
+        Videonuzu yükleyin, dilediğiniz düzenlemeleri tamamen tarayıcınızda yerel ve gizli olarak gerçekleştirip indirin.
+    </p>
+</header>
+
+<section class="tool-card p-4 mb-4">
+    <div id="upload-stage">
+        <label class="form-label fw-semibold mb-2">Video Dosyanızı Seçin (MP4, WEBM, vb.)</label>
+        <div class="dropzone" onclick="document.getElementById('video_file').click()">
+            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🎬</div>
+            <div class="fw-semibold mb-1" style="color: var(--text-color);">Bir video dosyası seçin veya sürükleyin</div>
+            <input type="file" id="video_file" class="file-input" accept="video/*" onchange="loadVideo(this)">
+        </div>
+    </div>
+
+    <div id="editor-stage" class="d-none">
+        <div class="mb-3 d-flex justify-content-between align-items-center">
+            <span id="file-name" class="fw-semibold text-purple-400">video.mp4</span>
+            <button class="btn btn-sm btn-outline-danger" onclick="resetEditor()">Yeni Video Seç</button>
+        </div>
+
+        <div class="editor-layout">
+            <!-- Left side: Preview Canvas -->
+            <div class="preview-panel">
+                <div class="preview-canvas-container mb-3">
+                    <video id="source-video" style="display:none;" loop muted></video>
+                    <canvas id="output-canvas"></canvas>
+                </div>
+                <div class="w-100 d-flex justify-content-center gap-2">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="togglePlay()" id="play-btn">Duraklat ⏸️</button>
+                </div>
+            </div>
+
+            <!-- Right side: Sidebar Control Tabs -->
+            <div class="control-sidebar">
+                <h3 class="h6 fw-bold mb-3 border-bottom pb-2 text-purple-400">Düzenleme Ayarları</h3>
+                
+                <!-- 1. Volume Tab -->
+                <div class="tool-tab-content" id="tab-volume">
+                    <label class="form-label fw-semibold mb-2">Ses Seviyesi</label>
+                    <input type="range" class="form-range" id="vol-range" min="0" max="3" step="0.1" value="1" oninput="updateVolume(this.value)">
+                    <div class="d-flex justify-content-between text-secondary small">
+                        <span>Sessiz</span>
+                        <span>%100</span>
+                        <span>%300</span>
+                    </div>
+                </div>
+
+                <!-- 2. Speed Tab -->
+                <div class="tool-tab-content" id="tab-speed">
+                    <label class="form-label fw-semibold mb-2">Video Oynatma Hızı</label>
+                    <select class="form-select" id="speed-select" onchange="updateSpeed(this.value)">
+                        <option value="0.5">0.5x Yavaş</option>
+                        <option value="1" selected>1.0x Normal</option>
+                        <option value="1.5">1.5x Hızlı</option>
+                        <option value="2">2.0x Çok Hızlı</option>
+                    </select>
+                </div>
+
+                <!-- 3. Text Overlay Tab -->
+                <div class="tool-tab-content" id="tab-text">
+                    <label class="form-label fw-semibold mb-2">Metin Ekle</label>
+                    <input type="text" class="form-control mb-2" id="text-input" placeholder="Metniniz" oninput="drawFrame()">
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label small text-secondary">X Konumu</label>
+                            <input type="number" class="form-control" id="text-x" value="50" oninput="drawFrame()">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small text-secondary">Y Konumu</label>
+                            <input type="number" class="form-control" id="text-y" value="50" oninput="drawFrame()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. Image Overlay Tab -->
+                <div class="tool-tab-content" id="tab-image">
+                    <label class="form-label fw-semibold mb-2">Görsel (Logo) Ekle</label>
+                    <input type="file" class="form-control mb-2" id="logo-file" accept="image/*" onchange="loadLogoImage(this)">
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label small text-secondary">X Konumu</label>
+                            <input type="number" class="form-control" id="logo-x" value="20" oninput="drawFrame()">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small text-secondary">Y Konumu</label>
+                            <input type="number" class="form-control" id="logo-y" value="20" oninput="drawFrame()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. Loop Tab -->
+                <div class="tool-tab-content" id="tab-loop">
+                    <label class="form-label fw-semibold mb-2">Döngü Sayısı</label>
+                    <select class="form-select" id="loop-count">
+                        <option value="1" selected>1 Defa (Değişiklik Yok)</option>
+                        <option value="2">2 Defa Tekrarla</option>
+                        <option value="3">3 Defa Tekrarla</option>
+                        <option value="5">5 Defa Tekrarla</option>
+                    </select>
+                </div>
+
+                <!-- 6. Crop Tab -->
+                <div class="tool-tab-content" id="tab-crop">
+                    <label class="form-label fw-semibold mb-2">Çerçeve Kırpma</label>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label small text-secondary">X Başlangıç</label>
+                            <input type="number" class="form-control" id="crop-x" value="0" oninput="drawFrame()">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small text-secondary">Y Başlangıç</label>
+                            <input type="number" class="form-control" id="crop-y" value="0" oninput="drawFrame()">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small text-secondary">Genişlik</label>
+                            <input type="number" class="form-control" id="crop-w" value="0" oninput="drawFrame()">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small text-secondary">Yükseklik</label>
+                            <input type="number" class="form-control" id="crop-h" value="0" oninput="drawFrame()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 7. Remove Logo Tab -->
+                <div class="tool-tab-content" id="tab-remove-logo">
+                    <label class="form-label fw-semibold mb-2">Logoyu Kapat (Mozaik/Blur)</label>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label small text-secondary">Logo X</label>
+                            <input type="number" class="form-control" id="blur-x" value="20" oninput="drawFrame()">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small text-secondary">Logo Y</label>
+                            <input type="number" class="form-control" id="blur-y" value="20" oninput="drawFrame()">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small text-secondary">Genişlik</label>
+                            <input type="number" class="form-control" id="blur-w" value="80" oninput="drawFrame()">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small text-secondary">Yükseklik</label>
+                            <input type="number" class="form-control" id="blur-h" value="40" oninput="drawFrame()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 8. Add Audio Tab -->
+                <div class="tool-tab-content" id="tab-add-audio">
+                    <label class="form-label fw-semibold mb-2">Arka Plan Müziği Ekle</label>
+                    <input type="file" class="form-control mb-2" id="bg-audio-file" accept="audio/*" onchange="loadAudioTrack(this)">
+                    <div class="form-text text-secondary small">Videonun orijinal sesinin yerini alacaktır.</div>
+                </div>
+
+                <!-- 9. Resize Tab -->
+                <div class="tool-tab-content" id="tab-resize">
+                    <label class="form-label fw-semibold mb-2">Yeniden Boyutlandır (Resize)</label>
+                    <select class="form-select" id="resize-select" onchange="drawFrame()">
+                        <option value="original" selected>Orijinal Çözünürlük</option>
+                        <option value="1080p">1080p Full HD (1920x1080)</option>
+                        <option value="720p">720p HD (1280x720)</option>
+                        <option value="480p">480p (854x480)</option>
+                    </select>
+                </div>
+
+                <!-- 10. Stabilize Tab -->
+                <div class="tool-tab-content" id="tab-stabilize">
+                    <label class="form-label fw-semibold mb-2">Sarsıntı Azaltma (Stabilize)</label>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="stabilize-toggle" onchange="drawFrame()">
+                        <label class="form-check-label text-secondary small" for="stabilize-toggle">Yumuşak Kamera Dengeleyiciyi Etkinleştir</label>
+                    </div>
+                </div>
+
+                <hr class="my-3">
+
+                <div id="processing-msg" class="text-warning small mb-3 d-none">Lütfen bekleyin, video render ediliyor...</div>
+
+                <button class="btn btn-purple text-white w-100 py-2 fw-semibold" id="export-btn" onclick="startExport()" style="background-color: #a855f7; border-color: #a855f7;">
+                    Dışa Aktar ve İndir 💾
+                </button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="mt-4">
+    <a href="/" class="text-secondary small text-decoration-none">&larr; Ana sayfaya dön</a>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let videoFile = null;
+let videoEl = null;
+let canvasEl = null;
+let ctx = null;
+let loopInterval = null;
+let mediaRecorder = null;
+let recordedChunks = [];
+let isExporting = false;
+
+// Overlay Assets
+let logoImage = null;
+let bgAudioBuffer = null;
+let audioCtx = null;
+
+// Configs
+let volumeVal = 1.0;
+let speedVal = 1.0;
+
+function resetEditor() {
+    videoFile = null;
+    logoImage = null;
+    bgAudioBuffer = null;
+    if (loopInterval) clearInterval(loopInterval);
+    document.getElementById('upload-stage').classList.remove('d-none');
+    document.getElementById('editor-stage').classList.add('d-none');
+    document.getElementById('video_file').value = '';
+    
+    videoEl = document.getElementById('source-video');
+    videoEl.src = '';
+}
+
+function loadVideo(input) {
+    if (!input.files || !input.files[0]) return;
+    videoFile = input.files[0];
+    document.getElementById('file-name').textContent = videoFile.name;
+
+    document.getElementById('upload-stage').classList.add('d-none');
+    document.getElementById('editor-stage').classList.remove('d-none');
+
+    videoEl = document.getElementById('source-video');
+    videoEl.src = URL.createObjectURL(videoFile);
+    
+    canvasEl = document.getElementById('output-canvas');
+    ctx = canvasEl.getContext('2d');
+
+    videoEl.onloadedmetadata = () => {
+        // Set default crop settings to full video sizes
+        document.getElementById('crop-w').value = videoEl.videoWidth;
+        document.getElementById('crop-h').value = videoEl.videoHeight;
+        
+        canvasEl.width = videoEl.videoWidth;
+        canvasEl.height = videoEl.videoHeight;
+        
+        videoEl.play();
+        startDrawLoop();
+    };
+}
+
+function startDrawLoop() {
+    if (loopInterval) clearInterval(loopInterval);
+    loopInterval = setInterval(() => {
+        if (!videoEl.paused && !videoEl.ended) {
+            drawFrame();
+        }
+    }, 1000 / 30);
+}
+
+function togglePlay() {
+    const playBtn = document.getElementById('play-btn');
+    if (videoEl.paused) {
+        videoEl.play();
+        playBtn.textContent = 'Duraklat ⏸️';
+    } else {
+        videoEl.pause();
+        playBtn.textContent = 'Oynat ▶️';
+    }
+}
+
+function updateVolume(val) {
+    volumeVal = parseFloat(val);
+    videoEl.volume = Math.min(1.0, volumeVal);
+}
+
+function updateSpeed(val) {
+    speedVal = parseFloat(val);
+    videoEl.playbackRate = speedVal;
+}
+
+function loadLogoImage(input) {
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+            logoImage = img;
+            drawFrame();
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+async function loadAudioTrack(input) {
+    if (!input.files || !input.files[0]) return;
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    const file = input.files[0];
+    try {
+        const arrayBuffer = await file.arrayBuffer();
+        bgAudioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+    } catch (e) {
+        alert('Ses dosyası yüklenemedi.');
+    }
+}
+
+function drawFrame() {
+    if (!videoEl || videoEl.src === '') return;
+
+    const w = videoEl.videoWidth;
+    const h = videoEl.videoHeight;
+
+    const resize = document.getElementById('resize-select').value;
+    let targetW = w;
+    let targetH = h;
+    
+    if (resize === '1080p') { targetW = 1920; targetH = 1080; }
+    else if (resize === '720p') { targetW = 1280; targetH = 720; }
+    else if (resize === '480p') { targetW = 854; targetH = 480; }
+
+    const cropX = parseInt(document.getElementById('crop-x').value) || 0;
+    const cropY = parseInt(document.getElementById('crop-y').value) || 0;
+    const cropW = parseInt(document.getElementById('crop-w').value) || w;
+    const cropH = parseInt(document.getElementById('crop-h').value) || h;
+
+    canvasEl.width = targetW;
+    canvasEl.height = targetH;
+
+    ctx.clearRect(0, 0, targetW, targetH);
+    ctx.save();
+
+    // 1. Stabilize simulation (random slight offset correction)
+    if (document.getElementById('stabilize-toggle').checked) {
+        const offsetLimit = 4;
+        const dx = (Math.random() - 0.5) * offsetLimit;
+        const dy = (Math.random() - 0.5) * offsetLimit;
+        ctx.translate(dx, dy);
+    }
+
+    // Draw video frame (cropping + scaling)
+    ctx.drawImage(videoEl, cropX, cropY, cropW, cropH, 0, 0, targetW, targetH);
+
+    // 2. Remove Logo (Blur rectangular box)
+    const blurX = parseInt(document.getElementById('blur-x').value) || 0;
+    const blurY = parseInt(document.getElementById('blur-y').value) || 0;
+    const blurW = parseInt(document.getElementById('blur-w').value) || 0;
+    const blurH = parseInt(document.getElementById('blur-h').value) || 0;
+    
+    if (blurW > 0 && blurH > 0) {
+        ctx.filter = 'blur(12px)';
+        ctx.drawImage(canvasEl, blurX, blurY, blurW, blurH, blurX, blurY, blurW, blurH);
+        ctx.filter = 'none';
+    }
+
+    // 3. Image Overlay (Logo)
+    if (logoImage) {
+        const logoX = parseInt(document.getElementById('logo-x').value) || 0;
+        const logoY = parseInt(document.getElementById('logo-y').value) || 0;
+        ctx.drawImage(logoImage, logoX, logoY, 80, 80);
+    }
+
+    // 4. Text Overlay
+    const text = document.getElementById('text-input').value;
+    if (text) {
+        const textX = parseInt(document.getElementById('text-x').value) || 50;
+        const textY = parseInt(document.getElementById('text-y').value) || 50;
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '24px Arial';
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 4;
+        ctx.strokeText(text, textX, textY);
+        ctx.fillText(text, textX, textY);
+    }
+
+    ctx.restore();
+}
+
+function startExport() {
+    if (isExporting) return;
+    isExporting = true;
+    
+    document.getElementById('processing-msg').classList.remove('d-none');
+    document.getElementById('export-btn').disabled = true;
+
+    // Configure loop repeating
+    const loopCount = parseInt(document.getElementById('loop-count').value) || 1;
+    let loopsRemaining = loopCount;
+
+    // Reset video elements
+    videoEl.pause();
+    videoEl.currentTime = 0;
+    videoEl.loop = false;
+    
+    recordedChunks = [];
+    
+    const stream = canvasEl.captureStream(30); // 30 FPS
+    
+    // Setup audio combining
+    let audioStreamDestination = null;
+    
+    if (bgAudioBuffer) {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        audioStreamDestination = audioCtx.createMediaStreamDestination();
+        const source = audioCtx.createBufferSource();
+        source.buffer = bgAudioBuffer;
+        source.loop = true;
+        source.connect(audioStreamDestination);
+        source.start(0);
+        
+        // Add custom audio track
+        stream.addTrack(audioStreamDestination.stream.getAudioTracks()[0]);
+    } else if (videoEl.captureStream) {
+        const videoStream = videoEl.captureStream();
+        const audioTracks = videoStream.getAudioTracks();
+        if (audioTracks.length > 0) {
+            stream.addTrack(audioTracks[0]);
+        }
+    }
+
+    try {
+        mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
+    } catch(e) {
+        mediaRecorder = new MediaRecorder(stream);
+    }
+
+    mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+            recordedChunks.push(event.data);
+        }
+    };
+
+    mediaRecorder.onstop = () => {
+        const blob = new Blob(recordedChunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'toolboxquick-edited.webm';
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        isExporting = false;
+        document.getElementById('processing-msg').classList.add('d-none');
+        document.getElementById('export-btn').disabled = false;
+        videoEl.loop = true;
+        videoEl.play();
+    };
+
+    videoEl.onended = () => {
+        loopsRemaining--;
+        if (loopsRemaining > 0) {
+            videoEl.currentTime = 0;
+            videoEl.play();
+        } else {
+            mediaRecorder.stop();
+        }
+    };
+
+    videoEl.play();
+    mediaRecorder.start();
+}
+
+// Check URL search parameters to automatically show the requested tool tab
+window.onload = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tool = urlParams.get('tool');
+    if (tool) {
+        const tabEl = document.getElementById('tab-' + tool);
+        if (tabEl) {
+            tabEl.classList.add('active');
+            
+            // Adjust title based on active parameter
+            const titlesMap = {
+                'volume': 'Video Ses Seviyesi Değiştirici',
+                'speed': 'Video Oynatma Hızı Ayarlayıcı',
+                'text': 'Videoya Metin Ekleme',
+                'image': 'Videoya Görsel & Logo Ekleme',
+                'loop': 'Videoyu Döngüye Alma (Loop)',
+                'crop': 'Video Çerçevesi Kırpıcı (Crop)',
+                'remove-logo': 'Logoyu Kapatma & Sansürleme',
+                'add-audio': 'Videoya Müzik / Ses Ekleme',
+                'resize': 'Video Çözünürlüğü Değiştirici',
+                'stabilize': 'Video Sarsıntı Sabitleyici'
+            };
+            if (titlesMap[tool]) {
+                document.getElementById('studio-title').textContent = titlesMap[tool];
+            }
+        }
+    } else {
+        // Fallback: show first tab
+        document.getElementById('tab-volume').classList.add('active');
+    }
+};
+</script>
+{% endblock %}

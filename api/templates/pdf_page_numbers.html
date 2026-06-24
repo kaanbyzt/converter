@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block title %}PDF Sayfa Numarası Ekle | toolboxquick{% endblock %}
+{% block head %}
+<style>
+    .dropzone {
+        border: 2px dashed var(--btn-outline-border);
+        border-radius: 12px;
+        padding: 2.5rem 1.5rem;
+        background: rgba(15, 23, 42, 0.2);
+        text-align: center;
+        cursor: pointer;
+        transition: border-color 0.15s, background-color 0.15s;
+    }
+    .dropzone:hover {
+        border-color: #f97316;
+        background: rgba(249, 115, 22, 0.05);
+    }
+    .file-input {
+        display: none;
+    }
+</style>
+<!-- Load pdf-lib CDN -->
+<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<header class="mb-4">
+    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #f97316 !important;">PDF Araçları</p>
+    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">PDF Sayfa Numarası Ekle</h1>
+    <p class="text-secondary mb-0">
+        PDF dosyanızın sayfalarının altına otomatik sayfa numarası ekleyin ve yerel olarak indirin.
+    </p>
+</header>
+
+<section class="tool-card p-4 mb-4">
+    <div id="upload-stage">
+        <label class="form-label fw-semibold mb-2">PDF Dosyanızı Seçin</label>
+        <div class="dropzone" onclick="document.getElementById('pdf_file').click()">
+            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔢</div>
+            <div class="fw-semibold mb-1" style="color: var(--text-color);">Bir adet PDF dosyası seçin</div>
+            <input type="file" id="pdf_file" class="file-input" accept="application/pdf" onchange="loadPDF(this)">
+        </div>
+    </div>
+
+    <div id="editor-stage" class="d-none text-center">
+        <div class="mb-3 d-flex justify-content-between align-items-center">
+            <span id="file-name" class="fw-semibold text-orange-400">belge.pdf</span>
+            <button class="btn btn-sm btn-outline-danger" onclick="resetEditor()">Yeni PDF Yükle</button>
+        </div>
+
+        <div class="mb-4 text-start" style="max-width: 400px; margin: 0 auto;">
+            <label class="form-label fw-semibold mb-2">Numaralandırma Ayarları</label>
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" id="show-total" checked>
+                <label class="form-check-input-label text-secondary small" for="show-total">
+                    Toplam sayfa sayısını göster (Örn: "1 / 10")
+                </label>
+            </div>
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="skip-first">
+                <label class="form-check-input-label text-secondary small" for="skip-first">
+                    İlk sayfayı (Kapak sayfasını) atla
+                </label>
+            </div>
+        </div>
+
+        <div id="processing-msg" class="text-warning small mb-3 d-none">Lütfen bekleyin, numaralar ekleniyor...</div>
+
+        <button class="btn btn-warning text-white px-5 py-2" id="process-btn" onclick="processAndDownload()" style="border-radius: 8px; font-weight: 600; background-color: #f97316; border-color: #f97316;">
+            Numara Ekle ve İndir 💾
+        </button>
+    </div>
+</section>
+
+<section class="mt-4">
+    <a href="/" class="text-secondary small text-decoration-none">&larr; Ana sayfaya dön</a>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let pdfData = null;
+let originalFileName = "";
+
+function resetEditor() {
+    pdfData = null;
+    originalFileName = "";
+    document.getElementById('upload-stage').classList.remove('d-none');
+    document.getElementById('editor-stage').classList.add('d-none');
+    document.getElementById('pdf_file').value = '';
+}
+
+async function loadPDF(input) {
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+    originalFileName = file.name.substring(0, file.name.lastIndexOf('.'));
+    document.getElementById('file-name').textContent = file.name;
+    
+    document.getElementById('upload-stage').classList.add('d-none');
+    document.getElementById('editor-stage').classList.remove('d-none');
+    
+    try {
+        pdfData = await file.arrayBuffer();
+    } catch(err) {
+        alert('PDF dosyası yüklenemedi.');
+        resetEditor();
+    }
+}
+
+async function processAndDownload() {
+    if (!pdfData) return;
+    
+    document.getElementById('processing-msg').classList.remove('d-none');
+    document.getElementById('process-btn').disabled = true;
+
+    try {
+        const { PDFDocument, rgb, StandardFonts } = PDFLib;
+        const pdfDoc = await PDFDocument.load(pdfData);
+        
+        const showTotal = document.getElementById('show-total').checked;
+        const skipFirst = document.getElementById('skip-first').checked;
+        
+        const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+        const pages = pdfDoc.getPages();
+        const total = pages.length;
+
+        pages.forEach((page, index) => {
+            if (skipFirst && index === 0) return;
+            
+            const { width, height } = page.getSize();
+            const pageNumText = showTotal ? `${index + 1} / ${total}` : `${index + 1}`;
+            
+            // Draw page numbers centered at bottom
+            page.drawText(pageNumText, {
+                x: width / 2 - 15,
+                y: 20,
+                size: 9,
+                font: font,
+                color: rgb(0.4, 0.45, 0.5)
+            });
+        });
+
+        const pdfBytes = await pdfDoc.save();
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = originalFileName + '-numbered.pdf';
+        a.click();
+        URL.revokeObjectURL(url);
+    } catch (e) {
+        alert('Numaralandırma işlemi sırasında hata oluştu.');
+        console.error(e);
+    } finally {
+        document.getElementById('processing-msg').classList.add('d-none');
+        document.getElementById('process-btn').disabled = false;
+    }
+}
+</script>
+{% endblock %}

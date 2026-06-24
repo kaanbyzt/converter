@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}PDF Sayfa Döndür | toolboxquick{% endblock %}
+{% block head %}
+<style>
+    .dropzone {
+        border: 2px dashed var(--btn-outline-border);
+        border-radius: 12px;
+        padding: 2.5rem 1.5rem;
+        background: rgba(15, 23, 42, 0.2);
+        text-align: center;
+        cursor: pointer;
+        transition: border-color 0.15s, background-color 0.15s;
+    }
+    .dropzone:hover {
+        border-color: #f97316;
+        background: rgba(249, 115, 22, 0.05);
+    }
+    .file-input {
+        display: none;
+    }
+</style>
+<!-- Load pdf-lib CDN -->
+<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<header class="mb-4">
+    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #f97316 !important;">PDF Araçları</p>
+    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">PDF Sayfa Döndür</h1>
+    <p class="text-secondary mb-0">
+        PDF dosyanızın sayfalarını istediğiniz yönde (90, 180 veya 270 derece) yerel olarak döndürün ve indirin.
+    </p>
+</header>
+
+<section class="tool-card p-4 mb-4">
+    <div id="upload-stage">
+        <label class="form-label fw-semibold mb-2">PDF Dosyanızı Seçin</label>
+        <div class="dropzone" onclick="document.getElementById('pdf_file').click()">
+            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔄</div>
+            <div class="fw-semibold mb-1" style="color: var(--text-color);">Bir adet PDF dosyası seçin</div>
+            <input type="file" id="pdf_file" class="file-input" accept="application/pdf" onchange="loadPDF(this)">
+        </div>
+    </div>
+
+    <div id="editor-stage" class="d-none text-center">
+        <div class="mb-3 d-flex justify-content-between align-items-center">
+            <span id="file-name" class="fw-semibold text-orange-400">belge.pdf</span>
+            <button class="btn btn-sm btn-outline-danger" onclick="resetEditor()">Yeni PDF Yükle</button>
+        </div>
+
+        <div class="mb-4" style="max-width: 300px; margin: 0 auto; text-align: left;">
+            <label class="form-label fw-semibold mb-2">Döndürme Yönü</label>
+            <select id="rotate-degrees" class="form-select" style="border-radius: 8px;">
+                <option value="90">90 Derece Sağa Döndür ↻</option>
+                <option value="180">180 Derece Döndür ↻</option>
+                <option value="270">90 Derece Sola Döndür ↺</option>
+            </select>
+        </div>
+
+        <div id="processing-msg" class="text-warning small mb-3 d-none">Lütfen bekleyin, PDF sayfaları döndürülüyor...</div>
+
+        <button class="btn btn-warning text-white px-5 py-2" id="process-btn" onclick="processAndDownload()" style="border-radius: 8px; font-weight: 600; background-color: #f97316; border-color: #f97316;">
+            Döndür ve İndir 💾
+        </button>
+    </div>
+</section>
+
+<section class="mt-4">
+    <a href="/" class="text-secondary small text-decoration-none">&larr; Ana sayfaya dön</a>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let pdfData = null;
+let originalFileName = "";
+
+function resetEditor() {
+    pdfData = null;
+    originalFileName = "";
+    document.getElementById('upload-stage').classList.remove('d-none');
+    document.getElementById('editor-stage').classList.add('d-none');
+    document.getElementById('pdf_file').value = '';
+}
+
+async function loadPDF(input) {
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+    originalFileName = file.name.substring(0, file.name.lastIndexOf('.'));
+    document.getElementById('file-name').textContent = file.name;
+    
+    document.getElementById('upload-stage').classList.add('d-none');
+    document.getElementById('editor-stage').classList.remove('d-none');
+    
+    try {
+        pdfData = await file.arrayBuffer();
+    } catch(err) {
+        alert('PDF dosyası yüklenemedi.');
+        resetEditor();
+    }
+}
+
+async function processAndDownload() {
+    if (!pdfData) return;
+    
+    document.getElementById('processing-msg').classList.remove('d-none');
+    document.getElementById('process-btn').disabled = true;
+
+    try {
+        const { PDFDocument, degrees } = PDFLib;
+        const pdfDoc = await PDFDocument.load(pdfData);
+        const rotationVal = parseInt(document.getElementById('rotate-degrees').value);
+        
+        const pages = pdfDoc.getPages();
+        pages.forEach(page => {
+            const currentRotation = page.getRotation().angle;
+            page.setRotation(degrees(currentRotation + rotationVal));
+        });
+
+        const pdfBytes = await pdfDoc.save();
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = originalFileName + '-rotated.pdf';
+        a.click();
+        URL.revokeObjectURL(url);
+    } catch (e) {
+        alert('Döndürme işlemi sırasında hata oluştu.');
+        console.error(e);
+    } finally {
+        document.getElementById('processing-msg').classList.add('d-none');
+        document.getElementById('process-btn').disabled = false;
+    }
+}
+</script>
+{% endblock %}

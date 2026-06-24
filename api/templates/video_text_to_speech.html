@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}Yazıyı Sese Dönüştür (Text to Speech) | toolboxquick{% endblock %}
+{% block head %}
+<style>
+    .tts-container {
+        max-width: 600px;
+        margin: 0 auto;
+        background: rgba(15, 23, 42, 0.3);
+        border: 1px solid var(--navbar-border);
+        border-radius: 12px;
+        padding: 2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<header class="mb-4">
+    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #a855f7 !important;">Ses &amp; Video Araçları</p>
+    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">Yazıyı Sese Dönüştür (Text to Speech)</h1>
+    <p class="text-secondary mb-0">
+        Metinlerinizi girin, dili seçin ve yüksek kaliteli ses dosyası (MP3/WAV) olarak yerel olarak indirin.
+    </p>
+</header>
+
+<section class="tool-card p-4 mb-4">
+    <div class="tts-container">
+        <div class="mb-4">
+            <label class="form-label fw-semibold mb-2">Metninizi Girin</label>
+            <textarea class="form-control" id="tts-text" rows="5" placeholder="Sese dönüştürmek istediğiniz metni yazın..." style="border-radius: 8px;"></textarea>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-sm-6">
+                <label class="form-label fw-semibold mb-2">Dil Seçimi</label>
+                <select class="form-select" id="tts-lang" style="border-radius: 8px;">
+                    <option value="tr" selected>Türkçe (TR)</option>
+                    <option value="en">İngilizce (EN)</option>
+                    <option value="de">Almanca (DE)</option>
+                    <option value="fr">Fransızca (FR)</option>
+                    <option value="es">İspanyolca (ES)</option>
+                    <option value="it">İtalyanca (IT)</option>
+                </select>
+            </div>
+            <div class="col-sm-6 d-flex align-items-end">
+                <button class="btn btn-outline-secondary w-100 py-2" onclick="playPreview()" style="border-radius: 8px;">
+                    Önizleme Dinle 🔊
+                </button>
+            </div>
+        </div>
+
+        <button class="btn btn-purple text-white w-100 py-2 fw-semibold" onclick="downloadTTS()" style="border-radius: 8px; background-color: #a855f7; border-color: #a855f7;">
+            Sesi Oluştur ve İndir 💾
+        </button>
+    </div>
+</section>
+
+<section class="mt-4">
+    <a href="/" class="text-secondary small text-decoration-none">&larr; Ana sayfaya dön</a>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function getTTSUrl(text, lang) {
+    return `https://translate.google.com/translate_tts?ie=UTF-8&tl=${lang}&client=tw-ob&q=${encodeURIComponent(text)}`;
+}
+
+function playPreview() {
+    const text = document.getElementById('tts-text').value.trim();
+    const lang = document.getElementById('tts-lang').value;
+    
+    if (!text) {
+        alert('Lütfen sese dönüştürülecek bir metin girin.');
+        return;
+    }
+    
+    const audio = new Audio(getTTSUrl(text, lang));
+    audio.play().catch(e => {
+        alert('Ses çalınırken hata oluşdu.');
+    });
+}
+
+async function downloadTTS() {
+    const text = document.getElementById('tts-text').value.trim();
+    const lang = document.getElementById('tts-lang').value;
+    
+    if (!text) {
+        alert('Lütfen sese dönüştürülecek bir metin girin.');
+        return;
+    }
+
+    try {
+        const url = getTTSUrl(text, lang);
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('API request failed');
+        
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = `tts-${lang}-${Date.now()}.mp3`;
+        a.click();
+        URL.revokeObjectURL(blobUrl);
+    } catch (e) {
+        // Fallback to direct window open / download if CORS blocks fetch
+        const url = getTTSUrl(text, lang);
+        window.open(url, '_blank');
+    }
+}
+</script>
+{% endblock %}

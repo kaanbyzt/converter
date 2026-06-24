@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% block title %}PDF to HTML | toolboxquick{% endblock %}
+{% block head %}
+<style>
+    .dropzone {
+        border: 2px dashed var(--btn-outline-border);
+        border-radius: 12px;
+        padding: 2.5rem 1.5rem;
+        background: rgba(15, 23, 42, 0.2);
+        text-align: center;
+        cursor: pointer;
+        transition: border-color 0.15s, background-color 0.15s;
+    }
+    .dropzone:hover {
+        border-color: #f97316;
+        background: rgba(249, 115, 22, 0.05);
+    }
+    .file-input {
+        display: none;
+    }
+</style>
+<!-- Load pdf.js CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<header class="mb-4">
+    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #f97316 !important;">PDF Araçları</p>
+    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">PDF to HTML Dönüştürücü</h1>
+    <p class="text-secondary mb-0">
+        PDF dosyanızın metin içeriklerini çıkarıp yerel tarayıcınızda biçimlendirilmiş bir HTML belgesine dönüştürün.
+    </p>
+</header>
+
+<section class="tool-card p-4 mb-4">
+    <div id="upload-stage">
+        <label class="form-label fw-semibold mb-2">PDF Dosyanızı Seçin</label>
+        <div class="dropzone" onclick="document.getElementById('pdf_file').click()">
+            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🌐</div>
+            <div class="fw-semibold mb-1" style="color: var(--text-color);">Bir adet PDF dosyası seçin</div>
+            <input type="file" id="pdf_file" class="file-input" accept="application/pdf" onchange="loadPDF(this)">
+        </div>
+    </div>
+
+    <div id="editor-stage" class="d-none text-center">
+        <div class="mb-3 d-flex justify-content-between align-items-center">
+            <span id="file-name" class="fw-semibold text-orange-400">belge.pdf</span>
+            <button class="btn btn-sm btn-outline-danger" onclick="resetEditor()">Yeni PDF Yükle</button>
+        </div>
+
+        <div class="alert alert-info py-2 my-4 small" style="max-width: 400px; margin: 0 auto;">
+            PDF metinleri ve sayfa yapıları yerel olarak HTML kodlarına aktarılacaktır.
+        </div>
+
+        <div id="processing-msg" class="text-warning small mb-3 d-none">Lütfen bekleyin, HTML belgesi oluşturuluyor...</div>
+
+        <button class="btn btn-warning text-white px-5 py-2" id="process-btn" onclick="processAndDownload()" style="border-radius: 8px; font-weight: 600; background-color: #f97316; border-color: #f97316;">
+            HTML Olarak Dönüştür ve İndir 💾
+        </button>
+    </div>
+</section>
+
+<section class="mt-4">
+    <a href="/" class="text-secondary small text-decoration-none">&larr; Ana sayfaya dön</a>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
+let pdfData = null;
+let originalFileName = "";
+
+function resetEditor() {
+    pdfData = null;
+    originalFileName = "";
+    document.getElementById('upload-stage').classList.remove('d-none');
+    document.getElementById('editor-stage').classList.add('d-none');
+    document.getElementById('pdf_file').value = '';
+}
+
+async function loadPDF(input) {
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+    originalFileName = file.name.substring(0, file.name.lastIndexOf('.'));
+    document.getElementById('file-name').textContent = file.name;
+    
+    document.getElementById('upload-stage').classList.add('d-none');
+    document.getElementById('editor-stage').classList.remove('d-none');
+    
+    try {
+        pdfData = new Uint8Array(await file.arrayBuffer());
+    } catch(err) {
+        alert('PDF dosyası yüklenemedi.');
+        resetEditor();
+    }
+}
+
+async function processAndDownload() {
+    if (!pdfData) return;
+    
+    document.getElementById('processing-msg').classList.remove('d-none');
+    document.getElementById('process-btn').disabled = true;
+
+    try {
+        const loadingTask = pdfjsLib.getDocument({ data: pdfData });
+        const pdf = await loadingTask.promise;
+        const totalPages = pdf.numPages;
+
+        let htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${originalFileName}</title>
+<style>
+body { font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif; padding: 20px; line-height: 1.6; max-width: 800px; margin: 0 auto; background: #f8fafc; color: #0f172a; }
+.page { background: #fff; border: 1px solid #e2e8f0; padding: 40px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.page-num { text-align: center; color: #64748b; font-size: 0.8em; margin-top: 20px; border-top: 1px solid #f1f5f9; padding-top: 10px; }
+p { margin-bottom: 1em; }
+</style>
+</head>
+<body>`;
+
+        for (let i = 1; i <= totalPages; i++) {
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+            
+            let pageText = `<div class="page">`;
+            let lastY = null;
+            
+            textContent.items.forEach(item => {
+                const y = item.transform[5];
+                if (lastY !== y) {
+                    if (lastY !== null) {
+                        pageText += '</p>';
+                    }
+                    pageText += '<p>';
+                    lastY = y;
+                }
+                pageText += item.str;
+            });
+            
+            if (lastY !== null) {
+                pageText += '</p>';
+            }
+            
+            pageText += `<div class="page-num">Sayfa ${i} / ${totalPages}</div></div>`;
+            htmlContent += pageText;
+        }
+
+        htmlContent += `</body></html>`;
+
+        const blob = new Blob([htmlContent], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = originalFileName + '.html';
+        a.click();
+        URL.revokeObjectURL(url);
+    } catch (e) {
+        alert('Dönüştürme işlemi sırasında hata oluştu.');
+        console.error(e);
+    } finally {
+        document.getElementById('processing-msg').classList.add('d-none');
+        document.getElementById('process-btn').disabled = false;
+    }
+}
+</script>
+{% endblock %}

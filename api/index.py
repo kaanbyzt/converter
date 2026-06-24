@@ -1,6 +1,7 @@
 import os
 import zipfile
 import uuid
+import tarfile
 from flask import Flask, render_template, request, send_file, jsonify
 from io import BytesIO
 from PyPDF2 import PdfMerger, PdfReader, PdfWriter
@@ -416,3 +417,181 @@ def convert_extract_download():
             )
     except Exception as e:
         return f"İndirme sırasında hata oluştu: {str(e)}", 500
+
+
+# --- AUDIO TOOLS ---
+@app.route("/audio-tools/pitch")
+def audio_pitch():
+    return render_template("audio_pitch.html")
+
+@app.route("/audio-tools/equalizer")
+def audio_equalizer():
+    return render_template("audio_equalizer.html")
+
+@app.route("/audio-tools/joiner")
+def audio_joiner():
+    return render_template("audio_joiner.html")
+
+@app.route("/audio-tools/reverse")
+def audio_reverse():
+    return render_template("audio_reverse.html")
+
+
+# --- PDF TOOLS ---
+@app.route("/pdf-tools/rotate")
+def pdf_rotate_page():
+    return render_template("pdf_rotate.html")
+
+@app.route("/pdf-tools/page-numbers")
+def pdf_page_numbers():
+    return render_template("pdf_page_numbers.html")
+
+@app.route("/pdf-tools/compress")
+def pdf_compress_page():
+    return render_template("pdf_compress.html")
+
+@app.route("/pdf-tools/pdf-to-jpg")
+def pdf_to_jpg():
+    return render_template("pdf_to_img.html")
+
+@app.route("/pdf-tools/pdf-to-png")
+def pdf_to_png():
+    return render_template("pdf_to_img.html")
+
+@app.route("/pdf-tools/jpg-to-pdf")
+def jpg_to_pdf():
+    return render_template("img_to_pdf.html")
+
+@app.route("/pdf-tools/png-to-pdf")
+def png_to_pdf():
+    return render_template("img_to_pdf.html")
+
+@app.route("/pdf-tools/pdf-to-html")
+def pdf_to_html():
+    return render_template("pdf_to_html.html")
+
+@app.route("/pdf-tools/word-to-pdf")
+def word_to_pdf():
+    return render_template("pdf_office.html", tool_type="word-pdf", tool_title="Word to PDF", tool_desc="Word (.docx) belgelerinizi yerel tarayıcınızda PDF formatına dönüştürün.", file_accept=".docx")
+
+@app.route("/pdf-tools/pdf-to-word")
+def pdf_to_word():
+    return render_template("pdf_office.html", tool_type="pdf-word", tool_title="PDF to Word", tool_desc="PDF belgelerinizdeki metinleri yerel tarayıcınızda Word (.doc) formatına dönüştürün.", file_accept=".pdf")
+
+@app.route("/pdf-tools/excel-to-pdf")
+def excel_to_pdf():
+    return render_template("pdf_office.html", tool_type="excel-pdf", tool_title="Excel to PDF", tool_desc="Excel (.xlsx, .xls) tablolarınızı yerel tarayıcınızda PDF formatına dönüştürün.", file_accept=".xlsx,.xls")
+
+@app.route("/pdf-tools/pdf-to-excel")
+def pdf_to_excel():
+    return render_template("pdf_office.html", tool_type="pdf-excel", tool_title="PDF to Excel", tool_desc="PDF belgelerinizdeki tabloları yerel tarayıcınızda Excel (.xlsx) formatına dönüştürün.", file_accept=".pdf")
+
+@app.route("/pdf-tools/ppt-to-pdf")
+def ppt_to_pdf():
+    return render_template("pdf_office.html", tool_type="ppt-pdf", tool_title="PPT to PDF", tool_desc="PowerPoint (.pptx) sunumlarınızı yerel tarayıcınızda PDF formatına dönüştürün.", file_accept=".pptx")
+
+
+# --- VIDEO TOOLS ---
+@app.route("/video-tools/editor")
+@app.route("/video-tools/crop")
+@app.route("/video-tools/loop")
+@app.route("/video-tools/video-volume")
+@app.route("/video-tools/video-speed")
+@app.route("/video-tools/add-text")
+@app.route("/video-tools/add-image")
+@app.route("/video-tools/stabilize")
+@app.route("/video-tools/remove-logo")
+@app.route("/video-tools/add-audio")
+@app.route("/video-tools/resize")
+def video_editor_tool():
+    return render_template("video_editor.html")
+
+@app.route("/video-tools/text-to-speech")
+def video_text_to_speech():
+    return render_template("video_text_to_speech.html")
+
+@app.route("/video-tools/record-camera")
+def video_record_camera():
+    return render_template("video_record_camera.html")
+
+
+# --- CONVERTERS ---
+@app.route("/convert/document")
+def convert_document():
+    return render_template("convert_document.html")
+
+@app.route("/convert/ebook")
+def convert_ebook():
+    return render_template("convert_ebook.html")
+
+@app.route("/convert/font")
+def convert_font():
+    return render_template("convert_font.html")
+
+@app.route("/convert/archive", methods=["GET", "POST"])
+def convert_archive():
+    if request.method == "GET":
+        return render_template("convert_archive.html", error=None)
+    
+    file = request.files.get("archive_file")
+    target_format = request.form.get("target_format")
+    
+    if not file or not file.filename:
+        return render_template("convert_archive.html", error="Lütfen geçerli bir arşiv dosyası seçin.")
+        
+    try:
+        in_buf = BytesIO(file.read())
+        out_buf = BytesIO()
+        
+        files_dict = {}
+        filename = file.filename.lower()
+        
+        if filename.endswith(".zip"):
+            with zipfile.ZipFile(in_buf, 'r') as z:
+                for name in z.namelist():
+                    files_dict[name] = z.read(name)
+        elif filename.endswith(".tar") or filename.endswith(".gz") or filename.endswith(".tgz"):
+            in_buf.seek(0)
+            mode = "r:gz" if (filename.endswith(".gz") or filename.endswith(".tgz")) else "r:"
+            with tarfile.open(fileobj=in_buf, mode=mode) as t:
+                for member in t.getmembers():
+                    if member.isfile():
+                        f = t.extractfile(member)
+                        if f:
+                            files_dict[member.name] = f.read()
+        else:
+            return render_template("convert_archive.html", error="Desteklenmeyen arşiv formatı.")
+            
+        out_buf.seek(0)
+        if target_format == "zip":
+            with zipfile.ZipFile(out_buf, 'w', zipfile.ZIP_DEFLATED) as z:
+                for name, data in files_dict.items():
+                    z.writestr(name, data)
+            download_name = "converted.zip"
+            mimetype = "application/zip"
+        elif target_format == "tar":
+            with tarfile.open(fileobj=out_buf, mode="w:") as t:
+                for name, data in files_dict.items():
+                    info = tarfile.TarInfo(name=name)
+                    info.size = len(data)
+                    t.addfile(tarinfo=info, fileobj=BytesIO(data))
+            download_name = "converted.tar"
+            mimetype = "application/x-tar"
+        elif target_format == "tgz":
+            with tarfile.open(fileobj=out_buf, mode="w:gz") as t:
+                for name, data in files_dict.items():
+                    info = tarfile.TarInfo(name=name)
+                    info.size = len(data)
+                    t.addfile(tarinfo=info, fileobj=BytesIO(data))
+            download_name = "converted.tar.gz"
+            mimetype = "application/gzip"
+            
+        out_buf.seek(0)
+        return send_file(
+            out_buf,
+            mimetype=mimetype,
+            as_attachment=True,
+            download_name=download_name
+        )
+    except Exception as e:
+        return render_template("convert_archive.html", error=f"Hata oluştu: {str(e)}")
