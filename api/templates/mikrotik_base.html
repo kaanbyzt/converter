@@ -135,7 +135,69 @@
             .sidebar-backdrop.visible { pointer-events: auto; }
             .main-content { overflow-y: auto; }
             .page { padding: 1.25rem 1rem; }
+            /* Mobilde notice panel örtüşmesin */
+            .mk-notice-panel {
+                bottom: 4.5rem;
+                right: 1rem;
+                width: 250px;
+                display: none;
+            }
+            .mk-notice-panel.mobile-open { display: flex; }
+            .mk-notice-toggle-btn { display: flex; }
         }
+
+        /* === Uyarı Paneli === */
+        .mk-notice-panel {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            width: 272px;
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            gap: 0.55rem;
+            pointer-events: none;
+        }
+        .mk-notice-panel > * { pointer-events: auto; }
+        .mk-notice-card {
+            background: #1f2937;
+            border: 1px solid rgba(55,65,81,0.9);
+            border-radius: 10px;
+            padding: 0.75rem 0.9rem;
+            box-shadow: 0 6px 24px rgba(0,0,0,0.5);
+            display: flex;
+            gap: 0.55rem;
+            align-items: flex-start;
+            backdrop-filter: blur(6px);
+            transition: border-color 0.2s;
+        }
+        .mk-notice-card:hover { border-color: rgba(75,85,99,1); }
+        .mk-notice-icon { font-size: 0.95rem; flex-shrink: 0; margin-top: 0.1rem; }
+        .mk-notice-text { font-size: 0.695rem; color: #9ca3af; line-height: 1.5; }
+        .mk-notice-card.mk-privacy  { border-left: 3px solid #22c55e; }
+        .mk-notice-card.mk-disclaimer { border-left: 3px solid #f59e0b; }
+        /* Mobil toggle butonu */
+        .mk-notice-toggle-btn {
+            display: none;
+            position: fixed;
+            bottom: 1.25rem;
+            right: 1.25rem;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #1e3a5f;
+            border: 1px solid rgba(59,130,246,0.4);
+            color: #60a5fa;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            z-index: 60;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+            transition: background 0.15s, transform 0.15s;
+        }
+        .mk-notice-toggle-btn:hover { background: #1e40af; transform: scale(1.05); }
         /* PAGE HEADER */
         .page-header { margin-bottom: 2rem; }
         .page-header h1 { font-size: 1.75rem; font-weight: 700; color: #60a5fa; margin-bottom: 0.35rem; }
@@ -435,6 +497,27 @@
             if (window.innerWidth <= 767) closeSidebar();
         });
     });
+    function toggleMkNotice() {
+        document.getElementById('mkNoticePanel').classList.toggle('mobile-open');
+    }
     </script>
+
+    <!-- MikroTik Uyarı Paneli -->
+    <div class="mk-notice-panel" id="mkNoticePanel">
+        <div class="mk-notice-card mk-privacy">
+            <span class="mk-notice-icon">🔒</span>
+            <p class="mk-notice-text">
+                Yüklediğiniz belge, evrak ve görseller web sitesinde tutulmamaktadır. Tüm işlemler tarayıcınızda yerel olarak gerçekleşir.
+            </p>
+        </div>
+        <div class="mk-notice-card mk-disclaimer">
+            <span class="mk-notice-icon">⚠️</span>
+            <p class="mk-notice-text">
+                MikroTik ile ilgili işlemler yardım amaçlı örnek olarak gösterilmektedir. Yapılan herhangi bir yanlış işlemde sorumluluk kabul edilmemektedir.
+            </p>
+        </div>
+    </div>
+    <button class="mk-notice-toggle-btn" onclick="toggleMkNotice()" aria-label="Uyarılar" title="Uyarılar">ℹ</button>
+
 </body>
 </html>
