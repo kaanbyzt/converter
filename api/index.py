@@ -9,6 +9,44 @@ from PyPDF2 import PdfMerger, PdfReader, PdfWriter
 
 app = Flask(__name__)
 
+# ZIP bomb koruması sabitleri
+_ZIP_MAX_FILES = 30
+_ZIP_MAX_TOTAL_BYTES = 100 * 1024 * 1024   # 100 MB açılmış toplam boyut
+_ZIP_MAX_FILE_BYTES = 50 * 1024 * 1024    # 50 MB tek dosya
+_ZIP_MAX_RATIO = 100                       # sıkıştırma oranı üst sınırı
+
+
+def _check_zip_safety(zip_ref: zipfile.ZipFile):
+    """Zip bomb kontrolü. Sorun varsa (False, hata_mesajı) döner."""
+    members = [i for i in zip_ref.infolist() if not i.is_dir()]
+
+    if len(members) > _ZIP_MAX_FILES:
+        return False, (
+            f"ZIP içinde maksimum {_ZIP_MAX_FILES} dosyaya izin verilmektedir "
+            f"(bu arşivde {len(members)} dosya var)."
+        )
+
+    total = 0
+    for info in members:
+        if info.file_size > _ZIP_MAX_FILE_BYTES:
+            return False, (
+                f"'{info.filename}' dosyası çok büyük: "
+                f"maksimum {_ZIP_MAX_FILE_BYTES // (1024 * 1024)} MB."
+            )
+        if info.compress_size > 0 and (info.file_size / info.compress_size) > _ZIP_MAX_RATIO:
+            return False, (
+                f"Şüpheli sıkıştırma oranı tespit edildi "
+                f"({info.file_size // max(info.compress_size, 1)}:1). ZIP bombası olabilir."
+            )
+        total += info.file_size
+        if total > _ZIP_MAX_TOTAL_BYTES:
+            return False, (
+                f"Toplam çıkarılan boyut "
+                f"{_ZIP_MAX_TOTAL_BYTES // (1024 * 1024)} MB limitini aşıyor."
+            )
+
+    return True, None
+
 
 @app.route("/")
 def index():
@@ -372,6 +410,11 @@ def convert_extract():
 
         files_list = []
         with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            ok, err = _check_zip_safety(zip_ref)
+            if not ok:
+                os.remove(zip_path)
+                return render_template("convert_extract.html", files=None, error=err)
+
             for info in zip_ref.infolist():
                 if not info.is_dir():
                     files_list.append({
@@ -549,6 +592,9 @@ def convert_archive():
         
         if filename.endswith(".zip"):
             with zipfile.ZipFile(in_buf, 'r') as z:
+                ok, err = _check_zip_safety(z)
+                if not ok:
+                    return render_template("convert_archive.html", error=err)
                 for name in z.namelist():
                     files_dict[name] = z.read(name)
         elif filename.endswith(".tar") or filename.endswith(".gz") or filename.endswith(".tgz"):

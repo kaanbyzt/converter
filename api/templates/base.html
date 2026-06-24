@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="tr" data-theme="dark">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -77,6 +78,7 @@
             font-size: 0.85rem;
             transition: background-color 0.15s, border-color 0.15s, color 0.15s;
         }
+
         .theme-toggle-btn:hover {
             background-color: var(--btn-outline-hover-bg);
         }
@@ -98,21 +100,25 @@
         }
 
         /* Forms styling */
-        .form-control, .form-select {
+        .form-control,
+        .form-select {
             background-color: var(--input-bg);
             border-color: var(--input-border);
             color: var(--input-text);
         }
-        .form-control:focus, .form-select:focus {
+
+        .form-control:focus,
+        .form-select:focus {
             background-color: var(--input-bg);
             color: var(--input-text);
             box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.25);
             border-color: #3b82f6;
         }
+
         .form-label {
             color: var(--text-color);
         }
-        
+
         .text-secondary {
             color: var(--text-secondary) !important;
         }
@@ -128,31 +134,43 @@
             flex-direction: column;
             gap: 0.6rem;
         }
+
         .notice-card {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
             border-radius: 12px;
             padding: 0.85rem 1rem;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
             display: flex;
             gap: 0.6rem;
             align-items: flex-start;
             transition: border-color 0.2s;
             backdrop-filter: blur(8px);
         }
-        .notice-card:hover { border-color: rgba(148,163,184,0.35); }
+
+        .notice-card:hover {
+            border-color: rgba(148, 163, 184, 0.35);
+        }
+
         .notice-icon {
             font-size: 1rem;
             flex-shrink: 0;
             margin-top: 0.05rem;
         }
+
         .notice-text {
             font-size: 0.72rem;
             color: var(--text-secondary);
             line-height: 1.5;
         }
-        .notice-card.notice-privacy { border-left: 3px solid #22c55e; }
-        .notice-card.notice-disclaimer { border-left: 3px solid #f59e0b; }
+
+        .notice-card.notice-privacy {
+            border-left: 3px solid #22c55e;
+        }
+
+        .notice-card.notice-disclaimer {
+            border-left: 3px solid #f59e0b;
+        }
 
         /* Mobil: gizle, buton göster */
         .notice-toggle-btn {
@@ -164,7 +182,7 @@
             height: 42px;
             border-radius: 50%;
             background: #1e3a5f;
-            border: 1px solid rgba(59,130,246,0.4);
+            border: 1px solid rgba(59, 130, 246, 0.4);
             color: #60a5fa;
             font-size: 1.1rem;
             font-weight: 700;
@@ -172,10 +190,14 @@
             z-index: 1000;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
             transition: background 0.15s, transform 0.15s;
         }
-        .notice-toggle-btn:hover { background: #1e40af; transform: scale(1.05); }
+
+        .notice-toggle-btn:hover {
+            background: #1e40af;
+            transform: scale(1.05);
+        }
 
         @media (max-width: 900px) {
             .notice-panel {
@@ -184,12 +206,19 @@
                 right: 1rem;
                 width: 260px;
             }
-            .notice-panel.mobile-open { display: flex; }
-            .notice-toggle-btn { display: flex; }
+
+            .notice-panel.mobile-open {
+                display: flex;
+            }
+
+            .notice-toggle-btn {
+                display: flex;
+            }
         }
     </style>
     {% block head %}{% endblock %}
 </head>
+
 <body>
     <script>
         // Apply theme immediately to prevent flashing
@@ -201,7 +230,8 @@
         <div class="container py-2 d-flex justify-content-between align-items-center">
             <a class="navbar-brand" href="/">toolboxquick</a>
             <div class="d-flex align-items-center gap-3">
-                <a class="theme-toggle-btn text-decoration-none" href="/mikrotik" style="border-color: rgba(59, 130, 246, 0.5); color: #3b82f6;">
+                <a class="theme-toggle-btn text-decoration-none" href="/mikrotik"
+                    style="border-color: rgba(59, 130, 246, 0.5); color: #3b82f6;">
                     <span>📶</span> <span>MikroTik Panel</span>
                 </a>
                 <button id="theme-toggle" class="theme-toggle-btn">
@@ -219,6 +249,8 @@
         <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center">
             <span>toolboxquick &mdash; %100 yerel ve yapay zekasız araçlar</span>
             <span class="mt-2 mt-md-0">Kaan Byzt tarafından geliştirildi</span>
+            <span class="mt-2 mt-md-0"><a href="https://github.com/kaanbyzt"
+                    style="color: white; text-decoration: underline;">GITHUB ADRESİMİ ZİYARET EDEBİLİRSİNİZ.</a></span>
         </div>
     </footer>
 
@@ -227,19 +259,22 @@
         <div class="notice-card notice-privacy">
             <span class="notice-icon">🔒</span>
             <p class="notice-text">
-                Yüklediğiniz belge, evrak ve görseller web sitesinde tutulmamaktadır. Tüm işlemler tarayıcınızda yerel olarak gerçekleşir.
+                Yüklediğiniz belge, evrak ve görseller web sitesinde tutulmamaktadır. Tüm işlemler tarayıcınızda yerel
+                olarak gerçekleşir.
             </p>
         </div>
         <div class="notice-card notice-disclaimer">
             <span class="notice-icon">⚠️</span>
             <p class="notice-text">
-                MikroTik ile ilgili işlemler yardım amaçlı örnek olarak gösterilmektedir. Yapılan herhangi bir yanlış işlemde sorumluluk kabul edilmemektedir.
+                MikroTik ile ilgili işlemler yardım amaçlı örnek olarak gösterilmektedir. Yapılan herhangi bir yanlış
+                işlemde sorumluluk kabul edilmemektedir.
             </p>
         </div>
     </div>
 
     <!-- Mobil açma/kapama butonu -->
-    <button class="notice-toggle-btn" id="noticeToggle" onclick="toggleNotice()" aria-label="Uyarıları göster/gizle" title="Uyarılar">
+    <button class="notice-toggle-btn" id="noticeToggle" onclick="toggleNotice()" aria-label="Uyarıları göster/gizle"
+        title="Uyarılar">
         ℹ
     </button>
 
@@ -261,7 +296,7 @@
         const currentTheme = localStorage.getItem('theme') || 'dark';
         updateUI(currentTheme);
 
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', function () {
             let theme = document.documentElement.getAttribute('data-theme');
             let newTheme = 'dark';
             if (theme === 'dark') {
@@ -279,4 +314,5 @@
     </script>
     {% block scripts %}{% endblock %}
 </body>
+
 </html>
