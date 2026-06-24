@@ -116,6 +116,77 @@
         .text-secondary {
             color: var(--text-secondary) !important;
         }
+
+        /* === Uyarı Paneli (Sağ Sabit) === */
+        .notice-panel {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            width: 280px;
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+        .notice-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 0.85rem 1rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+            display: flex;
+            gap: 0.6rem;
+            align-items: flex-start;
+            transition: border-color 0.2s;
+            backdrop-filter: blur(8px);
+        }
+        .notice-card:hover { border-color: rgba(148,163,184,0.35); }
+        .notice-icon {
+            font-size: 1rem;
+            flex-shrink: 0;
+            margin-top: 0.05rem;
+        }
+        .notice-text {
+            font-size: 0.72rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+        .notice-card.notice-privacy { border-left: 3px solid #22c55e; }
+        .notice-card.notice-disclaimer { border-left: 3px solid #f59e0b; }
+
+        /* Mobil: gizle, buton göster */
+        .notice-toggle-btn {
+            display: none;
+            position: fixed;
+            bottom: 1.25rem;
+            right: 1.25rem;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: #1e3a5f;
+            border: 1px solid rgba(59,130,246,0.4);
+            color: #60a5fa;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+            transition: background 0.15s, transform 0.15s;
+        }
+        .notice-toggle-btn:hover { background: #1e40af; transform: scale(1.05); }
+
+        @media (max-width: 900px) {
+            .notice-panel {
+                display: none;
+                bottom: 4.5rem;
+                right: 1rem;
+                width: 260px;
+            }
+            .notice-panel.mobile-open { display: flex; }
+            .notice-toggle-btn { display: flex; }
+        }
     </style>
     {% block head %}{% endblock %}
 </head>
@@ -151,6 +222,27 @@
         </div>
     </footer>
 
+    <!-- Uyarı / Bilgi Paneli -->
+    <div class="notice-panel" id="noticePanel">
+        <div class="notice-card notice-privacy">
+            <span class="notice-icon">🔒</span>
+            <p class="notice-text">
+                Yüklediğiniz belge, evrak ve görseller web sitesinde tutulmamaktadır. Tüm işlemler tarayıcınızda yerel olarak gerçekleşir.
+            </p>
+        </div>
+        <div class="notice-card notice-disclaimer">
+            <span class="notice-icon">⚠️</span>
+            <p class="notice-text">
+                MikroTik ile ilgili işlemler yardım amaçlı örnek olarak gösterilmektedir. Yapılan herhangi bir yanlış işlemde sorumluluk kabul edilmemektedir.
+            </p>
+        </div>
+    </div>
+
+    <!-- Mobil açma/kapama butonu -->
+    <button class="notice-toggle-btn" id="noticeToggle" onclick="toggleNotice()" aria-label="Uyarıları göster/gizle" title="Uyarılar">
+        ℹ
+    </button>
+
     <script>
         const btn = document.getElementById('theme-toggle');
         const icon = document.getElementById('theme-icon');
@@ -179,6 +271,11 @@
             localStorage.setItem('theme', newTheme);
             updateUI(newTheme);
         });
+
+        function toggleNotice() {
+            const panel = document.getElementById('noticePanel');
+            panel.classList.toggle('mobile-open');
+        }
     </script>
     {% block scripts %}{% endblock %}
 </body>
