@@ -1,13 +1,13 @@
 # Online Web Araçları & Dönüştürücüler (toolboxquick)
 
-Bu proje, ağ yöneticileri ve genel kullanıcılar için 123apps tarzında çeşitli web tabanlı araçlar sunan **%100 yerel ve güvenli** bir koleksiyondur. Proje bünyesinde hiçbir yapay zeka/API bağlantısı bulunmamaktadır; tüm hesaplamalar ve dosya işlemleri doğrudan tarayıcınızda veya yerel sunucunuzda matematiksel yöntemlerle gerçekleştirilir.
+Bu proje, ağ yöneticileri ve genel kullanıcılar için çeşitli web tabanlı araçlar sunan **%100 yerel ve güvenli** bir koleksiyondur. Proje bünyesinde hiçbir yapay zeka/API bağlantısı bulunmamaktadır; tüm hesaplamalar ve dosya işlemleri doğrudan tarayıcınızda veya yerel sunucunuzda matematiksel yöntemlerle gerçekleştirilir.
 
 ---
 
 ## 🌟 Ana Özellikler
 
 1.  **Tema Desteği (Dark / Light Mode)**: Tüm arayüzde tek tıklamayla karanlık ve aydınlık temalar arasında geçiş yapabilirsiniz. Tema tercihiniz tarayıcınızın `localStorage` alanında saklanır.
-2.  **123apps Kategori Düzeni**: Ana sayfa tamamen yenilenerek video, ses, PDF ve dönüştürme araçları olmak üzere 4 ana bölüme ayrılmıştır.
+2.  **Kategori Düzeni**: Ana sayfa tamamen yenilenerek video, ses, PDF ve dönüştürme araçları olmak üzere 4 ana bölüme ayrılmıştır.
 3.  **Yerel Çalışan Fonksiyonel Araçlar**:
     *   **PDF Birleştirici**: Birden fazla PDF dosyasını tek dosyada birleştirir.
     *   **PDF Bölücü / Sayfa Ayıklayıcı**: PDF dosyalarından belirli sayfa veya sayfa aralıklarını ayıklar.
