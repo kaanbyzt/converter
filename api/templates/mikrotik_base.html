@@ -38,6 +38,32 @@
         .top-bar-section { font-size: 0.875rem; color: #9ca3af; }
         .top-bar-home { font-size: 0.8rem; color: #6b7280; margin-left: auto; }
         .top-bar-home:hover { color: #9ca3af; }
+        /* Hamburger button (hidden on desktop) */
+        .hamburger-btn {
+            display: none;
+            background: none;
+            border: 1px solid rgba(55,65,81,0.9);
+            border-radius: 6px;
+            color: #9ca3af;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            line-height: 1;
+            transition: background 0.15s, color 0.15s;
+            flex-shrink: 0;
+        }
+        .hamburger-btn:hover { background: rgba(255,255,255,0.06); color: #f9fafb; }
+        /* Sidebar backdrop */
+        .sidebar-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.65);
+            z-index: 30;
+            opacity: 0;
+            transition: opacity 0.25s;
+        }
+        .sidebar-backdrop.visible { opacity: 1; }
         /* LAYOUT */
         .app-layout {
             display: flex;
@@ -53,6 +79,8 @@
             overflow-y: auto;
             padding: 1rem 0.75rem 2rem;
             flex-shrink: 0;
+            transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
+            z-index: 35;
         }
         .sidebar::-webkit-scrollbar { width: 4px; }
         .sidebar::-webkit-scrollbar-track { background: transparent; }
@@ -85,6 +113,28 @@
         .main-content::-webkit-scrollbar-track { background: transparent; }
         .main-content::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
         .page { padding: 2rem; max-width: 960px; margin: 0 auto; }
+
+        /* MOBILE OVERRIDES */
+        @media (max-width: 767px) {
+            body { height: 100dvh; }
+            .hamburger-btn { display: flex; align-items: center; justify-content: center; }
+            .top-bar-sep, .top-bar-section { display: none; }
+            .sidebar {
+                position: fixed;
+                top: 48px;
+                left: 0;
+                bottom: 0;
+                width: 280px;
+                min-width: 0;
+                transform: translateX(-100%);
+                border-right: 1px solid rgba(55,65,81,0.9);
+                padding-bottom: 3rem;
+            }
+            .sidebar.open { transform: translateX(0); }
+            .sidebar-backdrop { display: block; }
+            .main-content { overflow-y: auto; }
+            .page { padding: 1.25rem 1rem; }
+        }
         /* PAGE HEADER */
         .page-header { margin-bottom: 2rem; }
         .page-header h1 { font-size: 1.75rem; font-weight: 700; color: #60a5fa; margin-bottom: 0.35rem; }
@@ -293,11 +343,20 @@
 </head>
 <body>
     <div class="top-bar">
+        <button class="hamburger-btn" id="sidebar-toggle" aria-label="Menü Aç" onclick="toggleSidebar()">
+            <svg width="18" height="14" viewBox="0 0 18 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <line x1="0" y1="1" x2="18" y2="1"/>
+                <line x1="0" y1="7" x2="18" y2="7"/>
+                <line x1="0" y1="13" x2="18" y2="13"/>
+            </svg>
+        </button>
         <a href="/" class="top-bar-brand">toolboxquick</a>
         <span class="top-bar-sep">/</span>
         <span class="top-bar-section">MikroTik Araçları</span>
         <a href="/" class="top-bar-home">Ana Sayfa &larr;</a>
     </div>
+    <!-- Sidebar backdrop (mobile only) -->
+    <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeSidebar()"></div>
     <div class="app-layout">
         <aside class="sidebar">
             <div class="sidebar-title">MikroTik Araçları</div>
@@ -353,5 +412,28 @@
         </main>
     </div>
     {% block scripts %}{% endblock %}
+    <script>
+    function toggleSidebar() {
+        const sidebar  = document.querySelector('.sidebar');
+        const backdrop = document.getElementById('sidebar-backdrop');
+        const isOpen   = sidebar.classList.contains('open');
+        sidebar.classList.toggle('open', !isOpen);
+        backdrop.classList.toggle('visible', !isOpen);
+        document.getElementById('sidebar-toggle').setAttribute('aria-expanded', String(!isOpen));
+    }
+    function closeSidebar() {
+        const sidebar  = document.querySelector('.sidebar');
+        const backdrop = document.getElementById('sidebar-backdrop');
+        sidebar.classList.remove('open');
+        backdrop.classList.remove('visible');
+        document.getElementById('sidebar-toggle').setAttribute('aria-expanded', 'false');
+    }
+    // Close sidebar on nav link click (mobile)
+    document.querySelectorAll('.sidebar nav ul li a').forEach(link => {
+        link.addEventListener('click', function() {
+            if (window.innerWidth <= 767) closeSidebar();
+        });
+    });
+    </script>
 </body>
 </html>

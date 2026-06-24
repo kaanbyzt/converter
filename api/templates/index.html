@@ -34,6 +34,70 @@
         gap: 1.25rem;
     }
 
+    /* === Mobile Accordion === */
+    @media (max-width: 767px) {
+        .category-section {
+            margin-bottom: 0.75rem;
+            border-radius: 14px;
+            border: 1px solid var(--card-border);
+            background: var(--card-bg);
+            overflow: hidden;
+        }
+        .category-toggle {
+            cursor: pointer;
+            user-select: none;
+            padding: 1rem 1.1rem;
+            margin-bottom: 0;
+            background: transparent;
+            border: none;
+            width: 100%;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            border-radius: 0;
+            transition: background 0.15s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .category-toggle:active { background: rgba(255,255,255,0.04); }
+        .category-title-inner {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.05rem;
+            font-weight: 700;
+        }
+        .cat-chevron {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            transition: transform 0.25s ease;
+            flex-shrink: 0;
+        }
+        .category-toggle.open .cat-chevron { transform: rotate(180deg); }
+        .category-body {
+            overflow: hidden;
+            max-height: 0;
+            transition: max-height 0.35s ease, padding 0.25s ease;
+            padding: 0 1rem;
+        }
+        .category-body.open {
+            max-height: 9999px;
+            padding: 0 1rem 1rem;
+        }
+        .tools-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+        .tool-card {
+            min-height: 120px;
+            padding: 0.9rem;
+        }
+        .tool-title { font-size: 0.82rem; }
+        .tool-desc  { font-size: 0.71rem; }
+        .tool-badge { font-size: 0.6rem; }
+    }
+
     .tool-card {
         padding: 1.25rem;
         cursor: pointer;
@@ -130,8 +194,12 @@
 </section>
 
 <!-- VIDEO TOOLS -->
-<section class="category-section">
-    <h2 class="category-title cat-video">🎬 Video Araçları</h2>
+<section class="category-section" id="cat-video">
+    <button class="category-toggle category-title cat-video" onclick="toggleCat('cat-video')" aria-expanded="false">
+        <span class="category-title-inner">🎬 Video Araçları</span>
+        <span class="cat-chevron">▼</span>
+    </button>
+    <div class="category-body" id="cat-video-body">
     <div class="tools-grid">
         <a href="/video-tools/screen-record" class="tool-card card-video">
             <div class="tool-header">
@@ -304,11 +372,16 @@
             </div>
         </a>
     </div>
+    </div>
 </section>
 
 <!-- AUDIO TOOLS -->
-<section class="category-section">
-    <h2 class="category-title cat-audio">🎵 Ses Araçları</h2>
+<section class="category-section" id="cat-audio">
+    <button class="category-toggle category-title cat-audio" onclick="toggleCat('cat-audio')" aria-expanded="false">
+        <span class="category-title-inner">🎵 Ses Araçları</span>
+        <span class="cat-chevron">▼</span>
+    </button>
+    <div class="category-body" id="cat-audio-body">
     <div class="tools-grid">
         <a href="/audio-tools/trim" class="tool-card card-audio">
             <div class="tool-header">
@@ -391,11 +464,16 @@
             </div>
         </a>
     </div>
+    </div>
 </section>
 
 <!-- PDF TOOLS -->
-<section class="category-section">
-    <h2 class="category-title cat-pdf">📄 PDF Araçları</h2>
+<section class="category-section" id="cat-pdf">
+    <button class="category-toggle category-title cat-pdf" onclick="toggleCat('cat-pdf')" aria-expanded="false">
+        <span class="category-title-inner">📄 PDF Araçları</span>
+        <span class="cat-chevron">▼</span>
+    </button>
+    <div class="category-body" id="cat-pdf-body">
     <div class="tools-grid">
         <a href="/pdf-tools" class="tool-card card-pdf">
             <div class="tool-header">
@@ -568,11 +646,16 @@
             </div>
         </a>
     </div>
+    </div>
 </section>
 
 <!-- CONVERTERS -->
-<section class="category-section">
-    <h2 class="category-title cat-converter">🔄 Dönüştürücüler (Converters)</h2>
+<section class="category-section" id="cat-converter">
+    <button class="category-toggle category-title cat-converter" onclick="toggleCat('cat-converter')" aria-expanded="false">
+        <span class="category-title-inner">🔄 Dönüştürücüler (Converters)</span>
+        <span class="cat-chevron">▼</span>
+    </button>
+    <div class="category-body" id="cat-converter-body">
     <div class="tools-grid">
         <a href="/convert/image" class="tool-card card-converter">
             <div class="tool-header">
@@ -655,5 +738,34 @@
             </div>
         </a>
     </div>
+    </div>
 </section>
+
+{% block scripts %}
+<script>
+function toggleCat(id) {
+    const isMobile = window.innerWidth <= 767;
+    if (!isMobile) return;
+    const btn  = document.querySelector('#' + id + ' .category-toggle');
+    const body = document.getElementById(id + '-body');
+    const isOpen = body.classList.contains('open');
+    body.classList.toggle('open', !isOpen);
+    btn.classList.toggle('open', !isOpen);
+    btn.setAttribute('aria-expanded', String(!isOpen));
+}
+
+// On desktop: make sure all bodies are visible (remove closed state)
+function handleResize() {
+    const sections = ['cat-video','cat-audio','cat-pdf','cat-converter'];
+    if (window.innerWidth > 767) {
+        sections.forEach(id => {
+            const body = document.getElementById(id + '-body');
+            const btn  = document.querySelector('#' + id + ' .category-toggle');
+            if (body) body.style.maxHeight = '';
+        });
+    }
+}
+window.addEventListener('resize', handleResize);
+</script>
+{% endblock %}
 {% endblock %}
