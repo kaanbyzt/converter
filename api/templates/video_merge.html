@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+{% block title %}Videoları Birleştir | toolboxquick{% endblock %}
+{% block head %}
+<style>
+    .dropzone {
+        border: 2px dashed var(--btn-outline-border);
+        border-radius: 12px;
+        padding: 2.5rem 1.5rem;
+        background: rgba(15, 23, 42, 0.2);
+        text-align: center;
+        cursor: pointer;
+        transition: border-color 0.15s, background-color 0.15s;
+    }
+    .dropzone:hover {
+        border-color: #3b82f6;
+        background: rgba(59, 130, 246, 0.05);
+    }
+    .file-input {
+        display: none;
+    }
+    .preview-container {
+        max-width: 500px;
+        background: #090d16;
+        border: 1px solid #1f2937;
+        border-radius: 8px;
+        overflow: hidden;
+        margin: 0 auto;
+    }
+    video, canvas {
+        display: block;
+        width: 100%;
+        max-height: 400px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<header class="mb-4">
+    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #a855f7 !important;">Video Araçları</p>
+    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">Videoları Birleştirici</h1>
+    <p class="text-secondary mb-0">
+        Birden fazla video dosyasını seçin, sırayla birleştirip tek bir video olarak yerel indirin.
+    </p>
+</header>
+
+<section class="tool-card p-4 mb-4">
+    <div id="upload-stage">
+        <label class="form-label fw-semibold mb-2">Video Dosyalarınızı Seçin (En az 2 adet)</label>
+        <div class="dropzone" onclick="document.getElementById('video_files').click()">
+            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔀</div>
+            <div class="fw-semibold mb-1" style="color: var(--text-color);">Videoları seçmek için tıklayın</div>
+            <input type="file" id="video_files" class="file-input" accept="video/*" multiple onchange="loadVideos(this)">
+        </div>
+    </div>
+
+    <div id="editor-stage" class="d-none text-center">
+        <div class="mb-3 d-flex justify-content-between align-items-center">
+            <span id="files-count" class="fw-semibold text-purple-400">2 dosya seçildi</span>
+            <button class="btn btn-sm btn-outline-danger" onclick="resetEditor()">Yeniden Seç</button>
+        </div>
+
+        <div class="preview-container mb-4">
+            <!-- Hidden original video source -->
+            <video id="source-video" style="display:none;" muted></video>
+            <!-- Visible output canvas -->
+            <canvas id="output-canvas"></canvas>
+        </div>
+
+        <div id="processing-msg" class="text-warning small mb-3 d-none">Lütfen bekleyin, videolar birleştirilip kaydediliyor...</div>
+
+        <button class="btn btn-primary px-5 py-2" id="download-btn" onclick="startExport()" style="border-radius: 8px; font-weight: 600;">
+            Birleştir ve İndir 💾
+        </button>
+    </div>
+</section>
+
+<section class="mt-4">
+    <a href="/" class="text-secondary small text-decoration-none">&larr; Ana sayfaya dön</a>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let videoFiles = [];
+let currentVideoIndex = 0;
+let videoEl = null;
+let canvasEl = null;
+let ctx = null;
+let loopInterval = null;
+let mediaRecorder = null;
+let recordedChunks = [];
+let isExporting = false;
+
+function resetEditor() {
+    videoFiles = [];
+    currentVideoIndex = 0;
+    if (loopInterval) clearInterval(loopInterval);
+    document.getElementById('upload-stage').classList.remove('d-none');
+    document.getElementById('editor-stage').classList.add('d-none');
+    document.getElementById('video_files').value = '';
+    
+    videoEl = document.getElementById('source-video');
+    videoEl.src = '';
+}
+
+function loadVideos(input) {
+    if (!input.files || input.files.length < 2) {
+        alert('Lütfen en az iki adet video dosyası seçin.');
+        return;
+    }
+    
+    videoFiles = Array.from(input.files);
+    document.getElementById('files-count').textContent = videoFiles.length + ' dosya seçildi';
+
+    document.getElementById('upload-stage').classList.add('d-none');
+    document.getElementById('editor-stage').classList.remove('d-none');
+
+    videoEl = document.getElementById('source-video');
+    canvasEl = document.getElementById('output-canvas');
+    ctx = canvasEl.getContext('2d');
+
+    // Load first video for size initialization
+    currentVideoIndex = 0;
+    playVideoAtIndex(currentVideoIndex);
+}
+
+function playVideoAtIndex(index) {
+    const file = videoFiles[index];
+    videoEl.src = URL.createObjectURL(file);
+    
+    videoEl.onloadedmetadata = () => {
+        canvasEl.width = videoEl.videoWidth;
+        canvasEl.height = videoEl.videoHeight;
+        videoEl.play();
+        startDrawLoop();
+    };
+}
+
+function startDrawLoop() {
+    if (loopInterval) clearInterval(loopInterval);
+    loopInterval = setInterval(() => {
+        if (!videoEl.paused && !videoEl.ended) {
+            ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+            ctx.drawImage(videoEl, 0, 0, canvasEl.width, canvasEl.height);
+        }
+    }, 1000 / 30); // 30 FPS
+}
+
+function startExport() {
+    if (isExporting) return;
+    isExporting = true;
+    
+    document.getElementById('processing-msg').classList.remove('d-none');
+    document.getElementById('download-btn').disabled = true;
+
+    // Reset loop
+    videoEl.pause();
+    currentVideoIndex = 0;
+    
+    recordedChunks = [];
+    const stream = canvasEl.captureStream(30); // 30 FPS
+    mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
+
+    mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+            recordedChunks.push(event.data);
+        }
+    };
+
+    mediaRecorder.onstop = () => {
+        const blob = new Blob(recordedChunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'toolboxquick-merged.webm';
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        isExporting = false;
+        document.getElementById('processing-msg').classList.add('d-none');
+        document.getElementById('download-btn').disabled = false;
+        
+        // Replay first video
+        currentVideoIndex = 0;
+        playVideoAtIndex(currentVideoIndex);
+    };
+
+    mediaRecorder.start();
+    
+    // Set up transition handling
+    playNextVideoAndRecord();
+}
+
+function playNextVideoAndRecord() {
+    if (currentVideoIndex >= videoFiles.length) {
+        mediaRecorder.stop();
+        return;
+    }
+
+    const file = videoFiles[currentVideoIndex];
+    videoEl.src = URL.createObjectURL(file);
+    
+    videoEl.onloadedmetadata = () => {
+        // Adjust canvas dimension for each video in the playlist dynamically
+        canvasEl.width = videoEl.videoWidth;
+        canvasEl.height = videoEl.videoHeight;
+        videoEl.play();
+    };
+
+    videoEl.onended = () => {
+        currentVideoIndex++;
+        playNextVideoAndRecord();
+    };
+}
+</script>
+{% endblock %}

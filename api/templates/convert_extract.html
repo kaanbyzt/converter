@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Arşiv Açıcı | toolboxquick{% endblock %}
+{% block head %}
+<style>
+    .dropzone {
+        border: 2px dashed var(--btn-outline-border);
+        border-radius: 12px;
+        padding: 2.5rem 1.5rem;
+        background: rgba(15, 23, 42, 0.2);
+        text-align: center;
+        cursor: pointer;
+        transition: border-color 0.15s, background-color 0.15s;
+    }
+    .dropzone:hover {
+        border-color: #3b82f6;
+        background: rgba(59, 130, 246, 0.05);
+    }
+    .file-input {
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<header class="mb-4">
+    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #10b981 !important;">Dönüştürücüler</p>
+    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">Arşiv Açıcı (ZIP Extractor)</h1>
+    <p class="text-secondary mb-0">
+        Yüklediğiniz ZIP arşiv dosyalarının içeriğini görüntüleyin ve içindeki dosyaları tek tek ayıklayıp indirin.
+    </p>
+</header>
+
+<section class="tool-card p-4 mb-4">
+    {% if error %}
+    <div class="alert alert-danger py-2 mb-3" role="alert">
+        {{ error }}
+    </div>
+    {% endif %}
+
+    {% if not files %}
+    <!-- UPLOAD STATE -->
+    <form action="/convert/extract" method="post" enctype="multipart/form-data">
+        <label class="form-label fw-semibold mb-2">Arşiv Dosyanızı Seçin (.zip)</label>
+        <div class="dropzone" onclick="document.getElementById('zip_file').click()">
+            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🗄️</div>
+            <div class="fw-semibold mb-1" id="file-label" style="color: var(--text-color);">Bir adet ZIP dosyası seçin</div>
+            <input type="file" name="zip_file" id="zip_file" class="file-input" accept=".zip" required onchange="updateFileLabel(this)">
+        </div>
+        <button type="submit" class="btn btn-primary px-4 py-2 mt-4" style="border-radius: 8px; font-weight: 600;">
+            Arşivi Oku
+        </button>
+    </form>
+    {% else %}
+    <!-- LISTING STATE -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <span class="fw-semibold text-success">{{ archive_name }} ({{ files|length }} dosya)</span>
+        <a class="btn btn-sm btn-outline-danger" href="/convert/extract">Yeni Arşiv Yükle</a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle" style="color: var(--text-color);">
+            <thead>
+                <tr style="border-color: var(--navbar-border);">
+                    <th scope="col" style="color: var(--text-secondary);">Dosya Yolu</th>
+                    <th scope="col" style="color: var(--text-secondary);" class="text-end">Boyut</th>
+                    <th scope="col" style="color: var(--text-secondary);" class="text-end">İşlem</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for file in files %}
+                <tr style="border-color: var(--navbar-border);">
+                    <td class="font-mono small" style="word-break: break-all;">{{ file.name }}</td>
+                    <td class="text-end small text-secondary">{{ (file.size / 1024)|round(1) }} KB</td>
+                    <td class="text-end">
+                        <a href="/convert/extract/download?id={{ zip_id }}&file={{ file.name|urlencode }}" class="btn btn-sm btn-outline-primary py-1 px-3" style="border-radius: 6px;">İndir 📥</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</section>
+
+<section class="mt-4">
+    <a href="/" class="text-secondary small text-decoration-none">&larr; Ana sayfaya dön</a>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function updateFileLabel(input) {
+    const label = document.getElementById('file-label');
+    if (input.files && input.files[0]) {
+        label.textContent = input.files[0].name + " (" + (input.files[0].size / 1024 / 1024).toFixed(2) + " MB)";
+        label.style.color = '#3b82f6';
+    } else {
+        label.textContent = "Bir adet ZIP dosyası seçin";
+        label.style.color = 'var(--text-color)';
+    }
+}
+</script>
+{% endblock %}

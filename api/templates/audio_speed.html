@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% block title %}Ses Hızlandırıcı | toolboxquick{% endblock %}
+{% block head %}
+<style>
+    .dropzone {
+        border: 2px dashed var(--btn-outline-border);
+        border-radius: 12px;
+        padding: 2.5rem 1.5rem;
+        background: rgba(15, 23, 42, 0.2);
+        text-align: center;
+        cursor: pointer;
+        transition: border-color 0.15s, background-color 0.15s;
+    }
+    .dropzone:hover {
+        border-color: #3b82f6;
+        background: rgba(59, 130, 246, 0.05);
+    }
+    .file-input {
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<header class="mb-4">
+    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #3b82f6 !important;">Ses Araçları</p>
+    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">Ses Hızlandırıcı</h1>
+    <p class="text-secondary mb-0">
+        Ses dosyalarınızı yükleyin, çalma hızını ton bozulması olmadan hızlandırın veya yavaşlatın.
+    </p>
+</header>
+
+<section class="tool-card p-4 mb-4">
+    <div id="upload-stage">
+        <label class="form-label fw-semibold mb-2">Ses Dosyanızı Seçin (MP3, WAV, vb.)</label>
+        <div class="dropzone" onclick="document.getElementById('audio_file').click()">
+            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">⚡</div>
+            <div class="fw-semibold mb-1" style="color: var(--text-color);">Dosya yüklemek için tıklayın</div>
+            <input type="file" id="audio_file" class="file-input" accept="audio/*" onchange="loadAudio(this)">
+        </div>
+    </div>
+
+    <div id="editor-stage" class="d-none text-center">
+        <div class="mb-3 d-flex justify-content-between align-items-center">
+            <span id="file-name" class="fw-semibold text-blue-400">ses-dosyasi.mp3</span>
+            <button class="btn btn-sm btn-outline-danger" onclick="resetEditor()">Yeni Dosya Yükle</button>
+        </div>
+
+        <div class="my-4" style="max-width: 400px; margin: 0 auto;">
+            <label class="form-label fw-semibold mb-2">Hız Oranı: <span id="speed-pct" class="text-blue-400">1.0x</span></label>
+            <input type="range" id="speed-slider" class="form-range" min="0.5" max="2" step="0.1" value="1" oninput="updateSpeedLabel(this.value)">
+            <div class="d-flex justify-content-between small text-secondary">
+                <span>Yavaş (0.5x)</span>
+                <span>Normal (1.0x)</span>
+                <span>Hızlı (2.0x)</span>
+            </div>
+        </div>
+
+        <button class="btn btn-primary px-5 py-2 mt-2" onclick="processAndDownload()" style="border-radius: 8px; font-weight: 600;">
+            Hızı Değiştir ve İndir 💾
+        </button>
+    </div>
+</section>
+
+<section class="mt-4">
+    <a href="/" class="text-secondary small text-decoration-none">&larr; Ana sayfaya dön</a>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let audioCtx = null;
+let audioBuffer = null;
+let playbackSpeed = 1.0;
+
+function resetEditor() {
+    audioBuffer = null;
+    document.getElementById('upload-stage').classList.remove('d-none');
+    document.getElementById('editor-stage').classList.add('d-none');
+    document.getElementById('audio_file').value = '';
+}
+
+async function loadAudio(input) {
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+    document.getElementById('file-name').textContent = file.name;
+    
+    document.getElementById('upload-stage').classList.add('d-none');
+    document.getElementById('editor-stage').classList.remove('d-none');
+
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    try {
+        const arrayBuffer = await file.arrayBuffer();
+        audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+    } catch(err) {
+        alert('Ses dosyası çözümlenemedi. Lütfen geçerli bir dosya yükleyin.');
+        resetEditor();
+    }
+}
+
+function updateSpeedLabel(val) {
+    playbackSpeed = parseFloat(val);
+    document.getElementById('speed-pct').textContent = playbackSpeed.toFixed(1) + 'x';
+}
+
+function writeString(view, offset, string) {
+    for (let i = 0; i < string.length; i++) {
+        view.setUint8(offset + i, string.charCodeAt(i));
+    }
+}
+
+function bufferToWav(buffer) {
+    const numOfChan = buffer.numberOfChannels;
+    const length = buffer.length;
+    const sampleRate = buffer.sampleRate;
+    const bufferLen = length * numOfChan * 2 + 44;
+    const outBuffer = new ArrayBuffer(bufferLen);
+    const view = new DataView(outBuffer);
+
+    writeString(view, 0, 'RIFF');
+    view.setUint32(4, 36 + length * numOfChan * 2, true);
+    writeString(view, 8, 'WAVE');
+    writeString(view, 12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, numOfChan, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * numOfChan * 2, true);
+    view.setUint16(32, numOfChan * 2, true);
+    view.setUint16(34, 16, true);
+    writeString(view, 36, 'data');
+    view.setUint32(40, length * numOfChan * 2, true);
+
+    const pos = 44;
+    const channels = [];
+    for (let i = 0; i < numOfChan; i++) {
+        channels.push(buffer.getChannelData(i));
+    }
+
+    let p = pos;
+    for (let i = 0; i < length; i++) {
+        for (let channel = 0; channel < numOfChan; channel++) {
+            let sample = channels[channel][i];
+            sample = Math.max(-1, Math.min(1, sample));
+            view.setInt16(p, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+            p += 2;
+        }
+    }
+    return new Blob([view], { type: 'audio/wav' });
+}
+
+async function processAndDownload() {
+    if (!audioBuffer) return;
+
+    // Calculate length of the target audio at the new speed
+    const newLength = Math.floor(audioBuffer.length / playbackSpeed);
+
+    // Create an OfflineAudioContext to render the speed-changed audio
+    const offlineCtx = new OfflineAudioContext(
+        audioBuffer.numberOfChannels,
+        newLength,
+        audioBuffer.sampleRate
+    );
+
+    // Create a source node
+    const source = offlineCtx.createBufferSource();
+    source.buffer = audioBuffer;
+    source.playbackRate.value = playbackSpeed;
+
+    source.connect(offlineCtx.destination);
+    source.start(0);
+
+    // Render
+    try {
+        const renderedBuffer = await offlineCtx.startRendering();
+        
+        // Convert to WAV Blob
+        const wavBlob = bufferToWav(renderedBuffer);
+        const url = URL.createObjectURL(wavBlob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'toolboxquick-speed.wav';
+        a.click();
+        URL.revokeObjectURL(url);
+    } catch(err) {
+        alert('Hızlandırma işlemi sırasında bir hata oluştu: ' + err.message);
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+{% block title %}Video Dönüştürücü | toolboxquick{% endblock %}
+{% block head %}
+<style>
+    .dropzone {
+        border: 2px dashed var(--btn-outline-border);
+        border-radius: 12px;
+        padding: 2.5rem 1.5rem;
+        background: rgba(15, 23, 42, 0.2);
+        text-align: center;
+        cursor: pointer;
+        transition: border-color 0.15s, background-color 0.15s;
+    }
+    .dropzone:hover {
+        border-color: #10b981;
+        background: rgba(16, 185, 129, 0.05);
+    }
+    .file-input {
+        display: none;
+    }
+    .preview-container {
+        position: relative;
+        max-width: 500px;
+        background: #090d16;
+        border: 1px solid #1f2937;
+        border-radius: 8px;
+        overflow: hidden;
+        margin: 0 auto;
+    }
+    video, canvas {
+        display: block;
+        width: 100%;
+        max-height: 400px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<header class="mb-4">
+    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #10b981 !important;">Dönüştürücüler</p>
+    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">Video Dönüştürücü</h1>
+    <p class="text-secondary mb-0">
+        Videolarınızı yükleyin, hedef formatı ve çözünürlüğü seçin, yerel olarak tarayıcınızda dönüştürüp indirin.
+    </p>
+</header>
+
+<section class="tool-card p-4 mb-4">
+    <div id="upload-stage">
+        <label class="form-label fw-semibold mb-2">Video Dosyanızı Seçin (MP4, WEBM, AVI, MOV, vb.)</label>
+        <div class="dropzone" onclick="document.getElementById('video_file').click()">
+            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🎬</div>
+            <div class="fw-semibold mb-1" style="color: var(--text-color);">Bir video dosyası seçin veya sürükleyin</div>
+            <div class="text-secondary small">Dönüştürme işlemi tarayıcınızda yerel olarak yapılır.</div>
+            <input type="file" id="video_file" class="file-input" accept="video/*" onchange="loadVideo(this)">
+        </div>
+    </div>
+
+    <div id="editor-stage" class="d-none text-center">
+        <div class="mb-3 d-flex justify-content-between align-items-center">
+            <span id="file-name" class="fw-semibold text-success">video.mp4</span>
+            <button class="btn btn-sm btn-outline-danger" onclick="resetConverter()">Yeni Video Seç</button>
+        </div>
+
+        <div class="preview-container mb-4">
+            <video id="preview-video" controls loop muted></video>
+            <canvas id="export-canvas" class="d-none"></canvas>
+        </div>
+
+        <div class="row g-3 justify-content-center mb-4" style="max-width: 600px; margin: 0 auto; text-align: left;">
+            <div class="col-md-6">
+                <label class="form-label fw-semibold mb-2">Hedef Format</label>
+                <select id="target-format" class="form-select" style="border-radius: 8px;">
+                    <option value="video/webm;codecs=vp9">WEBM (.webm)</option>
+                    <option value="video/mp4;codecs=avc1">MP4 (.mp4)</option>
+                </select>
+                <div class="form-text text-secondary small" id="support-warning"></div>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-semibold mb-2">Çözünürlük</label>
+                <select id="target-resolution" class="form-select" style="border-radius: 8px;">
+                    <option value="original">Orijinal Çözünürlük</option>
+                    <option value="1080p">1080p Full HD (1920x1080)</option>
+                    <option value="720p">720p HD (1280x720)</option>
+                    <option value="480p">480p (854x480)</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="processing-msg" class="text-warning small mb-3 d-none">Lütfen bekleyin, video dönüştürülüyor...</div>
+
+        <button class="btn btn-success px-5 py-2" id="convert-btn" onclick="startConversion()" style="border-radius: 8px; font-weight: 600;">
+            Dönüştür ve İndir 💾
+        </button>
+    </div>
+</section>
+
+<section class="mt-4">
+    <a href="/" class="text-secondary small text-decoration-none">&larr; Ana sayfaya dön</a>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let videoFile = null;
+let originalFileName = "";
+let videoEl = null;
+let canvasEl = null;
+let ctx = null;
+let mediaRecorder = null;
+let recordedChunks = [];
+let isConverting = false;
+let loopInterval = null;
+
+function resetConverter() {
+    videoFile = null;
+    originalFileName = "";
+    if (loopInterval) clearInterval(loopInterval);
+    document.getElementById('upload-stage').classList.remove('d-none');
+    document.getElementById('editor-stage').classList.add('d-none');
+    document.getElementById('video_file').value = '';
+    
+    videoEl = document.getElementById('preview-video');
+    videoEl.src = '';
+    
+    document.getElementById('processing-msg').classList.add('d-none');
+    document.getElementById('convert-btn').disabled = false;
+    isConverting = false;
+}
+
+function loadVideo(input) {
+    if (!input.files || !input.files[0]) return;
+    videoFile = input.files[0];
+    originalFileName = videoFile.name.substring(0, videoFile.name.lastIndexOf('.'));
+    document.getElementById('file-name').textContent = videoFile.name;
+
+    document.getElementById('upload-stage').classList.add('d-none');
+    document.getElementById('editor-stage').classList.remove('d-none');
+
+    videoEl = document.getElementById('preview-video');
+    videoEl.src = URL.createObjectURL(videoFile);
+    
+    canvasEl = document.getElementById('export-canvas');
+    ctx = canvasEl.getContext('2d');
+
+    videoEl.onloadedmetadata = () => {
+        checkFormatSupport();
+        videoEl.play();
+    };
+}
+
+function checkFormatSupport() {
+    const mp4Sel = document.querySelector('#target-format option[value="video/mp4;codecs=avc1"]');
+    const warning = document.getElementById('support-warning');
+    if (!MediaRecorder.isTypeSupported('video/mp4') && !MediaRecorder.isTypeSupported('video/mp4;codecs=avc1')) {
+        if (mp4Sel) {
+            mp4Sel.disabled = true;
+            mp4Sel.textContent = 'MP4 (.mp4) - Tarayıcı Desteklemiyor';
+        }
+        warning.textContent = 'Tarayıcınız MP4 kaydetmeyi desteklemiyor, varsayılan olarak WebM kullanılacaktır.';
+    } else {
+        warning.textContent = '';
+    }
+}
+
+function startConversion() {
+    if (isConverting) return;
+    isConverting = true;
+
+    const targetFormat = document.getElementById('target-format').value;
+    const resolution = document.getElementById('target-resolution').value;
+    
+    let mimeType = targetFormat;
+    let extension = '.webm';
+    
+    if (targetFormat.includes('video/mp4')) {
+        if (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1')) {
+            mimeType = 'video/mp4;codecs=avc1';
+            extension = '.mp4';
+        } else if (MediaRecorder.isTypeSupported('video/mp4')) {
+            mimeType = 'video/mp4';
+            extension = '.mp4';
+        } else {
+            mimeType = 'video/webm';
+            extension = '.webm';
+        }
+    } else {
+        if (!MediaRecorder.isTypeSupported(targetFormat)) {
+            mimeType = 'video/webm';
+        }
+    }
+
+    document.getElementById('processing-msg').classList.remove('d-none');
+    document.getElementById('convert-btn').disabled = true;
+
+    // Reset video to start
+    videoEl.pause();
+    videoEl.currentTime = 0;
+    videoEl.controls = false;
+
+    recordedChunks = [];
+    
+    let stream;
+    const fps = 30;
+
+    if (resolution === 'original') {
+        canvasEl.width = videoEl.videoWidth;
+        canvasEl.height = videoEl.videoHeight;
+    } else if (resolution === '1080p') {
+        canvasEl.width = 1920;
+        canvasEl.height = 1080;
+    } else if (resolution === '720p') {
+        canvasEl.width = 1280;
+        canvasEl.height = 720;
+    } else if (resolution === '480p') {
+        canvasEl.width = 854;
+        canvasEl.height = 480;
+    }
+
+    canvasEl.classList.remove('d-none');
+    
+    // Draw loop for scaling
+    loopInterval = setInterval(() => {
+        ctx.drawImage(videoEl, 0, 0, canvasEl.width, canvasEl.height);
+    }, 1000 / fps);
+
+    stream = canvasEl.captureStream(fps);
+
+    try {
+        mediaRecorder = new MediaRecorder(stream, { mimeType: mimeType });
+    } catch (e) {
+        console.warn('Selected mimeType failed, falling back to default webm');
+        mediaRecorder = new MediaRecorder(stream);
+        extension = '.webm';
+    }
+
+    mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+            recordedChunks.push(event.data);
+        }
+    };
+
+    mediaRecorder.onstop = () => {
+        clearInterval(loopInterval);
+        canvasEl.classList.add('d-none');
+
+        const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = originalFileName + '-converted' + extension;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        isConverting = false;
+        document.getElementById('processing-msg').classList.add('d-none');
+        document.getElementById('convert-btn').disabled = false;
+        videoEl.controls = true;
+        videoEl.play();
+    };
+
+    // Sync audio track if available
+    if (videoEl.captureStream) {
+        const videoStream = videoEl.captureStream();
+        const audioTracks = videoStream.getAudioTracks();
+        if (audioTracks.length > 0) {
+            stream.addTrack(audioTracks[0].clone());
+        }
+    }
+
+    videoEl.play();
+    mediaRecorder.start();
+
+    videoEl.onended = () => {
+        mediaRecorder.stop();
+    };
+}
+</script>
+{% endblock %}

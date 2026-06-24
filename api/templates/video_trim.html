@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+{% block title %}Video Kesici | toolboxquick{% endblock %}
+{% block head %}
+<style>
+    .dropzone {
+        border: 2px dashed var(--btn-outline-border);
+        border-radius: 12px;
+        padding: 2.5rem 1.5rem;
+        background: rgba(15, 23, 42, 0.2);
+        text-align: center;
+        cursor: pointer;
+        transition: border-color 0.15s, background-color 0.15s;
+    }
+    .dropzone:hover {
+        border-color: #3b82f6;
+        background: rgba(59, 130, 246, 0.05);
+    }
+    .file-input {
+        display: none;
+    }
+    .preview-container {
+        max-width: 500px;
+        background: #090d16;
+        border: 1px solid #1f2937;
+        border-radius: 8px;
+        overflow: hidden;
+        margin: 0 auto;
+    }
+    video, canvas {
+        display: block;
+        width: 100%;
+        max-height: 400px;
+    }
+    .control-inputs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<header class="mb-4">
+    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #a855f7 !important;">Video Araçları</p>
+    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">Video Kırpıcı &amp; Kesici</h1>
+    <p class="text-secondary mb-0">
+        Videolarınızı yükleyin, kesmek istediğiniz saniye aralığını girin ve tarayıcınızda yerel olarak kırpıp indirin.
+    </p>
+</header>
+
+<section class="tool-card p-4 mb-4">
+    <div id="upload-stage">
+        <label class="form-label fw-semibold mb-2">Video Dosyanızı Seçin (MP4, WEBM, vb.)</label>
+        <div class="dropzone" onclick="document.getElementById('video_file').click()">
+            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">✂️</div>
+            <div class="fw-semibold mb-1" style="color: var(--text-color);">Video yüklemek için tıklayın</div>
+            <input type="file" id="video_file" class="file-input" accept="video/*" onchange="loadVideo(this)">
+        </div>
+    </div>
+
+    <div id="editor-stage" class="d-none text-center">
+        <div class="mb-3 d-flex justify-content-between align-items-center">
+            <span id="file-name" class="fw-semibold text-purple-400">video.mp4</span>
+            <button class="btn btn-sm btn-outline-danger" onclick="resetEditor()">Yeni Video Yükle</button>
+        </div>
+
+        <div class="preview-container mb-4">
+            <!-- Hidden original video source -->
+            <video id="source-video" style="display:none;" loop muted></video>
+            <!-- Visible output canvas -->
+            <canvas id="output-canvas"></canvas>
+        </div>
+
+        <div class="control-inputs mb-4" style="max-width: 400px; margin: 0 auto; text-align: left;">
+            <div>
+                <label class="form-label small text-secondary mb-1">Başlangıç Saniyesi</label>
+                <input type="number" id="start-time" class="form-control" value="0" step="0.5" min="0" onchange="updateRange()">
+            </div>
+            <div>
+                <label class="form-label small text-secondary mb-1">Bitiş Saniyesi</label>
+                <input type="number" id="end-time" class="form-control" value="10" step="0.5" min="0" onchange="updateRange()">
+            </div>
+        </div>
+
+        <div id="processing-msg" class="text-warning small mb-3 d-none">Lütfen bekleyin, video kesilerek kaydediliyor...</div>
+
+        <div class="d-flex justify-content-center gap-2">
+            <button id="play-btn" class="btn btn-secondary px-4" onclick="togglePlay()">Önizleme ▶️</button>
+            <button id="download-btn" class="btn btn-primary px-4" onclick="startExport()">Kırp &amp; İndir 💾</button>
+        </div>
+    </div>
+</section>
+
+<section class="mt-4">
+    <a href="/" class="text-secondary small text-decoration-none">&larr; Ana sayfaya dön</a>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let videoFile = null;
+let videoEl = null;
+let canvasEl = null;
+let ctx = null;
+let loopInterval = null;
+let mediaRecorder = null;
+let recordedChunks = [];
+let isExporting = false;
+let isPlaying = false;
+let startTimeVal = 0;
+let endTimeVal = 10;
+let duration = 0;
+
+function resetEditor() {
+    videoFile = null;
+    isPlaying = false;
+    if (loopInterval) clearInterval(loopInterval);
+    document.getElementById('upload-stage').classList.remove('d-none');
+    document.getElementById('editor-stage').classList.add('d-none');
+    document.getElementById('video_file').value = '';
+    
+    videoEl = document.getElementById('source-video');
+    videoEl.src = '';
+    document.getElementById('play-btn').textContent = 'Önizleme ▶️';
+}
+
+function loadVideo(input) {
+    if (!input.files || !input.files[0]) return;
+    videoFile = input.files[0];
+    document.getElementById('file-name').textContent = videoFile.name;
+
+    document.getElementById('upload-stage').classList.add('d-none');
+    document.getElementById('editor-stage').classList.remove('d-none');
+
+    videoEl = document.getElementById('source-video');
+    videoEl.src = URL.createObjectURL(videoFile);
+    
+    canvasEl = document.getElementById('output-canvas');
+    ctx = canvasEl.getContext('2d');
+
+    videoEl.onloadedmetadata = () => {
+        canvasEl.width = videoEl.videoWidth;
+        canvasEl.height = videoEl.videoHeight;
+        duration = videoEl.duration;
+        
+        startTimeVal = 0;
+        endTimeVal = duration;
+        document.getElementById('start-time').value = 0;
+        document.getElementById('end-time').value = duration.toFixed(2);
+        document.getElementById('end-time').max = duration.toFixed(2);
+
+        videoEl.currentTime = 0;
+        videoEl.play();
+        startDrawLoop();
+    };
+}
+
+function startDrawLoop() {
+    if (loopInterval) clearInterval(loopInterval);
+    loopInterval = setInterval(() => {
+        if (!videoEl.paused && !videoEl.ended) {
+            drawFrame();
+            
+            // Loop playback in preview stage
+            if (!isExporting && videoEl.currentTime >= endTimeVal) {
+                videoEl.currentTime = startTimeVal;
+            }
+        }
+    }, 1000 / 30); // 30 FPS
+}
+
+function drawFrame() {
+    ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+    ctx.drawImage(videoEl, 0, 0, canvasEl.width, canvasEl.height);
+}
+
+function updateRange() {
+    startTimeVal = parseFloat(document.getElementById('start-time').value) || 0;
+    endTimeVal = parseFloat(document.getElementById('end-time').value) || duration;
+
+    if (startTimeVal < 0) startTimeVal = 0;
+    if (endTimeVal > duration) endTimeVal = duration;
+    if (startTimeVal >= endTimeVal) startTimeVal = endTimeVal - 0.5;
+
+    document.getElementById('start-time').value = startTimeVal.toFixed(2);
+    document.getElementById('end-time').value = endTimeVal.toFixed(2);
+
+    videoEl.currentTime = startTimeVal;
+}
+
+function togglePlay() {
+    const btn = document.getElementById('play-btn');
+    if (isPlaying) {
+        videoEl.pause();
+        isPlaying = false;
+        btn.textContent = 'Önizleme ▶️';
+    } else {
+        videoEl.currentTime = startTimeVal;
+        videoEl.play();
+        isPlaying = true;
+        btn.textContent = 'Durdur ⏹️';
+    }
+}
+
+function startExport() {
+    if (isExporting) return;
+    isExporting = true;
+    
+    document.getElementById('processing-msg').classList.remove('d-none');
+    document.getElementById('download-btn').disabled = true;
+    document.getElementById('play-btn').disabled = true;
+
+    // Reset video to start time of the selection
+    videoEl.pause();
+    videoEl.loop = false;
+    videoEl.currentTime = startTimeVal;
+    
+    recordedChunks = [];
+    const stream = canvasEl.captureStream(30); // 30 FPS
+    mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
+
+    mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+            recordedChunks.push(event.data);
+        }
+    };
+
+    mediaRecorder.onstop = () => {
+        const blob = new Blob(recordedChunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'toolboxquick-trimmed.webm';
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        isExporting = false;
+        document.getElementById('processing-msg').classList.add('d-none');
+        document.getElementById('download-btn').disabled = false;
+        document.getElementById('play-btn').disabled = false;
+        
+        // Restore loop
+        videoEl.currentTime = startTimeVal;
+        videoEl.play();
+    };
+
+    // Play to capture frame-by-frame
+    videoEl.play();
+    mediaRecorder.start();
+
+    // Check when we hit the end time
+    const checkEnd = setInterval(() => {
+        if (videoEl.currentTime >= endTimeVal || videoEl.ended) {
+            clearInterval(checkEnd);
+            videoEl.pause();
+            mediaRecorder.stop();
+        }
+    }, 100);
+}
+</script>
+{% endblock %}

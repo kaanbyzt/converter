@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+{% block title %}Video Döndür | toolboxquick{% endblock %}
+{% block head %}
+<style>
+    .dropzone {
+        border: 2px dashed var(--btn-outline-border);
+        border-radius: 12px;
+        padding: 2.5rem 1.5rem;
+        background: rgba(15, 23, 42, 0.2);
+        text-align: center;
+        cursor: pointer;
+        transition: border-color 0.15s, background-color 0.15s;
+    }
+    .dropzone:hover {
+        border-color: #3b82f6;
+        background: rgba(59, 130, 246, 0.05);
+    }
+    .file-input {
+        display: none;
+    }
+    .preview-container {
+        position: relative;
+        max-width: 500px;
+        background: #090d16;
+        border: 1px solid #1f2937;
+        border-radius: 8px;
+        overflow: hidden;
+        margin: 0 auto;
+    }
+    video, canvas {
+        display: block;
+        width: 100%;
+        max-height: 400px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<header class="mb-4">
+    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #a855f7 !important;">Video Araçları</p>
+    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">Video Döndürme &amp; Aynalama</h1>
+    <p class="text-secondary mb-0">
+        Videonuzu yükleyin, döndürün veya aynalayın ve yerel olarak tarayıcınızda işleyip indirin.
+    </p>
+</header>
+
+<section class="tool-card p-4 mb-4">
+    <div id="upload-stage">
+        <label class="form-label fw-semibold mb-2">Video Dosyanızı Seçin (MP4, WEBM, vb.)</label>
+        <div class="dropzone" onclick="document.getElementById('video_file').click()">
+            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔄</div>
+            <div class="fw-semibold mb-1" style="color: var(--text-color);">Video yüklemek için tıklayın</div>
+            <input type="file" id="video_file" class="file-input" accept="video/*" onchange="loadVideo(this)">
+        </div>
+    </div>
+
+    <div id="editor-stage" class="d-none text-center">
+        <div class="mb-3 d-flex justify-content-between align-items-center">
+            <span id="file-name" class="fw-semibold text-purple-400">video.mp4</span>
+            <button class="btn btn-sm btn-outline-danger" onclick="resetEditor()">Yeni Video Yükle</button>
+        </div>
+
+        <div class="preview-container mb-4">
+            <!-- Hidden original video source -->
+            <video id="source-video" style="display:none;" loop muted></video>
+            <!-- Visible transformed output canvas -->
+            <canvas id="output-canvas"></canvas>
+        </div>
+
+        <div class="mb-4" style="max-width: 300px; margin: 0 auto; text-align: left;">
+            <label class="form-label fw-semibold mb-2">Döndürme / Aynalama Ayarı</label>
+            <select id="transform-type" class="form-select" onchange="applyTransform()">
+                <option value="none">Değişiklik Yok</option>
+                <option value="rotate90">90 Derece Sağa Döndür ↻</option>
+                <option value="rotate180">180 Derece Döndür ↻</option>
+                <option value="rotate270">90 Derece Sola Döndür ↺</option>
+                <option value="flipH">Yatay Aynala (Flip Horizontal)</option>
+                <option value="flipV">Dikey Aynala (Flip Vertical)</option>
+            </select>
+        </div>
+
+        <div id="processing-msg" class="text-warning small mb-3 d-none">Lütfen bekleyin, video arka planda yeniden kaydediliyor...</div>
+
+        <button class="btn btn-primary px-5 py-2" id="download-btn" onclick="startExport()" style="border-radius: 8px; font-weight: 600;">
+            İşle ve İndir 💾
+        </button>
+    </div>
+</section>
+
+<section class="mt-4">
+    <a href="/" class="text-secondary small text-decoration-none">&larr; Ana sayfaya dön</a>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let videoFile = null;
+let videoEl = null;
+let canvasEl = null;
+let ctx = null;
+let transform = 'none';
+let loopInterval = null;
+let mediaRecorder = null;
+let recordedChunks = [];
+let isExporting = false;
+
+function resetEditor() {
+    videoFile = null;
+    if (loopInterval) clearInterval(loopInterval);
+    document.getElementById('upload-stage').classList.remove('d-none');
+    document.getElementById('editor-stage').classList.add('d-none');
+    document.getElementById('video_file').value = '';
+    
+    videoEl = document.getElementById('source-video');
+    videoEl.src = '';
+}
+
+function loadVideo(input) {
+    if (!input.files || !input.files[0]) return;
+    videoFile = input.files[0];
+    document.getElementById('file-name').textContent = videoFile.name;
+
+    document.getElementById('upload-stage').classList.add('d-none');
+    document.getElementById('editor-stage').classList.remove('d-none');
+
+    videoEl = document.getElementById('source-video');
+    videoEl.src = URL.createObjectURL(videoFile);
+    
+    canvasEl = document.getElementById('output-canvas');
+    ctx = canvasEl.getContext('2d');
+
+    videoEl.onloadedmetadata = () => {
+        canvasEl.width = videoEl.videoWidth;
+        canvasEl.height = videoEl.videoHeight;
+        videoEl.play();
+        startDrawLoop();
+    };
+}
+
+function startDrawLoop() {
+    if (loopInterval) clearInterval(loopInterval);
+    loopInterval = setInterval(() => {
+        if (!videoEl.paused && !videoEl.ended) {
+            drawFrame();
+        }
+    }, 1000 / 30); // 30 FPS
+}
+
+function drawFrame() {
+    const w = videoEl.videoWidth;
+    const h = videoEl.videoHeight;
+
+    ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+    ctx.save();
+
+    // Adjust canvas dimensions depending on rotation
+    if (transform === 'rotate90' || transform === 'rotate270') {
+        canvasEl.width = h;
+        canvasEl.height = w;
+    } else {
+        canvasEl.width = w;
+        canvasEl.height = h;
+    }
+
+    // Apply canvas transformations
+    if (transform === 'rotate90') {
+        ctx.translate(h, 0);
+        ctx.rotate(90 * Math.PI / 180);
+        ctx.drawImage(videoEl, 0, 0, w, h);
+    } else if (transform === 'rotate180') {
+        ctx.translate(w, h);
+        ctx.rotate(180 * Math.PI / 180);
+        ctx.drawImage(videoEl, 0, 0, w, h);
+    } else if (transform === 'rotate270') {
+        ctx.translate(0, w);
+        ctx.rotate(270 * Math.PI / 180);
+        ctx.drawImage(videoEl, 0, 0, w, h);
+    } else if (transform === 'flipH') {
+        ctx.translate(w, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(videoEl, 0, 0, w, h);
+    } else if (transform === 'flipV') {
+        ctx.translate(0, h);
+        ctx.scale(1, -1);
+        ctx.drawImage(videoEl, 0, 0, w, h);
+    } else {
+        ctx.drawImage(videoEl, 0, 0, w, h);
+    }
+    
+    ctx.restore();
+}
+
+function applyTransform() {
+    transform = document.getElementById('transform-type').value;
+    if (videoEl && videoEl.readyState >= 2) {
+        drawFrame();
+    }
+}
+
+function startExport() {
+    if (isExporting) return;
+    isExporting = true;
+    
+    document.getElementById('processing-msg').classList.remove('d-none');
+    document.getElementById('download-btn').disabled = true;
+
+    // Reset video to start
+    videoEl.pause();
+    videoEl.loop = false;
+    videoEl.currentTime = 0;
+    
+    recordedChunks = [];
+    const stream = canvasEl.captureStream(30); // 30 FPS
+    mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
+
+    mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+            recordedChunks.push(event.data);
+        }
+    };
+
+    mediaRecorder.onstop = () => {
+        const blob = new Blob(recordedChunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'toolboxquick-rotated.webm';
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        isExporting = false;
+        document.getElementById('processing-msg').classList.add('d-none');
+        document.getElementById('download-btn').disabled = false;
+        
+        // Restore looping for preview
+        videoEl.loop = true;
+        videoEl.play();
+    };
+
+    // Play video to capture it frame-by-frame
+    videoEl.play();
+    mediaRecorder.start();
+
+    videoEl.onended = () => {
+        mediaRecorder.stop();
+    };
+}
+</script>
+{% endblock %}

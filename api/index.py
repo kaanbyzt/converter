@@ -1,4 +1,6 @@
 import os
+import zipfile
+import uuid
 from flask import Flask, render_template, request, send_file, jsonify
 from io import BytesIO
 from PyPDF2 import PdfMerger, PdfReader, PdfWriter
@@ -231,3 +233,186 @@ def video_screen_record():
 @app.route("/convert/image")
 def convert_image():
     return render_template("convert_image.html")
+
+
+# Temporary directory setup for ZIP extractor
+TEMP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "temp_zips")
+os.makedirs(TEMP_DIR, exist_ok=True)
+
+
+@app.route("/pdf-tools/protect", methods=["GET", "POST"])
+def pdf_protect():
+    if request.method == "GET":
+        return render_template("pdf_protect.html", error=None)
+
+    file = request.files.get("pdf_file")
+    password = request.form.get("password")
+
+    if not file or not file.filename.lower().endswith(".pdf"):
+        return render_template("pdf_protect.html", error="Lütfen geçerli bir PDF dosyası seçin.")
+
+    if not password:
+        return render_template("pdf_protect.html", error="Lütfen bir şifre belirleyin.")
+
+    try:
+        reader = PdfReader(file.stream)
+        writer = PdfWriter()
+
+        for page in reader.pages:
+            writer.add_page(page)
+
+        writer.encrypt(password)
+
+        output = BytesIO()
+        writer.write(output)
+        output.seek(0)
+
+        return send_file(
+            output,
+            mimetype="application/pdf",
+            as_attachment=True,
+            download_name="toolboxquick-protected.pdf"
+        )
+    except Exception as e:
+        return render_template("pdf_protect.html", error=f"Hata oluştu: {str(e)}")
+
+
+@app.route("/pdf-tools/unlock", methods=["GET", "POST"])
+def pdf_unlock():
+    if request.method == "GET":
+        return render_template("pdf_unlock.html", error=None)
+
+    file = request.files.get("pdf_file")
+    password = request.form.get("password")
+
+    if not file or not file.filename.lower().endswith(".pdf"):
+        return render_template("pdf_unlock.html", error="Lütfen geçerli bir PDF dosyası seçin.")
+
+    if not password:
+        return render_template("pdf_unlock.html", error="Lütfen şifreyi girin.")
+
+    try:
+        reader = PdfReader(file.stream)
+
+        if not reader.is_encrypted:
+            return render_template("pdf_unlock.html", error="Bu PDF dosyası zaten şifreli değil.")
+
+        decryption_result = reader.decrypt(password)
+        if decryption_result == 0:
+            return render_template("pdf_unlock.html", error="Hatalı şifre. Lütfen tekrar deneyin.")
+
+        writer = PdfWriter()
+        for page in reader.pages:
+            writer.add_page(page)
+
+        output = BytesIO()
+        writer.write(output)
+        output.seek(0)
+
+        return send_file(
+            output,
+            mimetype="application/pdf",
+            as_attachment=True,
+            download_name="toolboxquick-unlocked.pdf"
+        )
+    except Exception as e:
+        return render_template("pdf_unlock.html", error=f"Hata oluştu: {str(e)}")
+
+
+@app.route("/audio-tools/volume")
+def audio_volume():
+    return render_template("audio_volume.html")
+
+
+@app.route("/audio-tools/speed")
+def audio_speed():
+    return render_template("audio_speed.html")
+
+
+@app.route("/video-tools/rotate")
+def video_rotate():
+    return render_template("video_rotate.html")
+
+
+@app.route("/video-tools/trim")
+def video_trim():
+    return render_template("video_trim.html")
+
+
+@app.route("/video-tools/merge")
+def video_merge():
+    return render_template("video_merge.html")
+
+
+@app.route("/convert/audio")
+def convert_audio():
+    return render_template("convert_audio.html")
+
+
+@app.route("/convert/video")
+def convert_video():
+    return render_template("convert_video.html")
+
+
+@app.route("/convert/extract", methods=["GET", "POST"])
+def convert_extract():
+    if request.method == "GET":
+        return render_template("convert_extract.html", files=None, error=None)
+
+    file = request.files.get("zip_file")
+    if not file or not file.filename.lower().endswith(".zip"):
+        return render_template("convert_extract.html", files=None, error="Lütfen geçerli bir ZIP dosyası seçin.")
+
+    try:
+        zip_id = str(uuid.uuid4())
+        zip_path = os.path.join(TEMP_DIR, f"{zip_id}.zip")
+        file.save(zip_path)
+
+        files_list = []
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            for info in zip_ref.infolist():
+                if not info.is_dir():
+                    files_list.append({
+                        "name": info.filename,
+                        "size": info.file_size
+                    })
+
+        return render_template(
+            "convert_extract.html",
+            files=files_list,
+            zip_id=zip_id,
+            archive_name=file.filename,
+            error=None
+        )
+    except Exception as e:
+        return render_template("convert_extract.html", files=None, error=f"Hata oluştu: {str(e)}")
+
+
+@app.route("/convert/extract/download")
+def convert_extract_download():
+    zip_id = request.args.get("id")
+    file_path = request.args.get("file")
+
+    if not zip_id or not file_path:
+        return "Geçersiz istek.", 400
+
+    zip_path = os.path.join(TEMP_DIR, f"{zip_id}.zip")
+    if not os.path.exists(zip_path):
+        return "Arşiv bulunamadı veya süresi dolmuş.", 404
+
+    try:
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            if file_path not in zip_ref.namelist():
+                return "Dosya arşiv içinde bulunamadı.", 404
+
+            data = zip_ref.read(file_path)
+            io_buf = BytesIO(data)
+            basename = os.path.basename(file_path)
+            
+            return send_file(
+                io_buf,
+                as_attachment=True,
+                download_name=basename
+            )
+    except Exception as e:
+        return f"İndirme sırasında hata oluştu: {str(e)}", 500
