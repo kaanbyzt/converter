@@ -180,6 +180,10 @@
     .cat-converter { color: #10b981; }
     .card-converter:hover { border-color: #10b981 !important; box-shadow: 0 4px 20px rgba(16, 185, 129, 0.08) !important; }
     .icon-converter { background-color: rgba(16, 185, 129, 0.1); color: #10b981; }
+
+    .cat-ai { color: var(--text-color); }
+    .card-ai:hover { border-color: #22d3ee !important; box-shadow: 0 4px 20px rgba(34, 211, 238, 0.08) !important; }
+    .icon-ai { background-color: rgba(34, 211, 238, 0.1); color: #22d3ee; }
 </style>
 {% endblock %}
 
@@ -745,6 +749,28 @@
     </div>
 </section>
 
+<!-- AI TOOLS -->
+<section class="category-section" id="cat-ai">
+    <button class="category-toggle category-title cat-ai" onclick="toggleCat('cat-ai')" aria-expanded="false">
+        <span class="category-title-inner">🤖 Yapay Zeka Araçları</span>
+        <span class="cat-chevron">▼</span>
+    </button>
+    <div class="category-body" id="cat-ai-body">
+    <div class="tools-grid">
+        <a href="/ai-tools" class="tool-card card-ai">
+            <div class="tool-header">
+                <div class="tool-icon icon-ai">🤖</div>
+                <span class="tool-badge badge-active">Aktif</span>
+            </div>
+            <div>
+                <h3 class="tool-title">AI Karşılaştırma</h3>
+                <p class="tool-desc">ChatGPT, Claude, Gemini ve daha fazlasını kullanım alanı, fiyat ve performansına göre karşılaştırın; tıkladığınız araca doğrudan yönlenin.</p>
+            </div>
+        </a>
+    </div>
+    </div>
+</section>
+
 {% block scripts %}
 <script>
 function toggleCat(id) {
@@ -760,7 +786,7 @@ function toggleCat(id) {
 
 // On desktop: make sure all bodies are visible (remove closed state)
 function handleResize() {
-    const sections = ['cat-video','cat-audio','cat-pdf','cat-converter'];
+    const sections = ['cat-video','cat-audio','cat-pdf','cat-converter','cat-ai'];
     if (window.innerWidth > 767) {
         sections.forEach(id => {
             const body = document.getElementById(id + '-body');

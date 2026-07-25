@@ -168,6 +168,11 @@ def audio_tools():
     return render_template("audio_tools.html")
 
 
+@app.route("/ai-tools")
+def ai_tools():
+    return render_template("ai_tools.html")
+
+
 @app.route("/pdf-tools", methods=["GET", "POST"])
 def pdf_tools():
     if request.method == "GET":
