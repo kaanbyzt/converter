@@ -27,6 +27,20 @@
         align-items: center;
         gap: 0.5rem;
     }
+    /* Buton varsayılan görünümünü (beyaz çerçeve/arka plan) kaldır - tüm ekran boyutları için */
+    .category-toggle {
+        background: transparent;
+        background-color: transparent !important;
+        border: none;
+        outline: none;
+        box-shadow: none;
+        -webkit-appearance: none;
+        appearance: none;
+        cursor: pointer;
+        width: 100%;
+        text-align: left;
+        -webkit-tap-highlight-color: transparent;
+    }
 
     .tools-grid {
         display: grid;
@@ -46,6 +60,7 @@
             padding: 0;
             margin-bottom: 0;
             background: transparent;
+            background-color: transparent !important;
             border: none;
             box-shadow: none;
             outline: none;
