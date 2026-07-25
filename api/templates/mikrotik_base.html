@@ -135,50 +135,101 @@
             .sidebar-backdrop.visible { pointer-events: auto; }
             .main-content { overflow-y: auto; }
             .page { padding: 1.25rem 1rem; }
-            /* Mobilde notice panel örtüşmesin */
-            .mk-notice-panel {
-                bottom: 4.5rem;
-                right: 1rem;
-                width: 250px;
-                display: none;
-            }
-            .mk-notice-panel.mobile-open { display: flex; }
-            .mk-notice-toggle-btn { display: flex; }
+            /* Mobilde modal kutusu ekrana sığsın */
+            .mk-modal-box { max-width: 94vw; max-height: 82vh; }
+            .mk-modal-header { padding: 0.85rem 1rem 0.65rem; }
+            .mk-modal-title { font-size: 0.85rem; }
+            .mk-modal-body { padding: 0.85rem 1rem; }
+            .mk-notice-text { font-size: 0.75rem; }
+            .mk-notice-toggle-btn { bottom: 1rem; right: 1rem; }
         }
 
-        /* === Uyarı Paneli === */
-        .mk-notice-panel {
+        /* === Uyarı Modalı (pop-up) === */
+        .mk-modal-overlay {
             position: fixed;
-            bottom: 1.5rem;
-            right: 1.5rem;
-            width: 272px;
-            z-index: 50;
+            inset: 0;
+            background: rgba(3,7,18,0.72);
+            backdrop-filter: blur(2px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            padding: 1rem;
+        }
+        .mk-modal-overlay.open { display: flex; }
+        .mk-modal-box {
+            background: #1f2937;
+            border: 1px solid rgba(55,65,81,0.9);
+            border-radius: 0.85rem;
+            width: 100%;
+            max-width: 460px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.6);
             display: flex;
             flex-direction: column;
-            gap: 0.55rem;
-            pointer-events: none;
         }
-        .mk-notice-panel > * { pointer-events: auto; }
-        .mk-notice-card {
+        .mk-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem 1.15rem 0.75rem;
+            border-bottom: 1px solid #374151;
+            position: sticky;
+            top: 0;
             background: #1f2937;
+        }
+        .mk-modal-title { font-size: 0.95rem; font-weight: 700; color: #f9fafb; }
+        .mk-modal-close {
+            background: transparent;
+            border: none;
+            color: #9ca3af;
+            font-size: 1.05rem;
+            line-height: 1;
+            cursor: pointer;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.35rem;
+            flex-shrink: 0;
+        }
+        .mk-modal-close:hover { background: rgba(255,255,255,0.08); color: #f9fafb; }
+        .mk-modal-body {
+            padding: 1rem 1.15rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+        }
+        .mk-modal-footer { padding: 0 1.15rem 1.15rem; }
+        .mk-modal-ok-btn {
+            width: 100%;
+            background: #2563eb;
+            color: #fff;
+            border: none;
+            border-radius: 0.5rem;
+            padding: 0.65rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background 0.15s;
+        }
+        .mk-modal-ok-btn:hover { background: #1d4ed8; }
+        .mk-notice-card {
+            background: #111827;
             border: 1px solid rgba(55,65,81,0.9);
             border-radius: 10px;
             padding: 0.75rem 0.9rem;
-            box-shadow: 0 6px 24px rgba(0,0,0,0.5);
             display: flex;
             gap: 0.55rem;
             align-items: flex-start;
-            backdrop-filter: blur(6px);
-            transition: border-color 0.2s;
         }
-        .mk-notice-card:hover { border-color: rgba(75,85,99,1); }
         .mk-notice-icon { font-size: 0.95rem; flex-shrink: 0; margin-top: 0.1rem; }
-        .mk-notice-text { font-size: 0.695rem; color: #9ca3af; line-height: 1.5; }
+        .mk-notice-text { font-size: 0.8rem; color: #9ca3af; line-height: 1.5; }
         .mk-notice-card.mk-privacy  { border-left: 3px solid #22c55e; }
         .mk-notice-card.mk-disclaimer { border-left: 3px solid #f59e0b; }
-        /* Mobil toggle butonu */
+        /* Uyarıları tekrar açma butonu (sağ alt, tüm ekranlarda) */
         .mk-notice-toggle-btn {
-            display: none;
+            display: flex;
             position: fixed;
             bottom: 1.25rem;
             right: 1.25rem;
@@ -506,27 +557,53 @@
             if (window.innerWidth <= 767) closeSidebar();
         });
     });
-    function toggleMkNotice() {
-        document.getElementById('mkNoticePanel').classList.toggle('mobile-open');
+    function openMkNotice() {
+        document.getElementById('mkModalOverlay').classList.add('open');
     }
+    function closeMkNotice() {
+        document.getElementById('mkModalOverlay').classList.remove('open');
+        try { sessionStorage.setItem('mkNoticeSeen', '1'); } catch (e) {}
+    }
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeMkNotice();
+    });
+    document.addEventListener('DOMContentLoaded', function () {
+        document.getElementById('mkModalOverlay').addEventListener('click', function (e) {
+            if (e.target === this) closeMkNotice();
+        });
+        let seen = false;
+        try { seen = sessionStorage.getItem('mkNoticeSeen') === '1'; } catch (e) {}
+        if (!seen) openMkNotice();
+    });
     </script>
 
-    <!-- MikroTik Uyarı Paneli -->
-    <div class="mk-notice-panel" id="mkNoticePanel">
-        <div class="mk-notice-card mk-privacy">
-            <span class="mk-notice-icon">🔒</span>
-            <p class="mk-notice-text">
-                Yüklediğiniz belge, evrak ve görseller web sitesinde tutulmamaktadır. Tüm işlemler tarayıcınızda yerel olarak gerçekleşir.
-            </p>
-        </div>
-        <div class="mk-notice-card mk-disclaimer">
-            <span class="mk-notice-icon">⚠️</span>
-            <p class="mk-notice-text">
-                Burada üretilen script ve komutlar yalnızca yardımcı örnek niteliğindedir; cihazınıza özgü doğrulamayı siz yapmalısınız. Uygulamadan önce mutlaka mevcut konfigürasyonunuzun yedeğini (export) alın ve mümkünse önce test ortamında deneyin. Komutları kendi sorumluluğunuzda uygularsınız; oluşabilecek veri kaybı, kesinti veya diğer zararlardan site ve içerik sahibi sorumlu tutulamaz.
-            </p>
+    <!-- MikroTik Uyarı Modalı (panele girişte pop-up olarak gösterilir) -->
+    <div class="mk-modal-overlay" id="mkModalOverlay">
+        <div class="mk-modal-box" role="dialog" aria-modal="true" aria-labelledby="mkModalTitle">
+            <div class="mk-modal-header">
+                <span class="mk-modal-title" id="mkModalTitle">⚠️ Önemli Uyarılar</span>
+                <button type="button" class="mk-modal-close" onclick="closeMkNotice()" aria-label="Kapat">✕</button>
+            </div>
+            <div class="mk-modal-body">
+                <div class="mk-notice-card mk-privacy">
+                    <span class="mk-notice-icon">🔒</span>
+                    <p class="mk-notice-text">
+                        Yüklediğiniz belge, evrak ve görseller web sitesinde tutulmamaktadır. Tüm işlemler tarayıcınızda yerel olarak gerçekleşir.
+                    </p>
+                </div>
+                <div class="mk-notice-card mk-disclaimer">
+                    <span class="mk-notice-icon">⚠️</span>
+                    <p class="mk-notice-text">
+                        Burada üretilen script ve komutlar yalnızca yardımcı örnek niteliğindedir; cihazınıza özgü doğrulamayı siz yapmalısınız. Uygulamadan önce mutlaka mevcut konfigürasyonunuzun yedeğini (export) alın ve mümkünse önce test ortamında deneyin. Komutları kendi sorumluluğunuzda uygularsınız; oluşabilecek veri kaybı, kesinti veya diğer zararlardan site ve içerik sahibi sorumlu tutulamaz.
+                    </p>
+                </div>
+            </div>
+            <div class="mk-modal-footer">
+                <button type="button" class="mk-modal-ok-btn" onclick="closeMkNotice()">Anladım</button>
+            </div>
         </div>
     </div>
-    <button class="mk-notice-toggle-btn" onclick="toggleMkNotice()" aria-label="Uyarılar" title="Uyarılar">ℹ</button>
+    <button class="mk-notice-toggle-btn" onclick="openMkNotice()" aria-label="Uyarılar" title="Uyarılar">ℹ</button>
 
 </body>
 </html>
