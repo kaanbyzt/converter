@@ -173,6 +173,11 @@ def ai_tools():
     return render_template("ai_tools.html")
 
 
+@app.route("/guncelleme-notlari")
+def changelog():
+    return render_template("changelog.html")
+
+
 @app.route("/pdf-tools", methods=["GET", "POST"])
 def pdf_tools():
     if request.method == "GET":
