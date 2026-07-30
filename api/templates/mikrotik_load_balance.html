@@ -1,25 +1,25 @@
 {% extends "mikrotik_base.html" %}
-{% block title %}Load Balance{% endblock %}
+{% block title %}{{ t('mk_load_balance.title') }}{% endblock %}
 {% block content %}
-<div class="page-header"><h1>PCC Load Balance Sihirbazı</h1><p>Çoklu internet hatlarınızı (WAN) birleştirmek için RouterOS komutlarınızı otomatik oluşturun.</p></div>
+<div class="page-header"><h1>{{ t('mk_load_balance.heading') }}</h1><p>{{ t('mk_load_balance.intro') }}</p></div>
 <div class="tool-grid">
     <div class="card card-space">
         <div>
-            <label class="form-label">WAN (İnternet) Hat Sayısı</label>
+            <label class="form-label">{{ t('mk_load_balance.label_wanc') }}</label>
             <select id="wanc" class="form-select" onchange="update()">
-                <option value="2">2 Hat (Dual WAN)</option>
-                <option value="3">3 Hat</option>
-                <option value="4">4 Hat</option>
+                <option value="2">{{ t('mk_load_balance.wanc_2') }}</option>
+                <option value="3">{{ t('mk_load_balance.wanc_3') }}</option>
+                <option value="4">{{ t('mk_load_balance.wanc_4') }}</option>
             </select>
         </div>
         <div>
-            <label class="form-label">Yerel Ağ (LAN) Arayüzü</label>
-            <input type="text" id="lan" class="form-input" value="bridge-local" oninput="update()" placeholder="Örn: bridge-local veya ether5">
+            <label class="form-label">{{ t('mk_load_balance.label_lan') }}</label>
+            <input type="text" id="lan" class="form-input" value="bridge-local" oninput="update()" placeholder="{{ t('mk_load_balance.placeholder_lan') }}">
         </div>
     </div>
     <div class="script-card">
-        <div class="script-header"><div class="script-title"><span class="dot"></span>Üretilen RouterOS Komutları</div><button class="copy-btn" onclick="copy()">Kopyala</button></div>
-        <p class="script-warn">⚠️ Kopyalamadan önce script'i inceleyin; cihazınıza uygulamadan önce yedek alın ve mümkünse test ortamında deneyin.</p>
+        <div class="script-header"><div class="script-title"><span class="dot"></span>{{ t('mk_load_balance.script_title') }}</div><button class="copy-btn" onclick="copy()">{{ t('mk_load_balance.copy_btn') }}</button></div>
+        <p class="script-warn">⚠️ {{ t('mk_load_balance.copy_warning') }}</p>
         <pre id="out" class="script-pre"></pre>
     </div>
 </div>
@@ -44,7 +44,7 @@ function update() {
     wans.forEach((w,i) => s += `add check-gateway=ping distance=1 gateway=192.168.${i+1}.1 routing-mark=to_${w}\n`);
     document.getElementById('out').textContent = s;
 }
-function copy() { navigator.clipboard.writeText(document.getElementById('out').textContent); const b=document.querySelector('.copy-btn');b.textContent='Kopyalandı!';setTimeout(()=>b.textContent='Kopyala',1500); }
+function copy() { navigator.clipboard.writeText(document.getElementById('out').textContent); const b=document.querySelector('.copy-btn');b.textContent={{ t('mk_load_balance.copied')|tojson }};setTimeout(()=>b.textContent={{ t('mk_load_balance.copy_btn')|tojson }},1500); }
 update();
 </script>
 {% endblock %}

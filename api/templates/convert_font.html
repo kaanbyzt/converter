@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Yazı Tipi Dönüştürücü | toolboxquick{% endblock %}
+{% block title %}{{ t('convert_font.title') }} | toolboxquick{% endblock %}
 {% block head %}
 <style>
     .dropzone {
@@ -23,19 +23,19 @@
 
 {% block content %}
 <header class="mb-4">
-    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #10b981 !important;">Dönüştürücüler</p>
-    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">Yazı Tipi Dönüştürücü (Font Converter)</h1>
+    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #10b981 !important;">{{ t('convert_font.kicker') }}</p>
+    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">{{ t('convert_font.heading') }}</h1>
     <p class="text-secondary mb-0">
-        Yazı tiplerinizi (TTF, OTF, WOFF) yükleyin, hedef formatı belirleyin ve yerel tarayıcınızda dönüştürüp indirin.
+        {{ t('convert_font.subtitle') }}
     </p>
 </header>
 
 <section class="tool-card p-4 mb-4">
     <div id="upload-stage">
-        <label class="form-label fw-semibold mb-2">Yazı Tipi Dosyasını Seçin (.ttf, .otf, .woff)</label>
+        <label class="form-label fw-semibold mb-2">{{ t('convert_font.file_label') }}</label>
         <div class="dropzone" onclick="document.getElementById('font_file').click()">
             <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔤</div>
-            <div class="fw-semibold mb-1" style="color: var(--text-color);">Bir yazı tipi dosyası seçin</div>
+            <div class="fw-semibold mb-1" style="color: var(--text-color);">{{ t('convert_font.file_placeholder') }}</div>
             <input type="file" id="font_file" class="file-input" accept=".ttf,.otf,.woff" onchange="loadFontFile(this)">
         </div>
     </div>
@@ -43,28 +43,28 @@
     <div id="editor-stage" class="d-none text-center">
         <div class="mb-3 d-flex justify-content-between align-items-center">
             <span id="file-name" class="fw-semibold text-success">font.ttf</span>
-            <button class="btn btn-sm btn-outline-danger" onclick="resetEditor()">Yeni Yazı Tipi Yükle</button>
+            <button class="btn btn-sm btn-outline-danger" onclick="resetEditor()">{{ t('convert_font.new_file_btn') }}</button>
         </div>
 
         <div class="mb-4" style="max-width: 300px; margin: 0 auto; text-align: left;">
-            <label class="form-label fw-semibold mb-2">Hedef Format</label>
+            <label class="form-label fw-semibold mb-2">{{ t('convert_font.target_format_label') }}</label>
             <select id="target-format" class="form-select" style="border-radius: 8px;">
-                <option value="ttf">TrueType Font (.ttf)</option>
-                <option value="woff">Web Open Font Format (.woff)</option>
-                <option value="otf">OpenType Font (.otf)</option>
+                <option value="ttf">{{ t('convert_font.opt_ttf') }}</option>
+                <option value="woff">{{ t('convert_font.opt_woff') }}</option>
+                <option value="otf">{{ t('convert_font.opt_otf') }}</option>
             </select>
         </div>
 
-        <div id="processing-msg" class="text-warning small mb-3 d-none">Lütfen bekleyin, yazı tipi işleniyor...</div>
+        <div id="processing-msg" class="text-warning small mb-3 d-none">{{ t('convert_font.processing_msg') }}</div>
 
         <button class="btn btn-success px-5 py-2" id="process-btn" onclick="processAndDownload()" style="border-radius: 8px; font-weight: 600;">
-            Dönüştür ve İndir 💾
+            {{ t('convert_font.convert_btn') }}
         </button>
     </div>
 </section>
 
 <section class="mt-4">
-    <a href="/" class="text-secondary small text-decoration-none">&larr; Ana sayfaya dön</a>
+    <a href="/" class="text-secondary small text-decoration-none">&larr; {{ t('convert_font.back_home') }}</a>
 </section>
 {% endblock %}
 
@@ -115,7 +115,7 @@ async function processAndDownload() {
         a.click();
         URL.revokeObjectURL(url);
     } catch (e) {
-        alert('Dönüştürme işlemi sırasında hata oluştu.');
+        alert({{ t('convert_font.err_generic')|tojson }});
         console.error(e);
     } finally {
         document.getElementById('processing-msg').classList.add('d-none');

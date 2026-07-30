@@ -1,39 +1,39 @@
 {% extends "mikrotik_base.html" %}
-{% block title %}Log & Uyarı Asistanı{% endblock %}
+{% block title %}{{ t('mk_log.title') }}{% endblock %}
 {% block content %}
 <div class="page-header">
-    <h1>Log ve Uyarı Asistanı</h1>
-    <p>RouterOS üzerindeki kritik logları takip edin ve otomatik bildirim sistemleri kurun.</p>
+    <h1>{{ t('mk_log.h1') }}</h1>
+    <p>{{ t('mk_log.desc') }}</p>
 </div>
 <div class="tool-grid">
     <div class="card card-space">
         <div>
-            <label class="form-label">Takip Edilecek Log Türü</label>
+            <label class="form-label">{{ t('mk_log.alert_label') }}</label>
             <select id="alert" class="form-select" onchange="update()">
-                <option value="error">Error (Sistem Hataları)</option>
-                <option value="critical">Critical (Kritik Donanım/Yazılım Sorunları)</option>
-                <option value="warning">Warning (Genel Uyarılar)</option>
-                <option value="account">Account (Kullanıcı Giriş Denemeleri)</option>
+                <option value="error">{{ t('mk_log.opt_error') }}</option>
+                <option value="critical">{{ t('mk_log.opt_critical') }}</option>
+                <option value="warning">{{ t('mk_log.opt_warning') }}</option>
+                <option value="account">{{ t('mk_log.opt_account') }}</option>
             </select>
         </div>
         <div>
-            <label class="form-label">Bildirim Kanalı</label>
+            <label class="form-label">{{ t('mk_log.action_label') }}</label>
             <select id="action" class="form-select" onchange="toggleAction()">
-                <option value="email">E-Posta (SMTP)</option>
-                <option value="telegram">Telegram Bot API</option>
+                <option value="email">{{ t('mk_log.opt_email') }}</option>
+                <option value="telegram">{{ t('mk_log.opt_telegram') }}</option>
             </select>
         </div>
         <div>
-            <label class="form-label" id="contact-label">Yönetici E-Posta Adresi</label>
+            <label class="form-label" id="contact-label">{{ t('mk_log.contact_label_email') }}</label>
             <input type="text" id="contact" class="form-input" value="admin@firma.com" oninput="update()">
         </div>
     </div>
     <div class="script-card">
         <div class="script-header">
-            <div class="script-title"><span class="dot"></span> Otomasyon Scripti ve Zamanlayıcı</div>
-            <button class="copy-btn" onclick="copy()">Kopyala</button>
+            <div class="script-title"><span class="dot"></span> {{ t('mk_log.script_title') }}</div>
+            <button class="copy-btn" onclick="copy()">{{ t('mk_log.copy') }}</button>
         </div>
-        <p class="script-warn">⚠️ Kopyalamadan önce script'i inceleyin; cihazınıza uygulamadan önce yedek alın ve mümkünse test ortamında deneyin.</p>
+        <p class="script-warn">{{ t('mk_log.review_warning') }}</p>
         <pre id="out" class="script-pre"></pre>
     </div>
 </div>
@@ -44,27 +44,27 @@ function toggleAction() {
     const a = document.getElementById('action').value;
     const lbl = document.getElementById('contact-label');
     const inp = document.getElementById('contact');
-    if (a === 'email') { lbl.textContent = 'Yönetici E-Posta Adresi'; inp.value = 'admin@firma.com'; }
-    else { lbl.textContent = 'Telegram Chat ID'; inp.value = 'CHAT_ID'; }
+    if (a === 'email') { lbl.textContent = {{ t('mk_log.contact_label_email')|tojson }}; inp.value = 'admin@firma.com'; }
+    else { lbl.textContent = {{ t('mk_log.contact_label_telegram')|tojson }}; inp.value = 'CHAT_ID'; }
     update();
 }
 function update() {
     const alert = document.getElementById('alert').value;
     const action = document.getElementById('action').value;
     const contact = document.getElementById('contact').value;
-    let s = `# 1. Log İzleme İçin Komut Dosyası (Script) Oluştur\n/system script\nadd name="Log_Uyarici" source={\n  :local logMessage "";\n  :foreach i in=[/log find topics~"${alert}"] do={\n    :set logMessage [/log get $i message];\n  }\n  :if ($logMessage != "") do={\n`;
+    let s = `# ${ {{ t('mk_log.c1_title')|tojson }} }\n/system script\nadd name="Log_Uyarici" source={\n  :local logMessage "";\n  :foreach i in=[/log find topics~"${alert}"] do={\n    :set logMessage [/log get $i message];\n  }\n  :if ($logMessage != "") do={\n`;
     if (action === 'email') {
-        s += `    /tool e-mail send to="${contact}" subject="MikroTik Log Uyarisi: ${alert.toUpperCase()}" body=$logMessage;\n`;
+        s += `    /tool e-mail send to="${contact}" subject="MikroTik ${ {{ t('mk_log.email_subject_label')|tojson }} }: ${alert.toUpperCase()}" body=$logMessage;\n`;
     } else {
-        s += `    /tool fetch url="https://api.telegram.org/botBOT_TOKEN_BURAYA/sendMessage?chat_id=${contact}&text=MikroTik+Kritik+Hata:+$logMessage" keep-result=no;\n`;
+        s += `    /tool fetch url="https://api.telegram.org/botBOT_TOKEN_BURAYA/sendMessage?chat_id=${contact}&text=MikroTik+${ {{ t('mk_log.telegram_error_label')|tojson }} }:+$logMessage" keep-result=no;\n`;
     }
-    s += `  }\n}\n\n# 2. Bu Betiği Her 5 Dakikada Bir Çalışacak Şekilde Zamanla (Scheduler)\n/system scheduler\nadd interval=5m name="Log_Kontrol_Zamanlayici" on-event="Log_Uyarici" start-time=startup\n`;
+    s += `  }\n}\n\n# ${ {{ t('mk_log.c2_title')|tojson }} }\n/system scheduler\nadd interval=5m name="Log_Kontrol_Zamanlayici" on-event="Log_Uyarici" start-time=startup\n`;
     document.getElementById('out').textContent = s;
 }
 function copy() {
     navigator.clipboard.writeText(document.getElementById('out').textContent);
     const btn = document.querySelector('.copy-btn');
-    btn.textContent = 'Kopyalandı!'; setTimeout(() => btn.textContent = 'Kopyala', 1500);
+    btn.textContent = {{ t('mk_log.copied')|tojson }}; setTimeout(() => btn.textContent = {{ t('mk_log.copy')|tojson }}, 1500);
 }
 update();
 </script>

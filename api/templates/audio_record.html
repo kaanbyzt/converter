@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Ses Kaydedici | toolboxquick{% endblock %}
+{% block title %}{{ t('audio_record.title') }} | toolboxquick{% endblock %}
 {% block head %}
 <style>
     .record-container {
@@ -60,10 +60,10 @@
 
 {% block content %}
 <header class="mb-4">
-    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #3b82f6 !important;">Ses Araçları</p>
-    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">Ses Kaydedici (Mikrofon)</h1>
+    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #3b82f6 !important;">{{ t('audio_record.category') }}</p>
+    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">{{ t('audio_record.heading') }}</h1>
     <p class="text-secondary mb-0">
-        Tarayıcınızın mikrofon yetkisini açın, kaydı başlatın ve ses kaydınızı yerel olarak kaydedip indirin.
+        {{ t('audio_record.description') }}
     </p>
 </header>
 
@@ -76,20 +76,20 @@
         </div>
 
         <button id="record-button" class="record-btn" onclick="toggleRecord()">🎙️</button>
-        <div id="status" class="text-secondary small">Kayda başlamak için mikrofona tıklayın.</div>
+        <div id="status" class="text-secondary small">{{ t('audio_record.status_idle') }}</div>
 
         <div id="playback-section" class="d-none w-100 mt-3 text-center border-top pt-3" style="border-color: var(--navbar-border) !important;">
-            <h4 class="h6 mb-3 text-secondary">Kaydedilen Ses:</h4>
+            <h4 class="h6 mb-3 text-secondary">{{ t('audio_record.recorded_heading') }}</h4>
             <audio id="audio-playback" controls class="mb-3" style="width: 100%; max-width: 400px; margin: 0 auto;"></audio>
             <div>
-                <button class="btn btn-primary" onclick="downloadRecording()">Kaydı İndir (.webm) 💾</button>
+                <button class="btn btn-primary" onclick="downloadRecording()">{{ t('audio_record.download_btn') }} 💾</button>
             </div>
         </div>
     </div>
 </section>
 
 <section class="mt-4">
-    <a href="/" class="text-secondary small text-decoration-none">&larr; Ana sayfaya dön</a>
+    <a href="/" class="text-secondary small text-decoration-none">&larr; {{ t('audio_record.back_link') }}</a>
 </section>
 {% endblock %}
 
@@ -149,9 +149,9 @@ async function startRecording() {
         const btn = document.getElementById('record-button');
         btn.classList.add('recording');
         btn.textContent = '⏹️';
-        document.getElementById('status').textContent = 'Kayıt yapılıyor... Durdurmak için tekrar tıklayın.';
+        document.getElementById('status').textContent = {{ t('audio_record.status_recording')|tojson }};
     } catch(err) {
-        alert('Mikrofona erişim sağlanamadı. Lütfen tarayıcı izinlerini kontrol edin.');
+        alert({{ t('audio_record.mic_error')|tojson }});
     }
 }
 
@@ -164,7 +164,7 @@ function stopRecording() {
         const btn = document.getElementById('record-button');
         btn.classList.remove('recording');
         btn.textContent = '🎙️';
-        document.getElementById('status').textContent = 'Kayıt tamamlandı. Aşağıdan dinleyebilir veya indirebilirsiniz.';
+        document.getElementById('status').textContent = {{ t('audio_record.status_done')|tojson }};
         
         // Stop visualizer loop
         if (drawVisual) cancelAnimationFrame(drawVisual);

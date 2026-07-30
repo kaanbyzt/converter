@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Görüntü Dönüştürücü | toolboxquick{% endblock %}
+{% block title %}{{ t('convert_image.title') }} | toolboxquick{% endblock %}
 {% block head %}
 <style>
     .dropzone {
@@ -31,20 +31,20 @@
 
 {% block content %}
 <header class="mb-4">
-    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #10b981 !important;">Dönüştürücüler</p>
-    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">Görüntü Dönüştürücü</h1>
+    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #10b981 !important;">{{ t('convert_image.kicker') }}</p>
+    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">{{ t('convert_image.heading') }}</h1>
     <p class="text-secondary mb-0">
-        Resimlerinizi yükleyin, istediğiniz yeni dosya formatını seçin ve yerel olarak anında dönüştürüp indirin.
+        {{ t('convert_image.subtitle') }}
     </p>
 </header>
 
 <section class="tool-card p-4 mb-4">
     <div id="upload-stage">
-        <label class="form-label fw-semibold mb-2">Resim Dosyanızı Seçin (PNG, JPG, WebP, BMP, GIF, vb.)</label>
+        <label class="form-label fw-semibold mb-2">{{ t('convert_image.file_label') }}</label>
         <div class="dropzone" onclick="document.getElementById('image_file').click()">
             <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🖼️</div>
-            <div class="fw-semibold mb-1" style="color: var(--text-color);">Bir resim seçin veya sürükleyin</div>
-            <div class="text-secondary small">Dönüştürme işlemi tamamen tarayıcınızda yerel olarak yapılır.</div>
+            <div class="fw-semibold mb-1" style="color: var(--text-color);">{{ t('convert_image.file_placeholder') }}</div>
+            <div class="text-secondary small">{{ t('convert_image.file_hint') }}</div>
             <input type="file" id="image_file" class="file-input" accept="image/*" onchange="loadImage(this)">
         </div>
     </div>
@@ -52,29 +52,29 @@
     <div id="editor-stage" class="d-none text-center">
         <div class="mb-3 d-flex justify-content-between align-items-center">
             <span id="file-name" class="fw-semibold text-success">resim.png</span>
-            <button class="btn btn-sm btn-outline-danger" onclick="resetConverter()">Yeni Resim Seç</button>
+            <button class="btn btn-sm btn-outline-danger" onclick="resetConverter()">{{ t('convert_image.new_file_btn') }}</button>
         </div>
 
-        <img id="image-preview" class="preview-box" alt="Önizleme">
+        <img id="image-preview" class="preview-box" alt="{{ t('convert_image.preview_alt') }}">
 
         <div class="mb-4" style="max-width: 300px; margin: 0 auto text-align: left;">
-            <label class="form-label fw-semibold mb-2">Hedef Dosya Formatı</label>
+            <label class="form-label fw-semibold mb-2">{{ t('convert_image.target_format_label') }}</label>
             <select id="target-format" class="form-select" style="border-radius: 8px;">
-                <option value="image/png">PNG (.png)</option>
-                <option value="image/jpeg">JPEG (.jpg)</option>
-                <option value="image/webp">WEBP (.webp)</option>
-                <option value="image/bmp">BMP (.bmp)</option>
+                <option value="image/png">{{ t('convert_image.opt_png') }}</option>
+                <option value="image/jpeg">{{ t('convert_image.opt_jpeg') }}</option>
+                <option value="image/webp">{{ t('convert_image.opt_webp') }}</option>
+                <option value="image/bmp">{{ t('convert_image.opt_bmp') }}</option>
             </select>
         </div>
 
         <button class="btn btn-success px-5 py-2" onclick="convertAndDownload()" style="border-radius: 8px; font-weight: 600;">
-            Dönüştür ve İndir 💾
+            {{ t('convert_image.convert_btn') }}
         </button>
     </div>
 </section>
 
 <section class="mt-4">
-    <a href="/" class="text-secondary small text-decoration-none">&larr; Ana sayfaya dön</a>
+    <a href="/" class="text-secondary small text-decoration-none">&larr; {{ t('convert_image.back_home') }}</a>
 </section>
 {% endblock %}
 

@@ -1,51 +1,51 @@
 {% extends "mikrotik_base.html" %}
-{% block title %}WireGuard VPN{% endblock %}
+{% block title %}{{ t('mk_vpn.title') }}{% endblock %}
 {% block content %}
 <div class="page-header">
-    <h1>WireGuard VPN Kurulumu</h1>
-    <p>RouterOS v7 için en hızlı ve güvenli VPN olan WireGuard altyapısını saniyeler içinde oluşturun.</p>
+    <h1>{{ t('mk_vpn.h1') }}</h1>
+    <p>{{ t('mk_vpn.desc') }}</p>
 </div>
 <div class="tool-grid">
     <div class="card card-space">
         <div>
-            <label class="form-label">Arayüz Adı</label>
+            <label class="form-label">{{ t('mk_vpn.iface_label') }}</label>
             <input type="text" id="iface" class="form-input" value="wireguard1" oninput="update()">
         </div>
         <div>
-            <label class="form-label">Dinleme Portu (UDP)</label>
+            <label class="form-label">{{ t('mk_vpn.port_label') }}</label>
             <input type="text" id="port" class="form-input" value="13231" oninput="update()">
         </div>
         <div class="form-divider"></div>
         <div>
-            <label class="form-label form-label-blue">VPN Ağ Bloğu (Subnet)</label>
+            <label class="form-label form-label-blue">{{ t('mk_vpn.vpnnet_label') }}</label>
             <input type="text" id="vpnnet" class="form-input" value="10.252.1.0" oninput="update()">
         </div>
         <div class="grid-2">
             <div>
-                <label class="form-label">Sunucu IP Adresi</label>
+                <label class="form-label">{{ t('mk_vpn.srvip_label') }}</label>
                 <input type="text" id="srvip" class="form-input form-input-sm" value="10.252.1.1" oninput="update()">
             </div>
             <div>
-                <label class="form-label">İlk İstemci IP</label>
+                <label class="form-label">{{ t('mk_vpn.clipip_label') }}</label>
                 <input type="text" id="clipip" class="form-input form-input-sm" value="10.252.1.2" oninput="update()">
             </div>
         </div>
         <div>
-            <label class="form-label">İstemci Adı (Yorum)</label>
-            <input type="text" id="cliname" class="form-input" value="Telefon_veya_Laptop" oninput="update()">
+            <label class="form-label">{{ t('mk_vpn.cliname_label') }}</label>
+            <input type="text" id="cliname" class="form-input" value="{{ t('mk_vpn.cliname_default') }}" oninput="update()">
         </div>
         <div class="form-divider"></div>
         <label class="checkbox-row">
             <input type="checkbox" id="fw" checked onchange="update()">
-            <span>Gerekli Firewall Kuralını Ekle</span>
+            <span>{{ t('mk_vpn.fw_chk') }}</span>
         </label>
     </div>
     <div class="script-card">
         <div class="script-header">
-            <div class="script-title"><span class="dot"></span> Üretilen WireGuard Komutları</div>
-            <button class="copy-btn" onclick="copy()">Kopyala</button>
+            <div class="script-title"><span class="dot"></span> {{ t('mk_vpn.script_title') }}</div>
+            <button class="copy-btn" onclick="copy()">{{ t('mk_vpn.copy') }}</button>
         </div>
-        <p class="script-warn">⚠️ Kopyalamadan önce script'i inceleyin; cihazınıza uygulamadan önce yedek alın ve mümkünse test ortamında deneyin.</p>
+        <p class="script-warn">{{ t('mk_vpn.review_warning') }}</p>
         <pre id="out" class="script-pre"></pre>
     </div>
 </div>
@@ -61,15 +61,15 @@ function update() {
     const cliname = document.getElementById('cliname').value;
     const fw = document.getElementById('fw').checked;
     const fwScript = fw
-        ? `# 3. Güvenlik Duvarı (Firewall) İzni (Dışarıdan VPN'e bağlanabilmek için)\n/ip firewall filter\nadd action=accept chain=input comment="WireGuard VPN İzni" dst-port=${port} protocol=udp place-before=1\n\n`
-        : `# 3. Güvenlik Duvarı Kuralı Atlandı\n\n`;
-    const s = `# 1. WireGuard Arayüzünü Oluştur (Anahtarlar otomatik üretilecektir)\n/interface wireguard\nadd listen-port=${port} mtu=1420 name=${iface}\n\n# 2. VPN Ağı İçin Sunucuya IP Adresi Ver\n/ip address\nadd address=${srvip}/24 interface=${iface} network=${vpnnet}\n\n${fwScript}# 4. İstemci (Peer / Client) Ekleme\n# NOT: "public-key" kısmına, bağlayacağınız cihazın ürettiği Public Key'i girmelisiniz.\n/interface wireguard peers\nadd allowed-address=${clipip}/32 interface=${iface} public-key="ISTEMCININ_PUBLIC_KEY_BURAYA" comment="${cliname}"\n`;
+        ? `# ${ {{ t('mk_vpn.c_fw_title')|tojson }} }\n/ip firewall filter\nadd action=accept chain=input comment="${ {{ t('mk_vpn.c_fw_comment')|tojson }} }" dst-port=${port} protocol=udp place-before=1\n\n`
+        : `# ${ {{ t('mk_vpn.c_fw_skip')|tojson }} }\n\n`;
+    const s = `# ${ {{ t('mk_vpn.c1_title')|tojson }} }\n/interface wireguard\nadd listen-port=${port} mtu=1420 name=${iface}\n\n# ${ {{ t('mk_vpn.c2_title')|tojson }} }\n/ip address\nadd address=${srvip}/24 interface=${iface} network=${vpnnet}\n\n${fwScript}# ${ {{ t('mk_vpn.c4_title')|tojson }} }\n# ${ {{ t('mk_vpn.c_note')|tojson }} }\n/interface wireguard peers\nadd allowed-address=${clipip}/32 interface=${iface} public-key="${ {{ t('mk_vpn.pubkey_placeholder')|tojson }} }" comment="${cliname}"\n`;
     document.getElementById('out').textContent = s;
 }
 function copy() {
     navigator.clipboard.writeText(document.getElementById('out').textContent);
     const btn = document.querySelector('.copy-btn');
-    btn.textContent = 'Kopyalandı!'; setTimeout(() => btn.textContent = 'Kopyala', 1500);
+    btn.textContent = {{ t('mk_vpn.copied')|tojson }}; setTimeout(() => btn.textContent = {{ t('mk_vpn.copy')|tojson }}, 1500);
 }
 update();
 </script>

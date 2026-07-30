@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Görselden PDF'e Dönüştür | toolboxquick{% endblock %}
+{% block title %}{{ t('img_to_pdf.title') }} | toolboxquick{% endblock %}
 {% block head %}
 <style>
     .dropzone {
@@ -44,47 +44,48 @@
 
 {% block content %}
 <header class="mb-4">
-    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #f97316 !important;">PDF Araçları</p>
-    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">Görselleri PDF'e Dönüştür (Image to PDF)</h1>
+    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #f97316 !important;">{{ t('img_to_pdf.category') }}</p>
+    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">{{ t('img_to_pdf.heading') }}</h1>
     <p class="text-secondary mb-0">
-        Resimlerinizi (JPG, PNG) yükleyin ve yerel tarayıcınızda tek bir PDF dosyasında birleştirip indirin.
+        {{ t('img_to_pdf.desc') }}
     </p>
 </header>
 
 <section class="tool-card p-4 mb-4">
     <div class="mb-4">
-        <label class="form-label fw-semibold mb-2">Görselleri Ekleyin (Çoklu Seçim Desteklenir)</label>
+        <label class="form-label fw-semibold mb-2">{{ t('img_to_pdf.select_label') }}</label>
         <div class="dropzone" onclick="document.getElementById('image_files').click()">
             <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🖼️</div>
-            <div class="fw-semibold mb-1" style="color: var(--text-color);">Resimleri seçmek için tıklayın</div>
+            <div class="fw-semibold mb-1" style="color: var(--text-color);">{{ t('img_to_pdf.dropzone_text') }}</div>
             <input type="file" id="image_files" class="file-input" accept="image/jpeg, image/png" multiple onchange="addImages(this)">
         </div>
     </div>
 
     <div id="images-stage" class="d-none">
-        <h3 class="h6 fw-semibold mb-3">PDF'e Eklenecek Görseller</h3>
+        <h3 class="h6 fw-semibold mb-3">{{ t('img_to_pdf.images_title') }}</h3>
         <div class="img-list mb-4" id="img-list-container">
             <!-- Dynamically populated -->
         </div>
 
-        <div id="processing-msg" class="text-warning small mb-3 d-none">Lütfen bekleyin, PDF dosyası oluşturuluyor...</div>
+        <div id="processing-msg" class="text-warning small mb-3 d-none">{{ t('img_to_pdf.processing_msg') }}</div>
 
         <div class="d-flex justify-content-between align-items-center">
-            <button class="btn btn-outline-danger" onclick="clearImages()">Tümünü Temizle</button>
+            <button class="btn btn-outline-danger" onclick="clearImages()">{{ t('img_to_pdf.clear_btn') }}</button>
             <button class="btn btn-warning text-white px-5 py-2" id="convert-btn" onclick="convertToPDF()" style="border-radius: 8px; font-weight: 600; background-color: #f97316; border-color: #f97316;">
-                Dönüştür ve İndir 💾
+                {{ t('img_to_pdf.submit_btn') }}
             </button>
         </div>
     </div>
 </section>
 
 <section class="mt-4">
-    <a href="/" class="text-secondary small text-decoration-none">&larr; Ana sayfaya dön</a>
+    <a href="/" class="text-secondary small text-decoration-none">&larr; {{ t('img_to_pdf.back_home') }}</a>
 </section>
 {% endblock %}
 
 {% block scripts %}
 <script>
+const removeBtnLabel = {{ t('img_to_pdf.remove_btn')|tojson }};
 let images = [];
 
 function clearImages() {
@@ -157,7 +158,7 @@ function renderImages() {
             <div class="d-flex align-items-center gap-2">
                 <button class="btn btn-sm btn-outline-secondary py-1" onclick="moveImage('${img.id}', -1)" ${idx === 0 ? 'disabled' : ''}>▲</button>
                 <button class="btn btn-sm btn-outline-secondary py-1" onclick="moveImage('${img.id}', 1)" ${idx === images.length - 1 ? 'disabled' : ''}>▼</button>
-                <button class="btn btn-sm btn-outline-danger py-1" onclick="removeImage('${img.id}')">Sil</button>
+                <button class="btn btn-sm btn-outline-danger py-1" onclick="removeImage('${img.id}')">${removeBtnLabel}</button>
             </div>
         `;
         container.appendChild(item);
@@ -211,7 +212,7 @@ async function convertToPDF() {
 
         pdf.save('toolboxquick-converted.pdf');
     } catch (e) {
-        alert('PDF oluşturulurken hata meydana geldi.');
+        alert({{ t('img_to_pdf.err_process_failed')|tojson }});
         console.error(e);
     } finally {
         document.getElementById('processing-msg').classList.add('d-none');

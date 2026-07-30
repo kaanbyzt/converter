@@ -1,24 +1,24 @@
 {% extends "mikrotik_base.html" %}
-{% block title %}DNS Güvenliği{% endblock %}
+{% block title %}{{ t('mk_dns.title') }}{% endblock %}
 {% block content %}
-<div class="page-header"><h1>DNS Güvenliği ve Reklam Engelleme</h1><p>Güvenli DNS protokolleri tanımlayın, reklam ve izleyici domainlerini ağ seviyesinde filtreleyin.</p></div>
+<div class="page-header"><h1>{{ t('mk_dns.h1') }}</h1><p>{{ t('mk_dns.desc') }}</p></div>
 <div class="tool-grid">
     <div class="card card-space">
         <div>
-            <label class="form-label">Güvenli DNS Sağlayıcısı</label>
+            <label class="form-label">{{ t('mk_dns.provider_label') }}</label>
             <select id="provider" class="form-select" onchange="update()">
-                <option value="cloudflare-family">Cloudflare Family (Malware + Yetişkin Engeli)</option>
-                <option value="quad9">Quad9 Secure (Zararlı Yazılım & Phishing Koruması)</option>
-                <option value="adguard">AdGuard DNS (Varsayılan Reklam Engelleme)</option>
+                <option value="cloudflare-family">{{ t('mk_dns.opt_cloudflare') }}</option>
+                <option value="quad9">{{ t('mk_dns.opt_quad9') }}</option>
+                <option value="adguard">{{ t('mk_dns.opt_adguard') }}</option>
             </select>
         </div>
         <div class="form-divider"></div>
-        <label class="checkbox-row"><input type="checkbox" id="blockads" checked onchange="update()"><span>Temel Reklam/İzleyici Engelleme</span></label>
-        <label class="checkbox-row"><input type="checkbox" id="remote" checked onchange="update()"><span>Yerel İsteklere İzin Ver (Sorgu Önbelleği)</span></label>
+        <label class="checkbox-row"><input type="checkbox" id="blockads" checked onchange="update()"><span>{{ t('mk_dns.chk_blockads') }}</span></label>
+        <label class="checkbox-row"><input type="checkbox" id="remote" checked onchange="update()"><span>{{ t('mk_dns.chk_remote') }}</span></label>
     </div>
     <div class="script-card">
-        <div class="script-header"><div class="script-title"><span class="dot"></span>DNS Konfigürasyon Scripti</div><button class="copy-btn" onclick="copy()">Kopyala</button></div>
-        <p class="script-warn">⚠️ Kopyalamadan önce script'i inceleyin; cihazınıza uygulamadan önce yedek alın ve mümkünse test ortamında deneyin.</p>
+        <div class="script-header"><div class="script-title"><span class="dot"></span>{{ t('mk_dns.script_title') }}</div><button class="copy-btn" onclick="copy()">{{ t('mk_dns.copy') }}</button></div>
+        <p class="script-warn">{{ t('mk_dns.review_warning') }}</p>
         <pre id="out" class="script-pre"></pre>
     </div>
 </div>
@@ -28,11 +28,11 @@
 const SERVERS={'cloudflare-family':'1.1.1.3,1.0.0.3','quad9':'9.9.9.9,149.112.112.112','adguard':'94.140.14.14,94.140.15.15'};
 function update(){
     const p=document.getElementById('provider').value,block=document.getElementById('blockads').checked,remote=document.getElementById('remote').checked;
-    let s=`# 1. Güvenli Yukarı Akış (Upstream) DNS Sunucularını Ayarla\n/ip dns\nset servers=${SERVERS[p]} allow-remote-requests=${remote?'yes':'no'}\n`;
-    if(block) s+=`\n# 2. Popüler Zararlı ve Reklam Alan Adlarını Router Üzerinde Engelle (Sinkhole)\n/ip dns static\nadd name="doubleclick.net" address=0.0.0.0 comment="Reklam Engelleme"\nadd name="analytics.google.com" address=0.0.0.0 comment="Izleyici Engelleme"\nadd name="telemetry.microsoft.com" address=0.0.0.0 comment="Telemetri Engelleme"\n`;
+    let s=`# ${ {{ t('mk_dns.c1_title')|tojson }} }\n/ip dns\nset servers=${SERVERS[p]} allow-remote-requests=${remote?'yes':'no'}\n`;
+    if(block) s+=`\n# ${ {{ t('mk_dns.c2_title')|tojson }} }\n/ip dns static\nadd name="doubleclick.net" address=0.0.0.0 comment="${ {{ t('mk_dns.c2_comment1')|tojson }} }"\nadd name="analytics.google.com" address=0.0.0.0 comment="${ {{ t('mk_dns.c2_comment2')|tojson }} }"\nadd name="telemetry.microsoft.com" address=0.0.0.0 comment="${ {{ t('mk_dns.c2_comment3')|tojson }} }"\n`;
     document.getElementById('out').textContent=s;
 }
-function copy(){navigator.clipboard.writeText(document.getElementById('out').textContent);const b=document.querySelector('.copy-btn');b.textContent='Kopyalandı!';setTimeout(()=>b.textContent='Kopyala',1500);}
+function copy(){navigator.clipboard.writeText(document.getElementById('out').textContent);const b=document.querySelector('.copy-btn');b.textContent={{ t('mk_dns.copied')|tojson }};setTimeout(()=>b.textContent={{ t('mk_dns.copy')|tojson }},1500);}
 update();
 </script>
 {% endblock %}

@@ -1,52 +1,52 @@
 {% extends "mikrotik_base.html" %}
-{% block title %}PCQ Bant Genişliği{% endblock %}
+{% block title %}{{ t('mk_bandwidth.title') }}{% endblock %}
 {% block content %}
 <div class="page-header">
-    <h1>PCQ Bant Genişliği Yöneticisi</h1>
-    <p>İnternet hızınızı ağınızdaki kullanıcılar arasında adil ve dinamik bir şekilde dağıtın.</p>
+    <h1>{{ t('mk_bandwidth.h1') }}</h1>
+    <p>{{ t('mk_bandwidth.desc') }}</p>
 </div>
 <div class="tool-grid">
     <div class="card card-space">
         <div>
-            <label class="form-label">Hedef Ağ (Subnet)</label>
-            <input type="text" id="subnet" class="form-input" value="192.168.1.0/24" oninput="update()" placeholder="Örn: 192.168.1.0/24">
+            <label class="form-label">{{ t('mk_bandwidth.subnet_label') }}</label>
+            <input type="text" id="subnet" class="form-input" value="192.168.1.0/24" oninput="update()" placeholder="{{ t('mk_bandwidth.subnet_placeholder') }}">
         </div>
         <div class="grid-2">
             <div>
-                <label class="form-label form-label-blue">Toplam Download (Mbps)</label>
+                <label class="form-label form-label-blue">{{ t('mk_bandwidth.dl_label') }}</label>
                 <input type="number" id="dl" class="form-input form-input-sm" value="100" oninput="update()">
             </div>
             <div>
-                <label class="form-label form-label-orange">Toplam Upload (Mbps)</label>
+                <label class="form-label form-label-orange">{{ t('mk_bandwidth.ul_label') }}</label>
                 <input type="number" id="ul" class="form-input form-input-sm" value="20" oninput="update()">
             </div>
         </div>
         <div class="form-divider"></div>
         <div>
-            <label class="form-label">Dağıtım Stratejisi</label>
+            <label class="form-label">{{ t('mk_bandwidth.dist_label') }}</label>
             <select id="dist" class="form-select" onchange="toggleStrict()">
-                <option value="dynamic">Dinamik (Adil ve Esnek Paylaşım)</option>
-                <option value="strict">Katı Limit (Kullanıcı Başına Sınır)</option>
+                <option value="dynamic">{{ t('mk_bandwidth.opt_dynamic') }}</option>
+                <option value="strict">{{ t('mk_bandwidth.opt_strict') }}</option>
             </select>
             <p id="dist-hint" class="form-hint" style="margin-top:0.35rem;"></p>
         </div>
         <div id="strict-section" style="display:none;" class="grid-2">
             <div>
-                <label class="form-label" style="font-size:0.7rem;">Max Download (Kişi Başı)</label>
+                <label class="form-label" style="font-size:0.7rem;">{{ t('mk_bandwidth.pdl_label') }}</label>
                 <input type="number" id="pdl" class="form-input form-input-sm" value="10" oninput="update()">
             </div>
             <div>
-                <label class="form-label" style="font-size:0.7rem;">Max Upload (Kişi Başı)</label>
+                <label class="form-label" style="font-size:0.7rem;">{{ t('mk_bandwidth.pul_label') }}</label>
                 <input type="number" id="pul" class="form-input form-input-sm" value="2" oninput="update()">
             </div>
         </div>
     </div>
     <div class="script-card">
         <div class="script-header">
-            <div class="script-title"><span class="dot"></span> PCQ Kural Scripti</div>
-            <button class="copy-btn" onclick="copy()">Kopyala</button>
+            <div class="script-title"><span class="dot"></span> {{ t('mk_bandwidth.script_title') }}</div>
+            <button class="copy-btn" onclick="copy()">{{ t('mk_bandwidth.copy') }}</button>
         </div>
-        <p class="script-warn">⚠️ Kopyalamadan önce script'i inceleyin; cihazınıza uygulamadan önce yedek alın ve mümkünse test ortamında deneyin.</p>
+        <p class="script-warn">{{ t('mk_bandwidth.review_warning') }}</p>
         <pre id="out" class="script-pre"></pre>
     </div>
 </div>
@@ -54,8 +54,8 @@
 {% block scripts %}
 <script>
 const hints = {
-    dynamic: 'Dinamik modda hat boşsa bir kullanıcı tüm hızı kullanabilir. Başka biri gelince eşit bölünür.',
-    strict: 'Katı modda, hat boş olsa bile bir kullanıcı belirlenen sınırın üstüne çıkamaz.'
+    dynamic: {{ t('mk_bandwidth.hint_dynamic')|tojson }},
+    strict: {{ t('mk_bandwidth.hint_strict')|tojson }}
 };
 function toggleStrict() {
     const d = document.getElementById('dist').value;
@@ -70,19 +70,19 @@ function update() {
     const dist = document.getElementById('dist').value;
     const pdl = document.getElementById('pdl').value;
     const pul = document.getElementById('pul').value;
-    let s = `# 1. PCQ Kuyruk Tiplerini (Queue Types) Oluştur\n/queue type\n`;
+    let s = `# ${ {{ t('mk_bandwidth.c1_title')|tojson }} }\n/queue type\n`;
     if (dist === 'dynamic') {
         s += `add kind=pcq name=PCQ_Download pcq-classifier=dst-address pcq-rate=0\nadd kind=pcq name=PCQ_Upload pcq-classifier=src-address pcq-rate=0\n\n`;
     } else {
         s += `add kind=pcq name=PCQ_Download pcq-classifier=dst-address pcq-rate=${pdl}M\nadd kind=pcq name=PCQ_Upload pcq-classifier=src-address pcq-rate=${pul}M\n\n`;
     }
-    s += `# 2. Ana Basit Kuyruğu (Simple Queue) Uygula\n/queue simple\nadd max-limit=${ul}M/${dl}M name="Genel_PCQ_Kurali" target=${subnet} queue=PCQ_Upload/PCQ_Download\n`;
+    s += `# ${ {{ t('mk_bandwidth.c2_title')|tojson }} }\n/queue simple\nadd max-limit=${ul}M/${dl}M name="Genel_PCQ_Kurali" target=${subnet} queue=PCQ_Upload/PCQ_Download\n`;
     document.getElementById('out').textContent = s;
 }
 function copy() {
     navigator.clipboard.writeText(document.getElementById('out').textContent);
     const btn = document.querySelector('.copy-btn');
-    btn.textContent = 'Kopyalandı!'; setTimeout(() => btn.textContent = 'Kopyala', 1500);
+    btn.textContent = {{ t('mk_bandwidth.copied')|tojson }}; setTimeout(() => btn.textContent = {{ t('mk_bandwidth.copy')|tojson }}, 1500);
 }
 toggleStrict();
 </script>

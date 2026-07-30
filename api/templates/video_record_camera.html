@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Kamera Kaydedici (Video Recorder) | toolboxquick{% endblock %}
+{% block title %}{{ t('video_record_camera.page_title') }} | toolboxquick{% endblock %}
 {% block head %}
 <style>
     .recorder-container {
@@ -48,10 +48,10 @@
 
 {% block content %}
 <header class="mb-4">
-    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #a855f7 !important;">Video Araçları</p>
-    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">Kamera Kaydedici (Video Recorder)</h1>
+    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #a855f7 !important;">{{ t('video_record_camera.eyebrow') }}</p>
+    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">{{ t('video_record_camera.heading') }}</h1>
     <p class="text-secondary mb-0">
-        Web kameranızı ve mikrofonunuzu kullanarak tarayıcınız üzerinden yerel, güvenli ve ücretsiz video kaydedin.
+        {{ t('video_record_camera.description') }}
     </p>
 </header>
 
@@ -59,23 +59,23 @@
     <div class="recorder-container mb-4">
         <div class="status-badge d-none" id="recording-badge">
             <span class="status-dot"></span>
-            <span>Kayıt Yapılıyor</span>
+            <span>{{ t('video_record_camera.recording_badge') }}</span>
         </div>
         <video id="preview-video" autoplay muted playsinline></video>
     </div>
 
     <div class="d-flex justify-content-center gap-3">
         <button class="btn btn-purple text-white px-4 py-2" id="start-btn" onclick="startCamera()" style="border-radius: 8px; font-weight: 600; background-color: #a855f7; border-color: #a855f7;">
-            Kamerayı Aç 🎥
+            {{ t('video_record_camera.open_camera_btn') }} 🎥
         </button>
         <button class="btn btn-danger px-4 py-2 d-none" id="record-btn" onclick="toggleRecord()" style="border-radius: 8px; font-weight: 600;">
-            Kaydı Başlat ⏺️
+            {{ t('video_record_camera.start_recording_btn') }} ⏺️
         </button>
     </div>
 </section>
 
 <section class="mt-4">
-    <a href="/" class="text-secondary small text-decoration-none">&larr; Ana sayfaya dön</a>
+    <a href="/" class="text-secondary small text-decoration-none">&larr; {{ t('video_record_camera.back_home') }}</a>
 </section>
 {% endblock %}
 
@@ -99,7 +99,7 @@ async function startCamera() {
         document.getElementById('start-btn').classList.add('d-none');
         document.getElementById('record-btn').classList.remove('d-none');
     } catch (e) {
-        alert('Kamera veya mikrofona erişilemedi. Lütfen izin verdiğinizden emin olun.');
+        alert({{ t('video_record_camera.camera_access_failed')|tojson }});
         console.error(e);
     }
 }
@@ -131,14 +131,14 @@ function toggleRecord() {
         
         mediaRecorder.start();
         isRecording = true;
-        recordBtn.textContent = 'Kaydı Durdur ⏹️';
+        recordBtn.textContent = {{ t('video_record_camera.stop_recording_btn')|tojson }} + ' ⏹️';
         recordBtn.className = 'btn btn-outline-danger px-4 py-2';
         badge.classList.remove('d-none');
     } else {
         // Stop recording
         mediaRecorder.stop();
         isRecording = false;
-        recordBtn.textContent = 'Kaydı Başlat ⏺️';
+        recordBtn.textContent = {{ t('video_record_camera.start_recording_btn')|tojson }} + ' ⏺️';
         recordBtn.className = 'btn btn-danger px-4 py-2';
         badge.classList.add('d-none');
     }

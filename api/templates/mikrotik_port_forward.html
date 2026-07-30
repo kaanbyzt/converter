@@ -1,61 +1,62 @@
 {% extends "mikrotik_base.html" %}
-{% block title %}Port Yönlendirme (NAT){% endblock %}
+{% block title %}{{ t('mk_port_forward.title') }}{% endblock %}
 {% block content %}
 <div class="page-header">
-    <h1>Port Yönlendirme (NAT) Sihirbazı</h1>
-    <p>Kameralar, web sunucuları veya oyunlar için dışarıdan gelen istekleri iç ağınıza güvenle yönlendirin.</p>
+    <h1>{{ t('mk_port_forward.heading') }}</h1>
+    <p>{{ t('mk_port_forward.intro') }}</p>
 </div>
 <div class="tool-grid">
     <div class="card card-space">
         <div>
-            <label class="form-label">Kural Adı (Yorum)</label>
-            <input type="text" id="comment" class="form-input" value="Web Sunucusu" oninput="update()" placeholder="Örn: Kamera Sistemi">
+            <label class="form-label">{{ t('mk_port_forward.label_comment') }}</label>
+            <input type="text" id="comment" class="form-input" value="Web Sunucusu" oninput="update()" placeholder="{{ t('mk_port_forward.placeholder_comment') }}">
         </div>
         <div>
-            <label class="form-label">Gelen (WAN) Arayüz</label>
-            <input type="text" id="wan" class="form-input" value="pppoe-out1" oninput="update()" placeholder="Örn: ether1 veya pppoe-out1">
+            <label class="form-label">{{ t('mk_port_forward.label_wan') }}</label>
+            <input type="text" id="wan" class="form-input" value="pppoe-out1" oninput="update()" placeholder="{{ t('mk_port_forward.placeholder_wan') }}">
         </div>
         <div>
-            <label class="form-label">Protokol</label>
+            <label class="form-label">{{ t('mk_port_forward.label_proto') }}</label>
             <select id="proto" class="form-select" onchange="update()">
                 <option value="tcp">TCP</option>
                 <option value="udp">UDP</option>
-                <option value="tcp,udp">Hem TCP Hem UDP</option>
+                <option value="tcp,udp">{{ t('mk_port_forward.proto_tcp_udp') }}</option>
             </select>
         </div>
         <div>
-            <label class="form-label">Dış Port (Gelen)</label>
-            <input type="text" id="extport" class="form-input" value="80" oninput="update()" placeholder="Örn: 8080">
+            <label class="form-label">{{ t('mk_port_forward.label_extport') }}</label>
+            <input type="text" id="extport" class="form-input" value="80" oninput="update()" placeholder="{{ t('mk_port_forward.placeholder_extport') }}">
         </div>
         <div>
-            <label class="form-label">İç IP Adresi (Hedef)</label>
-            <input type="text" id="intip" class="form-input" value="192.168.1.50" oninput="update()" placeholder="Örn: 192.168.1.50">
+            <label class="form-label">{{ t('mk_port_forward.label_intip') }}</label>
+            <input type="text" id="intip" class="form-input" value="192.168.1.50" oninput="update()" placeholder="{{ t('mk_port_forward.placeholder_intip') }}">
         </div>
         <div>
-            <label class="form-label">İç Port (Hedef)</label>
-            <input type="text" id="intport" class="form-input" value="80" oninput="update()" placeholder="Örn: 80">
+            <label class="form-label">{{ t('mk_port_forward.label_intport') }}</label>
+            <input type="text" id="intport" class="form-input" value="80" oninput="update()" placeholder="{{ t('mk_port_forward.placeholder_intport') }}">
         </div>
         <div class="form-divider"></div>
         <div>
             <label class="checkbox-row">
                 <input type="checkbox" id="hairpin" onchange="update()">
-                <span>Hairpin NAT (Loopback) Ekle</span>
+                <span>{{ t('mk_port_forward.hairpin_label') }}</span>
             </label>
-            <p class="form-hint">İç ağdaki kullanıcıların dış statik IP adresinizi yazarak bu cihaza ulaşabilmesini sağlar.</p>
+            <p class="form-hint">{{ t('mk_port_forward.hairpin_hint') }}</p>
         </div>
     </div>
     <div class="script-card">
         <div class="script-header">
-            <div class="script-title"><span class="dot"></span> Üretilen NAT Kuralı</div>
-            <button class="copy-btn" onclick="copy()">Kopyala</button>
+            <div class="script-title"><span class="dot"></span> {{ t('mk_port_forward.script_title') }}</div>
+            <button class="copy-btn" onclick="copy()">{{ t('mk_port_forward.copy_btn') }}</button>
         </div>
-        <p class="script-warn">⚠️ Kopyalamadan önce script'i inceleyin; cihazınıza uygulamadan önce yedek alın ve mümkünse test ortamında deneyin.</p>
+        <p class="script-warn">⚠️ {{ t('mk_port_forward.copy_warning') }}</p>
         <pre id="out" class="script-pre"></pre>
     </div>
 </div>
 {% endblock %}
 {% block scripts %}
 <script>
+const HAIRPIN_COMMENT = {{ t('mk_port_forward.hairpin_comment')|tojson }};
 function update() {
     const wan = document.getElementById('wan').value;
     const proto = document.getElementById('proto').value;
@@ -67,14 +68,14 @@ function update() {
     const cstr = comment ? ` comment="${comment}"` : '';
     let s = `/ip firewall nat\nadd action=dst-nat chain=dstnat${cstr} dst-port=${extport} in-interface=${wan} protocol=${proto} to-addresses=${intip} to-ports=${intport}\n`;
     if (hairpin) {
-        s += `\n# Hairpin NAT (Loopback) Kuralı - İç ağdan dış IP ile erişim için\nadd action=masquerade chain=srcnat dst-address=${intip} dst-port=${intport} out-interface=bridge-local protocol=${proto} src-address=192.168.1.0/24\n`;
+        s += `\n# ${HAIRPIN_COMMENT}\nadd action=masquerade chain=srcnat dst-address=${intip} dst-port=${intport} out-interface=bridge-local protocol=${proto} src-address=192.168.1.0/24\n`;
     }
     document.getElementById('out').textContent = s;
 }
 function copy() {
     navigator.clipboard.writeText(document.getElementById('out').textContent);
     const btn = document.querySelector('.copy-btn');
-    btn.textContent = 'Kopyalandı!'; setTimeout(() => btn.textContent = 'Kopyala', 1500);
+    btn.textContent = {{ t('mk_port_forward.copied')|tojson }}; setTimeout(() => btn.textContent = {{ t('mk_port_forward.copy_btn')|tojson }}, 1500);
 }
 update();
 </script>

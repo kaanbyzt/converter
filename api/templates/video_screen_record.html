@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Ekran Kaydedici | toolboxquick{% endblock %}
+{% block title %}{{ t('video_screen_record.page_title') }} | toolboxquick{% endblock %}
 {% block head %}
 <style>
     .record-box {
@@ -32,43 +32,43 @@
 
 {% block content %}
 <header class="mb-4">
-    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #a855f7 !important;">Video Araçları</p>
-    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">Ekran Kaydedici</h1>
+    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #a855f7 !important;">{{ t('video_screen_record.eyebrow') }}</p>
+    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">{{ t('video_screen_record.heading') }}</h1>
     <p class="text-secondary mb-0">
-        Tarayıcınızın ekran paylaşımı iznini vererek tüm ekranınızı veya seçtiğiniz bir pencereyi yerel olarak kaydedin.
+        {{ t('video_screen_record.description') }}
     </p>
 </header>
 
 <section class="tool-card p-4 mb-4">
     <div class="record-box">
         <div class="duration-text" id="duration">00:00</div>
-        
+
         <video id="video-preview" class="video-preview" autoplay muted playsinline></video>
 
         <div class="d-flex gap-2">
             <button id="start-btn" class="btn btn-primary px-4 py-2" onclick="startCapture()" style="border-radius: 8px; font-weight: 600;">
-                Ekran Paylaşımını Başlat 🎥
+                {{ t('video_screen_record.start_share_btn') }} 🎥
             </button>
             <button id="record-btn" class="btn btn-danger px-4 py-2 d-none" onclick="startRecording()" style="border-radius: 8px; font-weight: 600;">
-                Kaydı Başlat 🔴
+                {{ t('video_screen_record.start_recording_btn') }} 🔴
             </button>
             <button id="stop-btn" class="btn btn-dark px-4 py-2 d-none" onclick="stopRecording()" style="border-radius: 8px; font-weight: 600;">
-                Kaydı Durdur ⏹️
+                {{ t('video_screen_record.stop_recording_btn') }} ⏹️
             </button>
         </div>
 
-        <div id="status" class="text-secondary small">Öncelikle ekran paylaşımını başlatmak için butona tıklayın.</div>
+        <div id="status" class="text-secondary small">{{ t('video_screen_record.status_initial') }}</div>
 
         <div id="download-section" class="d-none w-100 text-center border-top pt-3" style="border-color: var(--navbar-border) !important;">
             <button class="btn btn-success px-4 py-2" onclick="downloadVideo()" style="border-radius: 8px; font-weight: 600;">
-                Kaydedilen Videoyu İndir (.webm) 💾
+                {{ t('video_screen_record.download_recorded_btn') }} (.webm) 💾
             </button>
         </div>
     </div>
 </section>
 
 <section class="mt-4">
-    <a href="/" class="text-secondary small text-decoration-none">&larr; Ana sayfaya dön</a>
+    <a href="/" class="text-secondary small text-decoration-none">&larr; {{ t('video_screen_record.back_home') }}</a>
 </section>
 {% endblock %}
 
@@ -94,7 +94,7 @@ async function startCapture() {
 
         document.getElementById('start-btn').classList.add('d-none');
         document.getElementById('record-btn').classList.remove('d-none');
-        document.getElementById('status').textContent = 'Ekran yakalanıyor. Kayda başlamak için kırmızı butona tıklayın.';
+        document.getElementById('status').textContent = {{ t('video_screen_record.status_capturing')|tojson }};
 
         // Handle if user stops sharing via browser bar
         captureStream.getVideoTracks()[0].onended = () => {
@@ -102,7 +102,7 @@ async function startCapture() {
         };
 
     } catch (err) {
-        alert('Ekran paylaşımı başlatılamadı: ' + err.message);
+        alert({{ t('video_screen_record.share_start_failed')|tojson }} + ': ' + err.message);
     }
 }
 
@@ -134,7 +134,7 @@ function startRecording() {
         document.getElementById('download-section').classList.remove('d-none');
         document.getElementById('stop-btn').classList.add('d-none');
         document.getElementById('start-btn').classList.remove('d-none');
-        document.getElementById('status').textContent = 'Ekran kaydı tamamlandı. Aşağıdan videoyu indirebilirsiniz.';
+        document.getElementById('status').textContent = {{ t('video_screen_record.status_completed')|tojson }};
         
         // Stop stream tracks
         if (captureStream) {
@@ -151,7 +151,7 @@ function startRecording() {
     isRecording = true;
     document.getElementById('record-btn').classList.add('d-none');
     document.getElementById('stop-btn').classList.remove('d-none');
-    document.getElementById('status').textContent = 'Ekranınız kaydediliyor...';
+    document.getElementById('status').textContent = {{ t('video_screen_record.status_recording')|tojson }};
 }
 
 function stopRecording() {
@@ -194,7 +194,7 @@ function resetRecorder() {
     videoElement.src = '';
     videoElement.controls = false;
 
-    document.getElementById('status').textContent = 'Ekran paylaşımı sonlandırıldı.';
+    document.getElementById('status').textContent = {{ t('video_screen_record.status_share_ended')|tojson }};
     if (captureStream) {
         captureStream.getTracks().forEach(track => track.stop());
     }

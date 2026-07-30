@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Video Döndür | toolboxquick{% endblock %}
+{% block title %}{{ t('video_rotate.page_title') }} | toolboxquick{% endblock %}
 {% block head %}
 <style>
     .dropzone {
@@ -37,19 +37,19 @@
 
 {% block content %}
 <header class="mb-4">
-    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #a855f7 !important;">Video Araçları</p>
-    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">Video Döndürme &amp; Aynalama</h1>
+    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #a855f7 !important;">{{ t('video_rotate.eyebrow') }}</p>
+    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">{{ t('video_rotate.heading') }}</h1>
     <p class="text-secondary mb-0">
-        Videonuzu yükleyin, döndürün veya aynalayın ve yerel olarak tarayıcınızda işleyip indirin.
+        {{ t('video_rotate.description') }}
     </p>
 </header>
 
 <section class="tool-card p-4 mb-4">
     <div id="upload-stage">
-        <label class="form-label fw-semibold mb-2">Video Dosyanızı Seçin (MP4, WEBM, vb.)</label>
+        <label class="form-label fw-semibold mb-2">{{ t('video_rotate.select_file_label') }}</label>
         <div class="dropzone" onclick="document.getElementById('video_file').click()">
             <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔄</div>
-            <div class="fw-semibold mb-1" style="color: var(--text-color);">Video yüklemek için tıklayın</div>
+            <div class="fw-semibold mb-1" style="color: var(--text-color);">{{ t('video_rotate.click_to_upload') }}</div>
             <input type="file" id="video_file" class="file-input" accept="video/*" onchange="loadVideo(this)">
         </div>
     </div>
@@ -57,7 +57,7 @@
     <div id="editor-stage" class="d-none text-center">
         <div class="mb-3 d-flex justify-content-between align-items-center">
             <span id="file-name" class="fw-semibold text-purple-400">video.mp4</span>
-            <button class="btn btn-sm btn-outline-danger" onclick="resetEditor()">Yeni Video Yükle</button>
+            <button class="btn btn-sm btn-outline-danger" onclick="resetEditor()">{{ t('video_rotate.upload_new_video') }}</button>
         </div>
 
         <div class="preview-container mb-4">
@@ -68,27 +68,27 @@
         </div>
 
         <div class="mb-4" style="max-width: 300px; margin: 0 auto; text-align: left;">
-            <label class="form-label fw-semibold mb-2">Döndürme / Aynalama Ayarı</label>
+            <label class="form-label fw-semibold mb-2">{{ t('video_rotate.transform_setting_label') }}</label>
             <select id="transform-type" class="form-select" onchange="applyTransform()">
-                <option value="none">Değişiklik Yok</option>
-                <option value="rotate90">90 Derece Sağa Döndür ↻</option>
-                <option value="rotate180">180 Derece Döndür ↻</option>
-                <option value="rotate270">90 Derece Sola Döndür ↺</option>
-                <option value="flipH">Yatay Aynala (Flip Horizontal)</option>
-                <option value="flipV">Dikey Aynala (Flip Vertical)</option>
+                <option value="none">{{ t('video_rotate.no_change') }}</option>
+                <option value="rotate90">{{ t('video_rotate.rotate_90_right') }} ↻</option>
+                <option value="rotate180">{{ t('video_rotate.rotate_180') }} ↻</option>
+                <option value="rotate270">{{ t('video_rotate.rotate_90_left') }} ↺</option>
+                <option value="flipH">{{ t('video_rotate.flip_horizontal') }}</option>
+                <option value="flipV">{{ t('video_rotate.flip_vertical') }}</option>
             </select>
         </div>
 
-        <div id="processing-msg" class="text-warning small mb-3 d-none">Lütfen bekleyin, video arka planda yeniden kaydediliyor...</div>
+        <div id="processing-msg" class="text-warning small mb-3 d-none">{{ t('video_rotate.processing') }}</div>
 
         <button class="btn btn-primary px-5 py-2" id="download-btn" onclick="startExport()" style="border-radius: 8px; font-weight: 600;">
-            İşle ve İndir 💾
+            {{ t('video_rotate.process_download_btn') }} 💾
         </button>
     </div>
 </section>
 
 <section class="mt-4">
-    <a href="/" class="text-secondary small text-decoration-none">&larr; Ana sayfaya dön</a>
+    <a href="/" class="text-secondary small text-decoration-none">&larr; {{ t('video_rotate.back_home') }}</a>
 </section>
 {% endblock %}
 

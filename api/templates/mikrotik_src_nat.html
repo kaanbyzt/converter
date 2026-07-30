@@ -1,38 +1,41 @@
 {% extends "mikrotik_base.html" %}
-{% block title %}İnternet Çıkış (Src-NAT){% endblock %}
+{% block title %}{{ t('mk_src_nat.title') }}{% endblock %}
 {% block content %}
-<div class="page-header"><h1>İnternet Çıkış (Src-NAT) Asistanı</h1><p>İç ağdaki cihazlarınızın internete erişebilmesi için Masquerade veya Statik Src-NAT kurallarını yapılandırın.</p></div>
+<div class="page-header"><h1>{{ t('mk_src_nat.heading') }}</h1><p>{{ t('mk_src_nat.intro') }}</p></div>
 <div class="tool-grid">
     <div class="card card-space">
         <div>
-            <label class="form-label">NAT Yöntemi</label>
+            <label class="form-label">{{ t('mk_src_nat.label_method') }}</label>
             <select id="nat" class="form-select" onchange="toggleNat()">
-                <option value="masquerade">Masquerade (Dinamik IP / Standart)</option>
-                <option value="srcnat">Src-NAT (Statik / Sabit Dış IP)</option>
+                <option value="masquerade">{{ t('mk_src_nat.method_masquerade') }}</option>
+                <option value="srcnat">{{ t('mk_src_nat.method_srcnat') }}</option>
             </select>
         </div>
-        <div><label class="form-label">Yerel Ağ Bloğu (Src. Address)</label><input type="text" id="local" class="form-input" value="192.168.1.0/24" oninput="update()"></div>
-        <div><label class="form-label">Dış Hat Arayüzü (Out. Interface)</label><input type="text" id="iface" class="form-input" value="pppoe-out1" oninput="update()" placeholder="Örn: pppoe-out1 veya ether1"></div>
-        <div id="static-ip" style="display:none;"><label class="form-label">Statik Dış IP Adresiniz (To Addresses)</label><input type="text" id="pubip" class="form-input" value="85.105.x.x" oninput="update()" placeholder="Örn: 85.105.42.12"></div>
+        <div><label class="form-label">{{ t('mk_src_nat.label_local') }}</label><input type="text" id="local" class="form-input" value="192.168.1.0/24" oninput="update()"></div>
+        <div><label class="form-label">{{ t('mk_src_nat.label_iface') }}</label><input type="text" id="iface" class="form-input" value="pppoe-out1" oninput="update()" placeholder="{{ t('mk_src_nat.placeholder_iface') }}"></div>
+        <div id="static-ip" style="display:none;"><label class="form-label">{{ t('mk_src_nat.label_pubip') }}</label><input type="text" id="pubip" class="form-input" value="85.105.x.x" oninput="update()" placeholder="{{ t('mk_src_nat.placeholder_pubip') }}"></div>
     </div>
     <div class="script-card">
-        <div class="script-header"><div class="script-title"><span class="dot"></span>Source NAT Komut Satırı</div><button class="copy-btn" onclick="copy()">Kopyala</button></div>
-        <p class="script-warn">⚠️ Kopyalamadan önce script'i inceleyin; cihazınıza uygulamadan önce yedek alın ve mümkünse test ortamında deneyin.</p>
+        <div class="script-header"><div class="script-title"><span class="dot"></span>{{ t('mk_src_nat.script_title') }}</div><button class="copy-btn" onclick="copy()">{{ t('mk_src_nat.copy_btn') }}</button></div>
+        <p class="script-warn">⚠️ {{ t('mk_src_nat.copy_warning') }}</p>
         <pre id="out" class="script-pre"></pre>
     </div>
 </div>
 {% endblock %}
 {% block scripts %}
 <script>
+const HEADER_COMMENT = {{ t('mk_src_nat.script_comment_header')|tojson }};
+const COMMENT_MASQUERADE = {{ t('mk_src_nat.comment_masquerade')|tojson }};
+const COMMENT_SRCNAT = {{ t('mk_src_nat.comment_srcnat')|tojson }};
 function toggleNat(){const n=document.getElementById('nat').value;document.getElementById('static-ip').style.display=n==='srcnat'?'block':'none';update();}
 function update(){
     const nat=document.getElementById('nat').value,local=document.getElementById('local').value,iface=document.getElementById('iface').value,pub=document.getElementById('pubip').value;
-    let s=`# Yerel Ağın İnternete Çıkış (Source NAT) Yapılandırması\n/ip firewall nat\n`;
-    if(nat==='masquerade') s+=`add action=masquerade chain=srcnat comment="Dinamik IP ile internete cikis (Masquerade)" src-address=${local} out-interface=${iface}\n`;
-    else s+=`add action=src-nat chain=srcnat comment="Statik IP ile internete cikis (Src-NAT)" src-address=${local} out-interface=${iface} to-addresses=${pub}\n`;
+    let s=`# ${HEADER_COMMENT}\n/ip firewall nat\n`;
+    if(nat==='masquerade') s+=`add action=masquerade chain=srcnat comment="${COMMENT_MASQUERADE}" src-address=${local} out-interface=${iface}\n`;
+    else s+=`add action=src-nat chain=srcnat comment="${COMMENT_SRCNAT}" src-address=${local} out-interface=${iface} to-addresses=${pub}\n`;
     document.getElementById('out').textContent=s;
 }
-function copy(){navigator.clipboard.writeText(document.getElementById('out').textContent);const b=document.querySelector('.copy-btn');b.textContent='Kopyalandı!';setTimeout(()=>b.textContent='Kopyala',1500);}
+function copy(){navigator.clipboard.writeText(document.getElementById('out').textContent);const b=document.querySelector('.copy-btn');b.textContent={{ t('mk_src_nat.copied')|tojson }};setTimeout(()=>b.textContent={{ t('mk_src_nat.copy_btn')|tojson }},1500);}
 update();
 </script>
 {% endblock %}

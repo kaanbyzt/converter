@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}toolboxquick | Online Video, Audio, PDF &amp; Converter Tools{% endblock %}
+{% block title %}{{ t('seo.default_title') }}{% endblock %}
 {% block head %}
 <style>
     .hero-title {
@@ -9,6 +9,7 @@
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         line-height: 1.25;
+        overflow-wrap: break-word;
     }
     .hero-subtitle {
         color: var(--text-secondary);
@@ -108,6 +109,7 @@
             padding-top: 0.75rem;
         }
         .tool-card {
+            min-width: 0;
             min-height: 120px;
             padding: 0.9rem;
         }
@@ -216,10 +218,10 @@
     <div class="row align-items-center">
         <div class="col-lg-8">
             <h1 class="hero-title mb-3">
-                Video, ses, PDF ve dönüştürme araçları tek bir yerde.
+                {{ t('home.hero_title') }}
             </h1>
             <p class="hero-subtitle mb-4">
-                Yerel çalışan, hızlı ve ücretsiz araçlar koleksiyonu. Dosyalarınız tamamen güvendedir ve tarayıcınızda veya yerel sunucunuzda işlenir.
+                {{ t('home.hero_subtitle') }}
             </p>
         </div>
     </div>
@@ -228,7 +230,7 @@
 <!-- AI TOOLS -->
 <section class="category-section" id="cat-ai">
     <button class="category-toggle category-title cat-ai" onclick="toggleCat('cat-ai')" aria-expanded="false">
-        <span class="category-title-inner">🤖 Yapay Zeka Araçları</span>
+        <span class="category-title-inner">🤖 {{ t('home.cat.ai') }}</span>
         <span class="cat-chevron">▼</span>
     </button>
     <div class="category-body" id="cat-ai-body">
@@ -236,21 +238,21 @@
         <a href="/ai-tools" class="tool-card card-ai">
             <div class="tool-header">
                 <div class="tool-icon icon-ai">🤖</div>
-                <span class="tool-badge badge-active">Aktif</span>
+                <span class="tool-badge badge-active">{{ t('home.badge.active') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">AI Karşılaştırma</h3>
-                <p class="tool-desc">ChatGPT, Claude, Gemini ve daha fazlasını kullanım alanı, fiyat ve performansına göre karşılaştırın; tıkladığınız araca doğrudan yönlenin.</p>
+                <h3 class="tool-title">{{ t('home.ai.compare.title') }}</h3>
+                <p class="tool-desc">{{ t('home.ai.compare.desc') }}</p>
             </div>
         </a>
         <a href="/ai-tools#prompt" class="tool-card card-ai">
             <div class="tool-header">
                 <div class="tool-icon icon-ai">🎯</div>
-                <span class="tool-badge badge-active">Aktif</span>
+                <span class="tool-badge badge-active">{{ t('home.badge.active') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">AI Prompt Generator</h3>
-                <p class="tool-desc">İhtiyacınıza göre (kod, yazı, görsel, müzik...) birkaç detay girin; size uygun yapay zeka için hazır prompt otomatik oluşturulsun.</p>
+                <h3 class="tool-title">{{ t('home.ai.prompt.title') }}</h3>
+                <p class="tool-desc">{{ t('home.ai.prompt.desc') }}</p>
             </div>
         </a>
     </div>
@@ -260,7 +262,7 @@
 <!-- PDF TOOLS -->
 <section class="category-section" id="cat-pdf">
     <button class="category-toggle category-title cat-pdf" onclick="toggleCat('cat-pdf')" aria-expanded="false">
-        <span class="category-title-inner">📄 PDF Araçları</span>
+        <span class="category-title-inner">📄 {{ t('home.cat.pdf') }}</span>
         <span class="cat-chevron">▼</span>
     </button>
     <div class="category-body" id="cat-pdf-body">
@@ -268,171 +270,171 @@
         <a href="/pdf-tools" class="tool-card card-pdf">
             <div class="tool-header">
                 <div class="tool-icon icon-pdf">📚</div>
-                <span class="tool-badge badge-active">Aktif</span>
+                <span class="tool-badge badge-active">{{ t('home.badge.active') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">PDF Birleştirici</h3>
-                <p class="tool-desc">Farklı PDF dosyalarını yükleyin, sıralayın ve tek dosyada birleştirin.</p>
+                <h3 class="tool-title">{{ t('home.pdf.merge.title') }}</h3>
+                <p class="tool-desc">{{ t('home.pdf.merge.desc') }}</p>
             </div>
         </a>
         <a href="/pdf-tools/split" class="tool-card card-pdf">
             <div class="tool-header">
                 <div class="tool-icon icon-pdf">✂️</div>
-                <span class="tool-badge badge-active">Aktif</span>
+                <span class="tool-badge badge-active">{{ t('home.badge.active') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">PDF Bölücü</h3>
-                <p class="tool-desc">Büyük PDF dosyalarınızı sayfa numaralarına göre bölüp ayrı dosyalar yapın.</p>
+                <h3 class="tool-title">{{ t('home.pdf.split.title') }}</h3>
+                <p class="tool-desc">{{ t('home.pdf.split.desc') }}</p>
             </div>
         </a>
         <a href="/pdf-tools/protect" class="tool-card card-pdf">
             <div class="tool-header">
                 <div class="tool-icon icon-pdf">🔒</div>
-                <span class="tool-badge badge-active">Aktif</span>
+                <span class="tool-badge badge-active">{{ t('home.badge.active') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">PDF Şifrele (Protect)</h3>
-                <p class="tool-desc">PDF dosyalarınıza yönetici veya okuyucu şifresi ekleyerek koruyun.</p>
+                <h3 class="tool-title">{{ t('home.pdf.protect.title') }}</h3>
+                <p class="tool-desc">{{ t('home.pdf.protect.desc') }}</p>
             </div>
         </a>
         <a href="/pdf-tools/unlock" class="tool-card card-pdf">
             <div class="tool-header">
                 <div class="tool-icon icon-pdf">🔓</div>
-                <span class="tool-badge badge-active">Aktif</span>
+                <span class="tool-badge badge-active">{{ t('home.badge.active') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">PDF Şifre Çöz (Unlock)</h3>
-                <p class="tool-desc">Şifreli PDF dosyalarının kilitlerini açıp düzenlenebilir yapın.</p>
+                <h3 class="tool-title">{{ t('home.pdf.unlock.title') }}</h3>
+                <p class="tool-desc">{{ t('home.pdf.unlock.desc') }}</p>
             </div>
         </a>
         <a href="/pdf-tools/rotate" class="tool-card card-pdf">
             <div class="tool-header">
                 <div class="tool-icon icon-pdf">🔄</div>
-                <span class="tool-badge badge-active">Aktif</span>
+                <span class="tool-badge badge-active">{{ t('home.badge.active') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">PDF Döndür</h3>
-                <p class="tool-desc">PDF sayfalarını 90/180/270 derece döndürün.</p>
+                <h3 class="tool-title">{{ t('home.pdf.rotate.title') }}</h3>
+                <p class="tool-desc">{{ t('home.pdf.rotate.desc') }}</p>
             </div>
         </a>
         <a href="/pdf-tools/page-numbers" class="tool-card card-pdf">
             <div class="tool-header">
                 <div class="tool-icon icon-pdf">🔢</div>
-                <span class="tool-badge badge-active">Aktif</span>
+                <span class="tool-badge badge-active">{{ t('home.badge.active') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">Sayfa Numarası Ekle</h3>
-                <p class="tool-desc">PDF belgelerine sayfa numaraları yazdırın.</p>
+                <h3 class="tool-title">{{ t('home.pdf.page_numbers.title') }}</h3>
+                <p class="tool-desc">{{ t('home.pdf.page_numbers.desc') }}</p>
             </div>
         </a>
         <a href="/pdf-tools/compress" class="tool-card card-pdf">
             <div class="tool-header">
                 <div class="tool-icon icon-pdf">🗜️</div>
-                <span class="tool-badge badge-active">Aktif</span>
+                <span class="tool-badge badge-active">{{ t('home.badge.active') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">PDF Sıkıştır</h3>
-                <p class="tool-desc">PDF belgesinin dosya boyutunu küçültün.</p>
+                <h3 class="tool-title">{{ t('home.pdf.compress.title') }}</h3>
+                <p class="tool-desc">{{ t('home.pdf.compress.desc') }}</p>
             </div>
         </a>
         <a href="/pdf-tools/pdf-to-jpg" class="tool-card card-pdf">
             <div class="tool-header">
                 <div class="tool-icon icon-pdf">🖼️</div>
-                <span class="tool-badge badge-active">Aktif</span>
+                <span class="tool-badge badge-active">{{ t('home.badge.active') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">PDF to JPG</h3>
-                <p class="tool-desc">PDF sayfalarını JPG resim formatına dönüştürün.</p>
+                <h3 class="tool-title">{{ t('home.pdf.to_jpg.title') }}</h3>
+                <p class="tool-desc">{{ t('home.pdf.to_jpg.desc') }}</p>
             </div>
         </a>
         <a href="/pdf-tools/pdf-to-png" class="tool-card card-pdf">
             <div class="tool-header">
                 <div class="tool-icon icon-pdf">🖼️</div>
-                <span class="tool-badge badge-active">Aktif</span>
+                <span class="tool-badge badge-active">{{ t('home.badge.active') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">PDF to PNG</h3>
-                <p class="tool-desc">PDF sayfalarını PNG resim formatına dönüştürün.</p>
+                <h3 class="tool-title">{{ t('home.pdf.to_png.title') }}</h3>
+                <p class="tool-desc">{{ t('home.pdf.to_png.desc') }}</p>
             </div>
         </a>
         <a href="/pdf-tools/jpg-to-pdf" class="tool-card card-pdf">
             <div class="tool-header">
                 <div class="tool-icon icon-pdf">📄</div>
-                <span class="tool-badge badge-active">Aktif</span>
+                <span class="tool-badge badge-active">{{ t('home.badge.active') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">JPG to PDF</h3>
-                <p class="tool-desc">JPG resimlerini PDF belgesi haline getirin.</p>
+                <h3 class="tool-title">{{ t('home.pdf.jpg_to_pdf.title') }}</h3>
+                <p class="tool-desc">{{ t('home.pdf.jpg_to_pdf.desc') }}</p>
             </div>
         </a>
         <a href="/pdf-tools/png-to-pdf" class="tool-card card-pdf">
             <div class="tool-header">
                 <div class="tool-icon icon-pdf">📄</div>
-                <span class="tool-badge badge-active">Aktif</span>
+                <span class="tool-badge badge-active">{{ t('home.badge.active') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">PNG to PDF</h3>
-                <p class="tool-desc">PNG resimlerini PDF belgesi haline getirin.</p>
+                <h3 class="tool-title">{{ t('home.pdf.png_to_pdf.title') }}</h3>
+                <p class="tool-desc">{{ t('home.pdf.png_to_pdf.desc') }}</p>
             </div>
         </a>
         <a href="/pdf-tools/pdf-to-html" class="tool-card card-pdf">
             <div class="tool-header">
                 <div class="tool-icon icon-pdf">🌐</div>
-                <span class="tool-badge badge-active">Aktif</span>
+                <span class="tool-badge badge-active">{{ t('home.badge.active') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">PDF to HTML</h3>
-                <p class="tool-desc">PDF içeriğini HTML kod belgesine dönüştürün.</p>
+                <h3 class="tool-title">{{ t('home.pdf.to_html.title') }}</h3>
+                <p class="tool-desc">{{ t('home.pdf.to_html.desc') }}</p>
             </div>
         </a>
         <a href="/pdf-tools/word-to-pdf" class="tool-card card-pdf">
             <div class="tool-header">
                 <div class="tool-icon icon-pdf">📝</div>
-                <span class="tool-badge badge-active">Aktif</span>
+                <span class="tool-badge badge-active">{{ t('home.badge.active') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">Word to PDF</h3>
-                <p class="tool-desc">Word belgelerini (.docx) PDF formatına çevirin.</p>
+                <h3 class="tool-title">{{ t('home.pdf.word_to_pdf.title') }}</h3>
+                <p class="tool-desc">{{ t('home.pdf.word_to_pdf.desc') }}</p>
             </div>
         </a>
         <a href="/pdf-tools/pdf-to-word" class="tool-card card-pdf">
             <div class="tool-header">
                 <div class="tool-icon icon-pdf">📝</div>
-                <span class="tool-badge badge-active">Aktif</span>
+                <span class="tool-badge badge-active">{{ t('home.badge.active') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">PDF to Word</h3>
-                <p class="tool-desc">PDF belgelerini Word (.doc) formatına çevirin.</p>
+                <h3 class="tool-title">{{ t('home.pdf.to_word.title') }}</h3>
+                <p class="tool-desc">{{ t('home.pdf.to_word.desc') }}</p>
             </div>
         </a>
         <a href="/pdf-tools/excel-to-pdf" class="tool-card card-pdf">
             <div class="tool-header">
                 <div class="tool-icon icon-pdf">📊</div>
-                <span class="tool-badge badge-active">Aktif</span>
+                <span class="tool-badge badge-active">{{ t('home.badge.active') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">Excel to PDF</h3>
-                <p class="tool-desc">Excel tablolarını (.xlsx) PDF formatına çevirin.</p>
+                <h3 class="tool-title">{{ t('home.pdf.excel_to_pdf.title') }}</h3>
+                <p class="tool-desc">{{ t('home.pdf.excel_to_pdf.desc') }}</p>
             </div>
         </a>
         <a href="/pdf-tools/pdf-to-excel" class="tool-card card-pdf">
             <div class="tool-header">
                 <div class="tool-icon icon-pdf">📊</div>
-                <span class="tool-badge badge-active">Aktif</span>
+                <span class="tool-badge badge-active">{{ t('home.badge.active') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">PDF to Excel</h3>
-                <p class="tool-desc">PDF tablolarını Excel (.xlsx) formatına çevirin.</p>
+                <h3 class="tool-title">{{ t('home.pdf.to_excel.title') }}</h3>
+                <p class="tool-desc">{{ t('home.pdf.to_excel.desc') }}</p>
             </div>
         </a>
         <a href="/pdf-tools/ppt-to-pdf" class="tool-card card-pdf">
             <div class="tool-header">
                 <div class="tool-icon icon-pdf">📉</div>
-                <span class="tool-badge badge-active">Aktif</span>
+                <span class="tool-badge badge-active">{{ t('home.badge.active') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">PPT to PDF</h3>
-                <p class="tool-desc">PowerPoint (.pptx) sunumlarını PDF formatına çevirin.</p>
+                <h3 class="tool-title">{{ t('home.pdf.ppt_to_pdf.title') }}</h3>
+                <p class="tool-desc">{{ t('home.pdf.ppt_to_pdf.desc') }}</p>
             </div>
         </a>
     </div>
@@ -442,7 +444,7 @@
 <!-- CONVERTERS -->
 <section class="category-section" id="cat-converter">
     <button class="category-toggle category-title cat-converter" onclick="toggleCat('cat-converter')" aria-expanded="false">
-        <span class="category-title-inner">🔄 Dönüştürücüler (Converters)</span>
+        <span class="category-title-inner">🔄 {{ t('home.cat.converter') }}</span>
         <span class="cat-chevron">▼</span>
     </button>
     <div class="category-body" id="cat-converter-body">
@@ -450,81 +452,81 @@
         <a href="/convert/image" class="tool-card card-converter">
             <div class="tool-header">
                 <div class="tool-icon icon-converter">🖼️</div>
-                <span class="tool-badge badge-active">Aktif</span>
+                <span class="tool-badge badge-active">{{ t('home.badge.active') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">Görüntü Dönüştürücü</h3>
-                <p class="tool-desc">Resimlerinizi JPG, PNG, WebP, BMP formatları arasında yerel dönüştürün.</p>
+                <h3 class="tool-title">{{ t('home.conv.image.title') }}</h3>
+                <p class="tool-desc">{{ t('home.conv.image.desc') }}</p>
             </div>
         </a>
         <a href="/convert/audio" class="tool-card card-converter">
             <div class="tool-header">
                 <div class="tool-icon icon-converter">🎵</div>
-                <span class="tool-badge badge-active">Aktif</span>
+                <span class="tool-badge badge-active">{{ t('home.badge.active') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">Ses Dönüştürücü</h3>
-                <p class="tool-desc">MP3, WAV, M4A, OGG formatları arasında hızlı çevrim.</p>
+                <h3 class="tool-title">{{ t('home.conv.audio.title') }}</h3>
+                <p class="tool-desc">{{ t('home.conv.audio.desc') }}</p>
             </div>
         </a>
         <a href="/convert/video" class="tool-card card-converter">
             <div class="tool-header">
                 <div class="tool-icon icon-converter">🎬</div>
-                <span class="tool-badge badge-active">Aktif</span>
+                <span class="tool-badge badge-active">{{ t('home.badge.active') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">Video Dönüştürücü</h3>
-                <p class="tool-desc">MP4, WEBM, AVI formatları arasında çözünürlük ayarlı dönüştürme.</p>
+                <h3 class="tool-title">{{ t('home.conv.video.title') }}</h3>
+                <p class="tool-desc">{{ t('home.conv.video.desc') }}</p>
             </div>
         </a>
         <a href="/convert/extract" class="tool-card card-converter">
             <div class="tool-header">
                 <div class="tool-icon icon-converter">🗄️</div>
-                <span class="tool-badge badge-active">Aktif</span>
+                <span class="tool-badge badge-active">{{ t('home.badge.active') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">Arşiv Açıcı (Extractor)</h3>
-                <p class="tool-desc">ZIP, RAR, 7Z arşiv dosyalarını ayıklayıp içindekileri indirin.</p>
+                <h3 class="tool-title">{{ t('home.conv.extract.title') }}</h3>
+                <p class="tool-desc">{{ t('home.conv.extract.desc') }}</p>
             </div>
         </a>
         <a href="/convert/document" class="tool-card card-converter">
             <div class="tool-header">
                 <div class="tool-icon icon-converter">📝</div>
-                <span class="tool-badge badge-active">Aktif</span>
+                <span class="tool-badge badge-active">{{ t('home.badge.active') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">Belge Dönüştürücü</h3>
-                <p class="tool-desc">DOCX, TXT, HTML belgeleri arasında hızlı çevrim.</p>
+                <h3 class="tool-title">{{ t('home.conv.document.title') }}</h3>
+                <p class="tool-desc">{{ t('home.conv.document.desc') }}</p>
             </div>
         </a>
         <a href="/convert/ebook" class="tool-card card-converter">
             <div class="tool-header">
                 <div class="tool-icon icon-converter">📚</div>
-                <span class="tool-badge badge-active">Aktif</span>
+                <span class="tool-badge badge-active">{{ t('home.badge.active') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">E-kitap Dönüştürücü</h3>
-                <p class="tool-desc">EPUB e-kitap formatını PDF veya TXT yapın.</p>
+                <h3 class="tool-title">{{ t('home.conv.ebook.title') }}</h3>
+                <p class="tool-desc">{{ t('home.conv.ebook.desc') }}</p>
             </div>
         </a>
         <a href="/convert/font" class="tool-card card-converter">
             <div class="tool-header">
                 <div class="tool-icon icon-converter">🔤</div>
-                <span class="tool-badge badge-active">Aktif</span>
+                <span class="tool-badge badge-active">{{ t('home.badge.active') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">Yazı Tipi Dönüştürücü</h3>
-                <p class="tool-desc">TTF, OTF, WOFF yazı tipleri arasında dönüştürme.</p>
+                <h3 class="tool-title">{{ t('home.conv.font.title') }}</h3>
+                <p class="tool-desc">{{ t('home.conv.font.desc') }}</p>
             </div>
         </a>
         <a href="/convert/archive" class="tool-card card-converter">
             <div class="tool-header">
                 <div class="tool-icon icon-converter">🗄️</div>
-                <span class="tool-badge badge-active">Aktif</span>
+                <span class="tool-badge badge-active">{{ t('home.badge.active') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">Arşiv Dönüştürücü</h3>
-                <p class="tool-desc">ZIP, TAR, GZ arşiv paket formatları arasında dönüştürme.</p>
+                <h3 class="tool-title">{{ t('home.conv.archive.title') }}</h3>
+                <p class="tool-desc">{{ t('home.conv.archive.desc') }}</p>
             </div>
         </a>
     </div>
@@ -534,180 +536,180 @@
 <!-- VIDEO TOOLS -->
 <section class="category-section" id="cat-video">
     <button class="category-toggle category-title cat-video" onclick="toggleCat('cat-video')" aria-expanded="false">
-        <span class="category-title-inner">🎬 Video Araçları</span>
+        <span class="category-title-inner">🎬 {{ t('home.cat.video') }}</span>
         <span class="cat-chevron">▼</span>
     </button>
-    <p class="beta-note">⚠️ Beta: bu araçlar çalışır durumda ancak tam verim alınamayabilir.</p>
+    <p class="beta-note">⚠️ {{ t('home.beta_note') }}</p>
     <div class="category-body" id="cat-video-body">
     <div class="tools-grid">
         <a href="/video-tools/screen-record" class="tool-card card-video">
             <div class="tool-header">
                 <div class="tool-icon icon-video">🎥</div>
-                <span class="tool-badge badge-beta">Beta</span>
+                <span class="tool-badge badge-beta">{{ t('home.badge.beta') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">Ekran Kaydedici</h3>
-                <p class="tool-desc">Tarayıcı üzerinden ekranınızı veya belirli pencereleri yerel olarak kaydedin.</p>
+                <h3 class="tool-title">{{ t('home.video.screen_record.title') }}</h3>
+                <p class="tool-desc">{{ t('home.video.screen_record.desc') }}</p>
             </div>
         </a>
         <a href="/video-tools/trim" class="tool-card card-video">
             <div class="tool-header">
                 <div class="tool-icon icon-video">✂️</div>
-                <span class="tool-badge badge-beta">Beta</span>
+                <span class="tool-badge badge-beta">{{ t('home.badge.beta') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">Video Kırpıcı</h3>
-                <p class="tool-desc">Video dosyalarınızın belirli bölümlerini kesin ve düzenleyin.</p>
+                <h3 class="tool-title">{{ t('home.video.trim.title') }}</h3>
+                <p class="tool-desc">{{ t('home.video.trim.desc') }}</p>
             </div>
         </a>
         <a href="/video-tools/merge" class="tool-card card-video">
             <div class="tool-header">
                 <div class="tool-icon icon-video">🔀</div>
-                <span class="tool-badge badge-beta">Beta</span>
+                <span class="tool-badge badge-beta">{{ t('home.badge.beta') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">Videoları Birleştir</h3>
-                <p class="tool-desc">Birden fazla video klibini tek bir dosyada bir araya getirin.</p>
+                <h3 class="tool-title">{{ t('home.video.merge.title') }}</h3>
+                <p class="tool-desc">{{ t('home.video.merge.desc') }}</p>
             </div>
         </a>
         <a href="/video-tools/rotate" class="tool-card card-video">
             <div class="tool-header">
                 <div class="tool-icon icon-video">🔄</div>
-                <span class="tool-badge badge-beta">Beta</span>
+                <span class="tool-badge badge-beta">{{ t('home.badge.beta') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">Video Döndür / Çevir</h3>
-                <p class="tool-desc">Dikey veya yan çekilmiş videoları döndürün veya yatay aynalayın.</p>
+                <h3 class="tool-title">{{ t('home.video.rotate.title') }}</h3>
+                <p class="tool-desc">{{ t('home.video.rotate.desc') }}</p>
             </div>
         </a>
         <a href="/video-tools/editor" class="tool-card card-video">
             <div class="tool-header">
                 <div class="tool-icon icon-video">🎬</div>
-                <span class="tool-badge badge-beta">Beta</span>
+                <span class="tool-badge badge-beta">{{ t('home.badge.beta') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">Video Düzenleyici</h3>
-                <p class="tool-desc">Videolarınızı kesin, birleştirin, yazı ekleyin ve düzenleyin.</p>
+                <h3 class="tool-title">{{ t('home.video.editor.title') }}</h3>
+                <p class="tool-desc">{{ t('home.video.editor.desc') }}</p>
             </div>
         </a>
         <a href="/video-tools/add-image" class="tool-card card-video">
             <div class="tool-header">
                 <div class="tool-icon icon-video">🖼️</div>
-                <span class="tool-badge badge-beta">Beta</span>
+                <span class="tool-badge badge-beta">{{ t('home.badge.beta') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">Görüntü Ekle</h3>
-                <p class="tool-desc">Video üzerine logo veya resim ekleyin.</p>
+                <h3 class="tool-title">{{ t('home.video.add_image.title') }}</h3>
+                <p class="tool-desc">{{ t('home.video.add_image.desc') }}</p>
             </div>
         </a>
         <a href="/video-tools/resize" class="tool-card card-video">
             <div class="tool-header">
                 <div class="tool-icon icon-video">📐</div>
-                <span class="tool-badge badge-beta">Beta</span>
+                <span class="tool-badge badge-beta">{{ t('home.badge.beta') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">Video Yeniden Boyutlandır</h3>
-                <p class="tool-desc">Videonun en-boy veya çözünürlük ayarlarını değiştirin.</p>
+                <h3 class="tool-title">{{ t('home.video.resize.title') }}</h3>
+                <p class="tool-desc">{{ t('home.video.resize.desc') }}</p>
             </div>
         </a>
         <a href="/video-tools/add-text" class="tool-card card-video">
             <div class="tool-header">
                 <div class="tool-icon icon-video">✍️</div>
-                <span class="tool-badge badge-beta">Beta</span>
+                <span class="tool-badge badge-beta">{{ t('home.badge.beta') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">Metin Ekle</h3>
-                <p class="tool-desc">Video üzerine özel metin veya altyazı ekleyin.</p>
+                <h3 class="tool-title">{{ t('home.video.add_text.title') }}</h3>
+                <p class="tool-desc">{{ t('home.video.add_text.desc') }}</p>
             </div>
         </a>
         <a href="/video-tools/loop" class="tool-card card-video">
             <div class="tool-header">
                 <div class="tool-icon icon-video">🔁</div>
-                <span class="tool-badge badge-beta">Beta</span>
+                <span class="tool-badge badge-beta">{{ t('home.badge.beta') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">Videoyu Döngüye Al</h3>
-                <p class="tool-desc">Videonun belirli bir sayıda tekrarlanmasını sağlayın.</p>
+                <h3 class="tool-title">{{ t('home.video.loop.title') }}</h3>
+                <p class="tool-desc">{{ t('home.video.loop.desc') }}</p>
             </div>
         </a>
         <a href="/video-tools/text-to-speech" class="tool-card card-video">
             <div class="tool-header">
                 <div class="tool-icon icon-video">🗣️</div>
-                <span class="tool-badge badge-beta">Beta</span>
+                <span class="tool-badge badge-beta">{{ t('home.badge.beta') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">Yazıyı Sese Dönüştür</h3>
-                <p class="tool-desc">Yazdıklarınızı ses dosyasına dönüştürün.</p>
+                <h3 class="tool-title">{{ t('home.video.tts.title') }}</h3>
+                <p class="tool-desc">{{ t('home.video.tts.desc') }}</p>
             </div>
         </a>
         <a href="/video-tools/remove-logo" class="tool-card card-video">
             <div class="tool-header">
                 <div class="tool-icon icon-video">🚫</div>
-                <span class="tool-badge badge-beta">Beta</span>
+                <span class="tool-badge badge-beta">{{ t('home.badge.beta') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">Logoyu Kaldır</h3>
-                <p class="tool-desc">Video üzerindeki logoları sansürleyin veya kapatın.</p>
+                <h3 class="tool-title">{{ t('home.video.remove_logo.title') }}</h3>
+                <p class="tool-desc">{{ t('home.video.remove_logo.desc') }}</p>
             </div>
         </a>
         <a href="/video-tools/video-volume" class="tool-card card-video">
             <div class="tool-header">
                 <div class="tool-icon icon-video">🔊</div>
-                <span class="tool-badge badge-beta">Beta</span>
+                <span class="tool-badge badge-beta">{{ t('home.badge.beta') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">Video Ses Seviyesi</h3>
-                <p class="tool-desc">Video sesinin seviyesini artırın veya sessize alın.</p>
+                <h3 class="tool-title">{{ t('home.video.volume.title') }}</h3>
+                <p class="tool-desc">{{ t('home.video.volume.desc') }}</p>
             </div>
         </a>
         <a href="/video-tools/crop" class="tool-card card-video">
             <div class="tool-header">
                 <div class="tool-icon icon-video">✂️</div>
-                <span class="tool-badge badge-beta">Beta</span>
+                <span class="tool-badge badge-beta">{{ t('home.badge.beta') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">Videoyu Kırp (Crop)</h3>
-                <p class="tool-desc">Videonun çerçevesini dilediğiniz gibi kırpın.</p>
+                <h3 class="tool-title">{{ t('home.video.crop.title') }}</h3>
+                <p class="tool-desc">{{ t('home.video.crop.desc') }}</p>
             </div>
         </a>
         <a href="/video-tools/video-speed" class="tool-card card-video">
             <div class="tool-header">
                 <div class="tool-icon icon-video">⚡</div>
-                <span class="tool-badge badge-beta">Beta</span>
+                <span class="tool-badge badge-beta">{{ t('home.badge.beta') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">Video Hızı</h3>
-                <p class="tool-desc">Video oynatma hızını hızlandırın veya yavaşlatın.</p>
+                <h3 class="tool-title">{{ t('home.video.speed.title') }}</h3>
+                <p class="tool-desc">{{ t('home.video.speed.desc') }}</p>
             </div>
         </a>
         <a href="/video-tools/stabilize" class="tool-card card-video">
             <div class="tool-header">
                 <div class="tool-icon icon-video">⚖️</div>
-                <span class="tool-badge badge-beta">Beta</span>
+                <span class="tool-badge badge-beta">{{ t('home.badge.beta') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">Videoyu Sabitle</h3>
-                <p class="tool-desc">Videonun kamera sarsıntılarını yerel olarak azaltın.</p>
+                <h3 class="tool-title">{{ t('home.video.stabilize.title') }}</h3>
+                <p class="tool-desc">{{ t('home.video.stabilize.desc') }}</p>
             </div>
         </a>
         <a href="/video-tools/add-audio" class="tool-card card-video">
             <div class="tool-header">
                 <div class="tool-icon icon-video">🎵</div>
-                <span class="tool-badge badge-beta">Beta</span>
+                <span class="tool-badge badge-beta">{{ t('home.badge.beta') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">Müzik Ekle</h3>
-                <p class="tool-desc">Videolarınıza arka plan müzikleri ekleyin.</p>
+                <h3 class="tool-title">{{ t('home.video.add_audio.title') }}</h3>
+                <p class="tool-desc">{{ t('home.video.add_audio.desc') }}</p>
             </div>
         </a>
         <a href="/video-tools/record-camera" class="tool-card card-video">
             <div class="tool-header">
                 <div class="tool-icon icon-video">📹</div>
-                <span class="tool-badge badge-beta">Beta</span>
+                <span class="tool-badge badge-beta">{{ t('home.badge.beta') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">Kamera Kaydedici</h3>
-                <p class="tool-desc">Web kameranızı ve mikrofonunuzu kullanarak video kaydedin.</p>
+                <h3 class="tool-title">{{ t('home.video.record_camera.title') }}</h3>
+                <p class="tool-desc">{{ t('home.video.record_camera.desc') }}</p>
             </div>
         </a>
     </div>
@@ -717,90 +719,90 @@
 <!-- AUDIO TOOLS -->
 <section class="category-section" id="cat-audio">
     <button class="category-toggle category-title cat-audio" onclick="toggleCat('cat-audio')" aria-expanded="false">
-        <span class="category-title-inner">🎵 Ses Araçları</span>
+        <span class="category-title-inner">🎵 {{ t('home.cat.audio') }}</span>
         <span class="cat-chevron">▼</span>
     </button>
-    <p class="beta-note">⚠️ Beta: bu araçlar çalışır durumda ancak tam verim alınamayabilir.</p>
+    <p class="beta-note">⚠️ {{ t('home.beta_note') }}</p>
     <div class="category-body" id="cat-audio-body">
     <div class="tools-grid">
         <a href="/audio-tools/trim" class="tool-card card-audio">
             <div class="tool-header">
                 <div class="tool-icon icon-audio">✂️</div>
-                <span class="tool-badge badge-beta">Beta</span>
+                <span class="tool-badge badge-beta">{{ t('home.badge.beta') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">Ses Kesici</h3>
-                <p class="tool-desc">Müzik veya ses dosyalarınızı görsel dalga boyutu üzerinden kesip indirin.</p>
+                <h3 class="tool-title">{{ t('home.audio.trim.title') }}</h3>
+                <p class="tool-desc">{{ t('home.audio.trim.desc') }}</p>
             </div>
         </a>
         <a href="/audio-tools/record" class="tool-card card-audio">
             <div class="tool-header">
                 <div class="tool-icon icon-audio">🎙️</div>
-                <span class="tool-badge badge-beta">Beta</span>
+                <span class="tool-badge badge-beta">{{ t('home.badge.beta') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">Ses Kaydedici</h3>
-                <p class="tool-desc">Mikrofonunuzu kullanarak ses kaydı yapın ve anında indirin.</p>
+                <h3 class="tool-title">{{ t('home.audio.record.title') }}</h3>
+                <p class="tool-desc">{{ t('home.audio.record.desc') }}</p>
             </div>
         </a>
         <a href="/audio-tools/volume" class="tool-card card-audio">
             <div class="tool-header">
                 <div class="tool-icon icon-audio">📢</div>
-                <span class="tool-badge badge-beta">Beta</span>
+                <span class="tool-badge badge-beta">{{ t('home.badge.beta') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">Ses Seviyesi Değiştirici</h3>
-                <p class="tool-desc">Ses dosyalarınızın desibel (volüm) oranını artırın veya azaltın.</p>
+                <h3 class="tool-title">{{ t('home.audio.volume.title') }}</h3>
+                <p class="tool-desc">{{ t('home.audio.volume.desc') }}</p>
             </div>
         </a>
         <a href="/audio-tools/speed" class="tool-card card-audio">
             <div class="tool-header">
                 <div class="tool-icon icon-audio">⚡</div>
-                <span class="tool-badge badge-beta">Beta</span>
+                <span class="tool-badge badge-beta">{{ t('home.badge.beta') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">Ses Hızlandırıcı</h3>
-                <p class="tool-desc">Müzik veya podcast konuşma hızını ton bozulması olmadan değiştirin.</p>
+                <h3 class="tool-title">{{ t('home.audio.speed.title') }}</h3>
+                <p class="tool-desc">{{ t('home.audio.speed.desc') }}</p>
             </div>
         </a>
         <a href="/audio-tools/pitch" class="tool-card card-audio">
             <div class="tool-header">
                 <div class="tool-icon icon-audio">🎼</div>
-                <span class="tool-badge badge-beta">Beta</span>
+                <span class="tool-badge badge-beta">{{ t('home.badge.beta') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">Perde Değiştirici</h3>
-                <p class="tool-desc">Ses perdesini yarım tonlar halinde ince veya kalın yapın.</p>
+                <h3 class="tool-title">{{ t('home.audio.pitch.title') }}</h3>
+                <p class="tool-desc">{{ t('home.audio.pitch.desc') }}</p>
             </div>
         </a>
         <a href="/audio-tools/equalizer" class="tool-card card-audio">
             <div class="tool-header">
                 <div class="tool-icon icon-audio">🎚️</div>
-                <span class="tool-badge badge-beta">Beta</span>
+                <span class="tool-badge badge-beta">{{ t('home.badge.beta') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">Ses Ekolayzer</h3>
-                <p class="tool-desc">Farklı ses frekanslarını ekolayzer ile ayarlayın.</p>
+                <h3 class="tool-title">{{ t('home.audio.equalizer.title') }}</h3>
+                <p class="tool-desc">{{ t('home.audio.equalizer.desc') }}</p>
             </div>
         </a>
         <a href="/audio-tools/joiner" class="tool-card card-audio">
             <div class="tool-header">
                 <div class="tool-icon icon-audio">🔗</div>
-                <span class="tool-badge badge-beta">Beta</span>
+                <span class="tool-badge badge-beta">{{ t('home.badge.beta') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">Ses Birleştirici</h3>
-                <p class="tool-desc">Birden fazla ses dosyasını sırayla tek dosyada birleştirin.</p>
+                <h3 class="tool-title">{{ t('home.audio.joiner.title') }}</h3>
+                <p class="tool-desc">{{ t('home.audio.joiner.desc') }}</p>
             </div>
         </a>
         <a href="/audio-tools/reverse" class="tool-card card-audio">
             <div class="tool-header">
                 <div class="tool-icon icon-audio">🔄</div>
-                <span class="tool-badge badge-beta">Beta</span>
+                <span class="tool-badge badge-beta">{{ t('home.badge.beta') }}</span>
             </div>
             <div>
-                <h3 class="tool-title">Sesi Ters Çevir</h3>
-                <p class="tool-desc">Ses parçasını geriye doğru (tersten) çalacak şekilde çevirin.</p>
+                <h3 class="tool-title">{{ t('home.audio.reverse.title') }}</h3>
+                <p class="tool-desc">{{ t('home.audio.reverse.desc') }}</p>
             </div>
         </a>
     </div>

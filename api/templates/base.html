@@ -1,12 +1,101 @@
 <!DOCTYPE html>
-<html lang="tr" data-theme="dark">
+<html lang="{{ CURRENT_LANG }}" dir="{{ 'rtl' if IS_RTL else 'ltr' }}" data-theme="dark">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}toolboxquick | Online Tools &amp; Converters{% endblock %}</title>
+    <title>{% block title %}{{ t('seo.default_title') }}{% endblock %}</title>
+    <meta name="description" content="{% block meta_description %}{{ t('seo.default_description') }}{% endblock %}">
+    <meta name="keywords" content="{% block meta_keywords %}{{ t('seo.default_keywords') }}{% endblock %}">
+    <link rel="canonical" href="{{ SEO_CANONICAL }}">
+    {% for lang, url in SEO_HREFLANG %}
+    <link rel="alternate" hreflang="{{ lang }}" href="{{ url }}">
+    {% endfor %}
+    <link rel="alternate" hreflang="x-default" href="{{ SEO_HREFLANG_DEFAULT }}">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="toolboxquick">
+    <meta property="og:title" content="{% block og_title %}{{ self.title() }}{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}{{ self.meta_description() }}{% endblock %}">
+    <meta property="og:url" content="{{ SEO_CANONICAL }}">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="{{ self.og_title() }}">
+    <meta name="twitter:description" content="{{ self.og_description() }}">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <style>
+        [dir="rtl"] .notice-panel {
+            right: auto;
+            left: 1.5rem;
+        }
+
+        [dir="rtl"] .notice-toggle-btn {
+            right: auto;
+            left: 1.25rem;
+        }
+
+        [dir="rtl"] .notice-card {
+            border-left: none;
+            padding: 0.85rem 1rem 0.85rem 1.6rem;
+        }
+
+        [dir="rtl"] .notice-close-btn {
+            right: auto;
+            left: 0.5rem;
+        }
+
+        [dir="rtl"] .notice-card.notice-privacy {
+            border-right: 3px solid #22c55e;
+        }
+
+        [dir="rtl"] .notice-card.notice-disclaimer {
+            border-right: 3px solid #f59e0b;
+        }
+
+        .lang-switcher {
+            position: relative;
+        }
+
+        .lang-dropdown {
+            display: none;
+            position: absolute;
+            top: calc(100% + 0.5rem);
+            right: 0;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            box-shadow: var(--card-shadow);
+            padding: 0.35rem;
+            z-index: 50;
+            min-width: 160px;
+        }
+
+        [dir="rtl"] .lang-dropdown {
+            right: auto;
+            left: 0;
+        }
+
+        .lang-dropdown.open {
+            display: block;
+        }
+
+        .lang-option {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.6rem;
+            border-radius: 6px;
+            text-decoration: none;
+            color: var(--text-color);
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+
+        .lang-option:hover {
+            background-color: var(--btn-outline-hover-bg);
+        }
+
+        .lang-option.active {
+            font-weight: 700;
+        }
         :root {
             --bg-color: #05060a;
             --text-color: #f5f5f5;
@@ -51,6 +140,11 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            overflow-wrap: break-word;
+        }
+
+        html {
+            overflow-x: hidden;
         }
 
         [data-theme="dark"] body {
@@ -104,6 +198,9 @@
         }
 
         .navbar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
             background: var(--navbar-bg);
             border-bottom: 1px solid var(--navbar-border);
             transition: background 0.25s ease, border-color 0.25s ease;
@@ -185,11 +282,15 @@
             gap: 0.6rem;
         }
 
+        .notice-panel.collapsed {
+            display: none;
+        }
+
         .notice-card {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
             border-radius: 12px;
-            padding: 0.85rem 1rem;
+            padding: 0.85rem 1.6rem 0.85rem 1rem;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
             display: flex;
             gap: 0.6rem;
@@ -222,7 +323,6 @@
             border-left: 3px solid #f59e0b;
         }
 
-        /* Mobil: gizle, buton göster */
         .notice-toggle-btn {
             display: none;
             position: fixed;
@@ -249,20 +349,32 @@
             transform: scale(1.05);
         }
 
+        .notice-toggle-btn.visible {
+            display: flex;
+        }
+
+        .notice-close-btn {
+            position: absolute;
+            top: 0.4rem;
+            right: 0.5rem;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1rem;
+            line-height: 1;
+            cursor: pointer;
+            padding: 0.15rem 0.3rem;
+        }
+
+        .notice-close-btn:hover {
+            color: var(--text-color);
+        }
+
         @media (max-width: 900px) {
             .notice-panel {
-                display: none;
                 bottom: 4.5rem;
                 right: 1rem;
                 width: 260px;
-            }
-
-            .notice-panel.mobile-open {
-                display: flex;
-            }
-
-            .notice-toggle-btn {
-                display: flex;
             }
         }
     </style>
@@ -282,16 +394,37 @@
         <div class="nebula nebula-b"></div>
     </div>
 
+    <script>
+        window.I18N = {
+            theme_dark: {{ t('nav.theme_dark')|tojson }},
+            theme_light: {{ t('nav.theme_light')|tojson }}
+        };
+    </script>
+
     <nav class="navbar">
         <div class="container py-2 d-flex justify-content-between align-items-center">
             <a class="navbar-brand" href="/">toolboxquick</a>
             <div class="d-flex align-items-center gap-3">
                 <a class="theme-toggle-btn text-decoration-none" href="/mikrotik"
                     style="border-color: rgba(59, 130, 246, 0.5); color: #3b82f6;">
-                    <span>📶</span> <span>MikroTik Panel</span>
+                    <span>📶</span> <span>{{ t('nav.mikrotik_panel') }}</span>
                 </a>
+                <div class="lang-switcher">
+                    <button id="lang-toggle" class="theme-toggle-btn" aria-label="{{ t('nav.lang_aria') }}"
+                        aria-haspopup="true" aria-expanded="false">
+                        <span>{{ LANG_META[CURRENT_LANG].flag }}</span> <span>{{ CURRENT_LANG|upper }}</span>
+                    </button>
+                    <div class="lang-dropdown" id="lang-dropdown">
+                        {% for code in SUPPORTED_LANGS %}
+                        <a class="lang-option{{ ' active' if code == CURRENT_LANG else '' }}"
+                            href="{{ LANG_URLS[code] }}">
+                            <span>{{ LANG_META[code].flag }}</span> <span>{{ LANG_META[code].name }}</span>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
                 <button id="theme-toggle" class="theme-toggle-btn">
-                    <span id="theme-icon">🌙</span> <span id="theme-text">Dark</span>
+                    <span id="theme-icon">🌙</span> <span id="theme-text">{{ t('nav.theme_dark') }}</span>
                 </button>
             </div>
         </div>
@@ -303,34 +436,33 @@
 
     <footer class="footer py-3">
         <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center">
-            <span>toolboxquick &mdash; %100 yerel ve yapay zekasız araçlar</span>
-            <span class="mt-2 mt-md-0"><a href="/guncelleme-notlari" style="color: inherit; text-decoration: underline;">Güncelleme Notları</a></span>
+            <span>{{ t('footer.tagline') }}</span>
+            <span class="mt-2 mt-md-0"><a href="/guncelleme-notlari" style="color: inherit; text-decoration: underline;">{{ t('footer.changelog') }}</a></span>
             <span class="mt-2 mt-md-0"><a href="https://github.com/kaanbyzt"
-                    style="color: white; text-decoration: underline;">GITHUB ADRESİMİ ZİYARET EDEBİLİRSİNİZ.</a></span>
+                    style="color: white; text-decoration: underline;">{{ t('footer.github') }}</a></span>
         </div>
     </footer>
 
     <!-- Uyarı / Bilgi Paneli -->
     <div class="notice-panel" id="noticePanel">
+        <button class="notice-close-btn" onclick="toggleNotice()" aria-label="{{ t('notice.toggle_aria') }}">✕</button>
         <div class="notice-card notice-privacy">
             <span class="notice-icon">🔒</span>
             <p class="notice-text">
-                Yüklediğiniz belge, evrak ve görseller web sitesinde tutulmamaktadır. Tüm işlemler tarayıcınızda yerel
-                olarak gerçekleşir.
+                {{ t('notice.privacy') }}
             </p>
         </div>
         <div class="notice-card notice-disclaimer">
             <span class="notice-icon">⚠️</span>
             <p class="notice-text">
-                MikroTik ile ilgili işlemler yardım amaçlı örnek olarak gösterilmektedir. Yapılan herhangi bir yanlış
-                işlemde sorumluluk kabul edilmemektedir.
+                {{ t('notice.disclaimer') }}
             </p>
         </div>
     </div>
 
     <!-- Mobil açma/kapama butonu -->
-    <button class="notice-toggle-btn" id="noticeToggle" onclick="toggleNotice()" aria-label="Uyarıları göster/gizle"
-        title="Uyarılar">
+    <button class="notice-toggle-btn" id="noticeToggle" onclick="toggleNotice()" aria-label="{{ t('notice.toggle_aria') }}"
+        title="{{ t('mk.notice_toggle_aria') }}">
         ℹ
     </button>
 
@@ -342,10 +474,10 @@
         function updateUI(theme) {
             if (theme === 'light') {
                 icon.textContent = '☀️';
-                text.textContent = 'Light';
+                text.textContent = window.I18N.theme_light;
             } else {
                 icon.textContent = '🌙';
-                text.textContent = 'Dark';
+                text.textContent = window.I18N.theme_dark;
             }
         }
 
@@ -363,10 +495,60 @@
             updateUI(newTheme);
         });
 
-        function toggleNotice() {
+        (function () {
             const panel = document.getElementById('noticePanel');
-            panel.classList.toggle('mobile-open');
-        }
+            const toggleBtn = document.getElementById('noticeToggle');
+            const AUTO_COLLAPSE_MS = 15000;
+            let collapseTimer = null;
+
+            function collapse() {
+                panel.classList.add('collapsed');
+                toggleBtn.classList.add('visible');
+            }
+
+            function expand() {
+                panel.classList.remove('collapsed');
+                toggleBtn.classList.remove('visible');
+                clearTimeout(collapseTimer);
+                collapseTimer = setTimeout(collapse, AUTO_COLLAPSE_MS);
+            }
+
+            window.toggleNotice = function () {
+                if (panel.classList.contains('collapsed')) {
+                    expand();
+                } else {
+                    clearTimeout(collapseTimer);
+                    collapse();
+                }
+            };
+
+            if (window.matchMedia('(max-width: 900px)').matches) {
+                collapse();
+            } else {
+                collapseTimer = setTimeout(collapse, AUTO_COLLAPSE_MS);
+            }
+        })();
+    </script>
+
+    <script>
+        (function () {
+            const langBtn = document.getElementById('lang-toggle');
+            const langDropdown = document.getElementById('lang-dropdown');
+            if (!langBtn || !langDropdown) return;
+
+            langBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                const isOpen = langDropdown.classList.toggle('open');
+                langBtn.setAttribute('aria-expanded', String(isOpen));
+            });
+
+            document.addEventListener('click', function (e) {
+                if (!langDropdown.contains(e.target) && e.target !== langBtn) {
+                    langDropdown.classList.remove('open');
+                    langBtn.setAttribute('aria-expanded', 'false');
+                }
+            });
+        })();
     </script>
 
     <script>

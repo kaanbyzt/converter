@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}PDF Sayfa Numarası Ekle | toolboxquick{% endblock %}
+{% block title %}{{ t('pdf_page_numbers.title') }} | toolboxquick{% endblock %}
 {% block head %}
 <style>
     .dropzone {
@@ -25,55 +25,55 @@
 
 {% block content %}
 <header class="mb-4">
-    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #f97316 !important;">PDF Araçları</p>
-    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">PDF Sayfa Numarası Ekle</h1>
+    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #f97316 !important;">{{ t('pdf_page_numbers.category') }}</p>
+    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">{{ t('pdf_page_numbers.heading') }}</h1>
     <p class="text-secondary mb-0">
-        PDF dosyanızın sayfalarının altına otomatik sayfa numarası ekleyin ve yerel olarak indirin.
+        {{ t('pdf_page_numbers.desc') }}
     </p>
 </header>
 
 <section class="tool-card p-4 mb-4">
     <div id="upload-stage">
-        <label class="form-label fw-semibold mb-2">PDF Dosyanızı Seçin</label>
+        <label class="form-label fw-semibold mb-2">{{ t('pdf_page_numbers.select_label') }}</label>
         <div class="dropzone" onclick="document.getElementById('pdf_file').click()">
             <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔢</div>
-            <div class="fw-semibold mb-1" style="color: var(--text-color);">Bir adet PDF dosyası seçin</div>
+            <div class="fw-semibold mb-1" style="color: var(--text-color);">{{ t('pdf_page_numbers.dropzone_text') }}</div>
             <input type="file" id="pdf_file" class="file-input" accept="application/pdf" onchange="loadPDF(this)">
         </div>
     </div>
 
     <div id="editor-stage" class="d-none text-center">
         <div class="mb-3 d-flex justify-content-between align-items-center">
-            <span id="file-name" class="fw-semibold text-orange-400">belge.pdf</span>
-            <button class="btn btn-sm btn-outline-danger" onclick="resetEditor()">Yeni PDF Yükle</button>
+            <span id="file-name" class="fw-semibold text-orange-400">{{ t('pdf_page_numbers.default_filename') }}</span>
+            <button class="btn btn-sm btn-outline-danger" onclick="resetEditor()">{{ t('pdf_page_numbers.reset_btn') }}</button>
         </div>
 
         <div class="mb-4 text-start" style="max-width: 400px; margin: 0 auto;">
-            <label class="form-label fw-semibold mb-2">Numaralandırma Ayarları</label>
+            <label class="form-label fw-semibold mb-2">{{ t('pdf_page_numbers.settings_label') }}</label>
             <div class="form-check mb-2">
                 <input class="form-check-input" type="checkbox" id="show-total" checked>
                 <label class="form-check-input-label text-secondary small" for="show-total">
-                    Toplam sayfa sayısını göster (Örn: "1 / 10")
+                    {{ t('pdf_page_numbers.show_total_label') }}
                 </label>
             </div>
             <div class="form-check mb-3">
                 <input class="form-check-input" type="checkbox" id="skip-first">
                 <label class="form-check-input-label text-secondary small" for="skip-first">
-                    İlk sayfayı (Kapak sayfasını) atla
+                    {{ t('pdf_page_numbers.skip_first_label') }}
                 </label>
             </div>
         </div>
 
-        <div id="processing-msg" class="text-warning small mb-3 d-none">Lütfen bekleyin, numaralar ekleniyor...</div>
+        <div id="processing-msg" class="text-warning small mb-3 d-none">{{ t('pdf_page_numbers.processing_msg') }}</div>
 
         <button class="btn btn-warning text-white px-5 py-2" id="process-btn" onclick="processAndDownload()" style="border-radius: 8px; font-weight: 600; background-color: #f97316; border-color: #f97316;">
-            Numara Ekle ve İndir 💾
+            {{ t('pdf_page_numbers.submit_btn') }}
         </button>
     </div>
 </section>
 
 <section class="mt-4">
-    <a href="/" class="text-secondary small text-decoration-none">&larr; Ana sayfaya dön</a>
+    <a href="/" class="text-secondary small text-decoration-none">&larr; {{ t('pdf_page_numbers.back_home') }}</a>
 </section>
 {% endblock %}
 
@@ -102,7 +102,7 @@ async function loadPDF(input) {
     try {
         pdfData = await file.arrayBuffer();
     } catch(err) {
-        alert('PDF dosyası yüklenemedi.');
+        alert({{ t('pdf_page_numbers.err_load_failed')|tojson }});
         resetEditor();
     }
 }
@@ -150,7 +150,7 @@ async function processAndDownload() {
         a.click();
         URL.revokeObjectURL(url);
     } catch (e) {
-        alert('Numaralandırma işlemi sırasında hata oluştu.');
+        alert({{ t('pdf_page_numbers.err_process_failed')|tojson }});
         console.error(e);
     } finally {
         document.getElementById('processing-msg').classList.add('d-none');

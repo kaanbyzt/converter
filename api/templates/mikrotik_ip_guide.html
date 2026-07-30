@@ -1,35 +1,38 @@
 {% extends "mikrotik_base.html" %}
-{% block title %}IPv4 Adresleme Rehberi{% endblock %}
+{% block title %}{{ t('mk_ip_guide.title') }}{% endblock %}
 {% block content %}
-<div class="page-header"><h1>IPv4 Adresleme ve Sınıf Rehberi</h1><p>Ağ tasarımlarınızda doğru IP bloklarını seçmek için temel başvuru kılavuzu.</p></div>
-<p class="script-warn">⚠️ Bu içerik genel bilgi amaçlıdır; ağ tasarımınızı uygulamadan önce kendi gereksinimlerinize göre doğrulayın.</p>
+<div class="page-header"><h1>{{ t('mk_ip_guide.heading') }}</h1><p>{{ t('mk_ip_guide.intro') }}</p></div>
+<p class="script-warn">⚠️ {{ t('mk_ip_guide.warning') }}</p>
 <div class="filter-bar">
-    <button class="filter-btn active" onclick="setFilter('all',this)">Tümü</button>
-    <button class="filter-btn" onclick="setFilter('a',this)">A Sınıfı</button>
-    <button class="filter-btn" onclick="setFilter('b',this)">B Sınıfı</button>
-    <button class="filter-btn" onclick="setFilter('c',this)">C Sınıfı</button>
+    <button class="filter-btn active" onclick="setFilter('all',this)">{{ t('mk_ip_guide.filter_all') }}</button>
+    <button class="filter-btn" onclick="setFilter('a',this)">{{ t('mk_ip_guide.class_a') }}</button>
+    <button class="filter-btn" onclick="setFilter('b',this)">{{ t('mk_ip_guide.class_b') }}</button>
+    <button class="filter-btn" onclick="setFilter('c',this)">{{ t('mk_ip_guide.class_c') }}</button>
 </div>
 <div id="cards"></div>
-<div class="alert-note">💡 <strong>Ağ Mühendisi Notu:</strong> <code>127.0.0.0/8</code> bloğu Loopback (yerel cihaz testi) için, <code>169.254.0.0/16</code> bloğu ise DHCP sunucusundan IP alamayan cihazların otomatik atadığı APIPA adresi için rezerve edilmiştir. Ağ tasarlarken yerel arayüzlerinize bu blokları tanımlamaktan kaçının.</div>
+<div class="alert-note">💡 {{ t('mk_ip_guide.note')|safe }}</div>
 {% endblock %}
 {% block scripts %}
 <script>
 const CLASSES=[
-    {key:'a',name:'A Sınıfı',range:'1.0.0.0 - 126.255.255.255',mask:'255.0.0.0 (/8)',priv:'10.0.0.0 - 10.255.255.255',usage:'Çok büyük ölçekli ağlar ve telekom operatörleri için tasarlanmıştır.'},
-    {key:'b',name:'B Sınıfı',range:'128.0.0.0 - 191.255.255.255',mask:'255.255.0.0 (/16)',priv:'172.16.0.0 - 172.31.255.255',usage:'Orta ve büyük ölçekli şirketler, üniversiteler ve kurumsal ağlar içindir.'},
-    {key:'c',name:'C Sınıfı',range:'192.0.0.0 - 223.255.255.255',mask:'255.255.255.0 (/24)',priv:'192.168.0.0 - 192.168.255.255',usage:'Küçük işletmeler, ev ağları ve yerel lokal ağların (LAN) vazgeçilmez standardıdır.'},
+    {key:'a',name:{{ t('mk_ip_guide.class_a')|tojson }},range:'1.0.0.0 - 126.255.255.255',mask:'255.0.0.0 (/8)',priv:'10.0.0.0 - 10.255.255.255',usage:{{ t('mk_ip_guide.usage_a')|tojson }}},
+    {key:'b',name:{{ t('mk_ip_guide.class_b')|tojson }},range:'128.0.0.0 - 191.255.255.255',mask:'255.255.0.0 (/16)',priv:'172.16.0.0 - 172.31.255.255',usage:{{ t('mk_ip_guide.usage_b')|tojson }}},
+    {key:'c',name:{{ t('mk_ip_guide.class_c')|tojson }},range:'192.0.0.0 - 223.255.255.255',mask:'255.255.255.0 (/24)',priv:'192.168.0.0 - 192.168.255.255',usage:{{ t('mk_ip_guide.usage_c')|tojson }}},
 ];
+const DEFAULT_BADGE = {{ t('mk_ip_guide.default_badge')|tojson }};
+const PUBLIC_RANGE_LABEL = {{ t('mk_ip_guide.public_range_label')|tojson }};
+const PRIVATE_RANGE_LABEL = {{ t('mk_ip_guide.private_range_label')|tojson }};
 let cur='all';
 function setFilter(f,btn){cur=f;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');render();}
 function render(){
     const list=cur==='all'?CLASSES:CLASSES.filter(c=>c.key===cur);
     document.getElementById('cards').innerHTML=list.map(c=>`
         <div class="info-card">
-            <div class="info-card-header"><div class="info-card-title">${c.name}</div><div class="info-card-badge">Varsayılan: ${c.mask}</div></div>
+            <div class="info-card-header"><div class="info-card-title">${c.name}</div><div class="info-card-badge">${DEFAULT_BADGE.replace('{mask}', c.mask)}</div></div>
             <div class="info-card-desc">${c.usage}</div>
             <div class="info-grid">
-                <div class="info-block"><div class="info-block-label">Genel (Public) IP Aralığı</div><div class="info-block-value">${c.range}</div></div>
-                <div class="info-block info-block-blue"><div class="info-block-label">Yerel (Private - LAN) IP Aralığı</div><div class="info-block-value">${c.priv}</div></div>
+                <div class="info-block"><div class="info-block-label">${PUBLIC_RANGE_LABEL}</div><div class="info-block-value">${c.range}</div></div>
+                <div class="info-block info-block-blue"><div class="info-block-label">${PRIVATE_RANGE_LABEL}</div><div class="info-block-value">${c.priv}</div></div>
             </div>
         </div>`).join('');
 }

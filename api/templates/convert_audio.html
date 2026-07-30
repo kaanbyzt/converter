@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Ses Dönüştürücü | toolboxquick{% endblock %}
+{% block title %}{{ t('convert_audio.title') }} | toolboxquick{% endblock %}
 {% block head %}
 <style>
     .dropzone {
@@ -23,19 +23,19 @@
 
 {% block content %}
 <header class="mb-4">
-    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #10b981 !important;">Dönüştürücüler</p>
-    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">Ses Dönüştürücü (Audio to WAV)</h1>
+    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #10b981 !important;">{{ t('convert_audio.kicker') }}</p>
+    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">{{ t('convert_audio.heading') }}</h1>
     <p class="text-secondary mb-0">
-        Yüklediğiniz herhangi bir ses dosyasını tarayıcınızda çözüp yerel olarak yüksek kaliteli WAV formatına dönüştürün.
+        {{ t('convert_audio.subtitle') }}
     </p>
 </header>
 
 <section class="tool-card p-4 mb-4">
     <div id="upload-stage">
-        <label class="form-label fw-semibold mb-2">Ses Dosyanızı Seçin (MP3, M4A, OGG, vb.)</label>
+        <label class="form-label fw-semibold mb-2">{{ t('convert_audio.file_label') }}</label>
         <div class="dropzone" onclick="document.getElementById('audio_file').click()">
             <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🎵</div>
-            <div class="fw-semibold mb-1" style="color: var(--text-color);">Dosya yüklemek için tıklayın</div>
+            <div class="fw-semibold mb-1" style="color: var(--text-color);">{{ t('convert_audio.file_placeholder') }}</div>
             <input type="file" id="audio_file" class="file-input" accept="audio/*" onchange="loadAudio(this)">
         </div>
     </div>
@@ -43,26 +43,26 @@
     <div id="editor-stage" class="d-none text-center">
         <div class="mb-3 d-flex justify-content-between align-items-center">
             <span id="file-name" class="fw-semibold text-success">ses-dosyasi.mp3</span>
-            <button class="btn btn-sm btn-outline-danger" onclick="resetEditor()">Yeni Dosya Yükle</button>
+            <button class="btn btn-sm btn-outline-danger" onclick="resetEditor()">{{ t('convert_audio.new_file_btn') }}</button>
         </div>
 
         <div class="mb-4" style="max-width: 300px; margin: 0 auto; text-align: left;">
-            <label class="form-label fw-semibold mb-2">Hedef Format</label>
+            <label class="form-label fw-semibold mb-2">{{ t('convert_audio.target_format_label') }}</label>
             <select id="target-format" class="form-select" style="border-radius: 8px;">
-                <option value="wav">WAV (.wav) - Sıkıştırılmamış Yüksek Kalite</option>
+                <option value="wav">{{ t('convert_audio.opt_wav') }}</option>
             </select>
         </div>
 
-        <div id="processing-msg" class="text-warning small mb-3 d-none">Lütfen bekleyin, ses dönüştürülüyor...</div>
+        <div id="processing-msg" class="text-warning small mb-3 d-none">{{ t('convert_audio.processing_msg') }}</div>
 
         <button class="btn btn-success px-5 py-2 mt-2" id="download-btn" onclick="convertAndDownload()" style="border-radius: 8px; font-weight: 600;">
-            Dönüştür ve İndir 💾
+            {{ t('convert_audio.convert_btn') }}
         </button>
     </div>
 </section>
 
 <section class="mt-4">
-    <a href="/" class="text-secondary small text-decoration-none">&larr; Ana sayfaya dön</a>
+    <a href="/" class="text-secondary small text-decoration-none">&larr; {{ t('convert_audio.back_home') }}</a>
 </section>
 {% endblock %}
 
@@ -95,7 +95,7 @@ async function loadAudio(input) {
         const arrayBuffer = await file.arrayBuffer();
         audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
     } catch(err) {
-        alert('Ses dosyası çözümlenemedi. Lütfen geçerli bir dosya yükleyin.');
+        alert({{ t('convert_audio.err_decode')|tojson }});
         resetEditor();
     }
 }

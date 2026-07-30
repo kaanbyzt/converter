@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}PDF Şifrele | toolboxquick{% endblock %}
+{% block title %}{{ t('pdf_protect.title') }} | toolboxquick{% endblock %}
 {% block head %}
 <style>
     .dropzone {
@@ -23,10 +23,10 @@
 
 {% block content %}
 <header class="mb-4">
-    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #f97316 !important;">PDF Araçları</p>
-    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">PDF Şifrele (Protect)</h1>
+    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #f97316 !important;">{{ t('pdf_protect.category') }}</p>
+    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">{{ t('pdf_protect.heading') }}</h1>
     <p class="text-secondary mb-0">
-        PDF dosyanıza şifre ekleyerek yetkisiz erişimleri ve düzenlemeleri engelleyin.
+        {{ t('pdf_protect.desc') }}
     </p>
 </header>
 
@@ -39,30 +39,30 @@
 
     <form action="/pdf-tools/protect" method="post" enctype="multipart/form-data">
         <div class="mb-4">
-            <label class="form-label fw-semibold mb-2">PDF Dosyanızı Seçin</label>
+            <label class="form-label fw-semibold mb-2">{{ t('pdf_protect.select_label') }}</label>
             <div class="dropzone" onclick="document.getElementById('pdf_file').click()">
                 <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔒</div>
-                <div class="fw-semibold mb-1" id="file-label" style="color: var(--text-color);">Bir adet PDF dosyası seçin</div>
+                <div class="fw-semibold mb-1" id="file-label" style="color: var(--text-color);">{{ t('pdf_protect.dropzone_default') }}</div>
                 <input type="file" name="pdf_file" id="pdf_file" class="file-input" accept="application/pdf" required onchange="updateFileLabel(this)">
             </div>
         </div>
 
         <div class="mb-4">
-            <label class="form-label fw-semibold mb-1">Şifre Belirleyin</label>
-            <input type="password" name="password" class="form-control" placeholder="Güçlü bir şifre girin" required style="border-radius: 8px;">
+            <label class="form-label fw-semibold mb-1">{{ t('pdf_protect.password_label') }}</label>
+            <input type="password" name="password" class="form-control" placeholder="{{ t('pdf_protect.password_placeholder') }}" required style="border-radius: 8px;">
             <div class="form-text text-secondary">
-                PDF dosyasını açmak isteyen kullanıcıların bu şifreyi girmesi gerekecektir.
+                {{ t('pdf_protect.password_hint') }}
             </div>
         </div>
 
         <button type="submit" class="btn btn-primary px-4 py-2" style="border-radius: 8px; font-weight: 600;">
-            PDF'i Şifrele ve İndir
+            {{ t('pdf_protect.submit_btn') }}
         </button>
     </form>
 </section>
 
 <section class="mt-4">
-    <a href="/" class="text-secondary small text-decoration-none">&larr; Ana sayfaya dön</a>
+    <a href="/" class="text-secondary small text-decoration-none">&larr; {{ t('pdf_protect.back_home') }}</a>
 </section>
 {% endblock %}
 
@@ -74,7 +74,7 @@ function updateFileLabel(input) {
         label.textContent = input.files[0].name + " (" + (input.files[0].size / 1024 / 1024).toFixed(2) + " MB)";
         label.style.color = '#3b82f6';
     } else {
-        label.textContent = "Bir adet PDF dosyası seçin";
+        label.textContent = {{ t('pdf_protect.dropzone_default')|tojson }};
         label.style.color = 'var(--text-color)';
     }
 }

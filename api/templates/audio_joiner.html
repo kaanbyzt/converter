@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Ses Birleştirici (Audio Joiner) | toolboxquick{% endblock %}
+{% block title %}{{ t('audio_joiner.heading') }} | toolboxquick{% endblock %}
 {% block head %}
 <style>
     .dropzone {
@@ -42,42 +42,42 @@
 
 {% block content %}
 <header class="mb-4">
-    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #3b82f6 !important;">Ses Araçları</p>
-    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">Ses Birleştirici (Audio Joiner)</h1>
+    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #3b82f6 !important;">{{ t('audio_joiner.category') }}</p>
+    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">{{ t('audio_joiner.heading') }}</h1>
     <p class="text-secondary mb-0">
-        Birden fazla ses dosyasını yükleyin, sıraya dizin ve yerel olarak tek bir WAV dosyası halinde birleştirin.
+        {{ t('audio_joiner.description') }}
     </p>
 </header>
 
 <section class="tool-card p-4 mb-4">
     <div class="mb-4">
-        <label class="form-label fw-semibold mb-2">Ses Dosyalarını Ekleyin (Çoklu Seçim Desteklenir)</label>
+        <label class="form-label fw-semibold mb-2">{{ t('audio_joiner.upload_label') }}</label>
         <div class="dropzone" onclick="document.getElementById('audio_files').click()">
             <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔗</div>
-            <div class="fw-semibold mb-1" style="color: var(--text-color);">Dosyaları seçmek için tıklayın</div>
+            <div class="fw-semibold mb-1" style="color: var(--text-color);">{{ t('audio_joiner.upload_cta') }}</div>
             <input type="file" id="audio_files" class="file-input" accept="audio/*" multiple onchange="addTracks(this)">
         </div>
     </div>
 
     <div id="tracks-stage" class="d-none">
-        <h3 class="h6 fw-semibold mb-3">Birleştirilecek Dosyalar</h3>
+        <h3 class="h6 fw-semibold mb-3">{{ t('audio_joiner.tracks_heading') }}</h3>
         <div class="track-list mb-4" id="track-list-container">
             <!-- Dynamically populated -->
         </div>
 
-        <div id="processing-msg" class="text-warning small mb-3 d-none">Lütfen bekleyin, ses dosyaları birleştiriliyor...</div>
+        <div id="processing-msg" class="text-warning small mb-3 d-none">{{ t('audio_joiner.processing') }}</div>
 
         <div class="d-flex justify-content-between align-items-center">
-            <button class="btn btn-outline-danger" onclick="clearTracks()">Tümünü Temizle</button>
+            <button class="btn btn-outline-danger" onclick="clearTracks()">{{ t('audio_joiner.clear_btn') }}</button>
             <button class="btn btn-primary px-5 py-2" id="join-btn" onclick="joinAndDownload()" style="border-radius: 8px; font-weight: 600;">
-                Birleştir ve İndir 💾
+                {{ t('audio_joiner.join_btn') }} 💾
             </button>
         </div>
     </div>
 </section>
 
 <section class="mt-4">
-    <a href="/" class="text-secondary small text-decoration-none">&larr; Ana sayfaya dön</a>
+    <a href="/" class="text-secondary small text-decoration-none">&larr; {{ t('audio_joiner.back_link') }}</a>
 </section>
 {% endblock %}
 
@@ -161,7 +161,7 @@ function renderTracks() {
             <div class="d-flex align-items-center gap-2">
                 <button class="btn btn-sm btn-outline-secondary py-1" onclick="moveTrack('${track.id}', -1)" ${idx === 0 ? 'disabled' : ''}>▲</button>
                 <button class="btn btn-sm btn-outline-secondary py-1" onclick="moveTrack('${track.id}', 1)" ${idx === tracks.length - 1 ? 'disabled' : ''}>▼</button>
-                <button class="btn btn-sm btn-outline-danger py-1" onclick="removeTrack('${track.id}')">Sil</button>
+                <button class="btn btn-sm btn-outline-danger py-1" onclick="removeTrack('${track.id}')">{{ t('audio_joiner.remove_btn') }}</button>
             </div>
         `;
         container.appendChild(item);
@@ -269,7 +269,7 @@ async function joinAndDownload() {
         a.click();
         URL.revokeObjectURL(url);
     } catch (e) {
-        alert('Dosyalar birleştirilirken bir hata oluştu. Lütfen dosya formatlarını kontrol edin.');
+        alert({{ t('audio_joiner.merge_error')|tojson }});
         console.error(e);
     } finally {
         document.getElementById('processing-msg').classList.add('d-none');

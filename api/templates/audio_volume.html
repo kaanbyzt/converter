@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Ses Seviyesi Değiştirici | toolboxquick{% endblock %}
+{% block title %}{{ t('audio_volume.heading') }} | toolboxquick{% endblock %}
 {% block head %}
 <style>
     .dropzone {
@@ -23,19 +23,19 @@
 
 {% block content %}
 <header class="mb-4">
-    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #3b82f6 !important;">Ses Araçları</p>
-    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">Ses Seviyesi Değiştirici</h1>
+    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #3b82f6 !important;">{{ t('audio_volume.category') }}</p>
+    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">{{ t('audio_volume.heading') }}</h1>
     <p class="text-secondary mb-0">
-        Ses dosyalarınızı yükleyin, volüm oranını artırın veya azaltın ve yerel olarak indirip dinleyin.
+        {{ t('audio_volume.description') }}
     </p>
 </header>
 
 <section class="tool-card p-4 mb-4">
     <div id="upload-stage">
-        <label class="form-label fw-semibold mb-2">Ses Dosyanızı Seçin (MP3, WAV, vb.)</label>
+        <label class="form-label fw-semibold mb-2">{{ t('audio_volume.upload_label') }}</label>
         <div class="dropzone" onclick="document.getElementById('audio_file').click()">
             <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔊</div>
-            <div class="fw-semibold mb-1" style="color: var(--text-color);">Dosya yüklemek için tıklayın</div>
+            <div class="fw-semibold mb-1" style="color: var(--text-color);">{{ t('audio_volume.upload_cta') }}</div>
             <input type="file" id="audio_file" class="file-input" accept="audio/*" onchange="loadAudio(this)">
         </div>
     </div>
@@ -43,27 +43,27 @@
     <div id="editor-stage" class="d-none text-center">
         <div class="mb-3 d-flex justify-content-between align-items-center">
             <span id="file-name" class="fw-semibold text-blue-400">ses-dosyasi.mp3</span>
-            <button class="btn btn-sm btn-outline-danger" onclick="resetEditor()">Yeni Dosya Yükle</button>
+            <button class="btn btn-sm btn-outline-danger" onclick="resetEditor()">{{ t('audio_volume.new_file_btn') }}</button>
         </div>
 
         <div class="my-4" style="max-width: 400px; margin: 0 auto;">
-            <label class="form-label fw-semibold mb-2">Ses Seviyesi: <span id="vol-pct" class="text-blue-400">100%</span></label>
+            <label class="form-label fw-semibold mb-2">{{ t('audio_volume.level_label') }} <span id="vol-pct" class="text-blue-400">100%</span></label>
             <input type="range" id="volume-slider" class="form-range" min="0" max="3" step="0.05" value="1" oninput="updateVolumeLabel(this.value)">
             <div class="d-flex justify-content-between small text-secondary">
-                <span>Sessiz</span>
-                <span>Normal (100%)</span>
-                <span>Çok Yüksek (300%)</span>
+                <span>{{ t('audio_volume.range_low') }}</span>
+                <span>{{ t('audio_volume.range_mid') }}</span>
+                <span>{{ t('audio_volume.range_high') }}</span>
             </div>
         </div>
 
         <button class="btn btn-primary px-5 py-2 mt-2" onclick="processAndDownload()" style="border-radius: 8px; font-weight: 600;">
-            Değiştir ve İndir 💾
+            {{ t('audio_volume.process_btn') }} 💾
         </button>
     </div>
 </section>
 
 <section class="mt-4">
-    <a href="/" class="text-secondary small text-decoration-none">&larr; Ana sayfaya dön</a>
+    <a href="/" class="text-secondary small text-decoration-none">&larr; {{ t('audio_volume.back_link') }}</a>
 </section>
 {% endblock %}
 
@@ -94,7 +94,7 @@ async function loadAudio(input) {
         const arrayBuffer = await file.arrayBuffer();
         audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
     } catch(err) {
-        alert('Ses dosyası çözümlenemedi. Lütfen geçerli bir dosya yükleyin.');
+        alert({{ t('audio_volume.decode_error')|tojson }});
         resetEditor();
     }
 }

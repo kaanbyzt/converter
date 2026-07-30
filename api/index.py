@@ -3,11 +3,128 @@ import zipfile
 import uuid
 import tarfile
 import tempfile
-from flask import Flask, render_template, request, send_file, jsonify
+from flask import Flask, Response, render_template, request, send_file, jsonify
 from io import BytesIO
 from PyPDF2 import PdfMerger, PdfReader, PdfWriter
 
+from i18n import SUPPORTED_LANGS, init_i18n, t
+
 app = Flask(__name__)
+init_i18n(app)
+
+# Sitemap için site içindeki tüm statik/GET sayfa yolları
+SITEMAP_ROUTES = [
+    ("/", 1.0),
+    ("/mikrotik", 0.8),
+    ("/mikrotik/nasil-kullanilir", 0.5),
+    ("/mikrotik/subnet", 0.6),
+    ("/mikrotik/ip-guide", 0.5),
+    ("/mikrotik/dhcp-server", 0.5),
+    ("/mikrotik/interface-ip", 0.5),
+    ("/mikrotik/port-forward", 0.5),
+    ("/mikrotik/src-nat", 0.5),
+    ("/mikrotik/routing", 0.5),
+    ("/mikrotik/load-balance", 0.5),
+    ("/mikrotik/firewall", 0.5),
+    ("/mikrotik/dns-security", 0.5),
+    ("/mikrotik/port-services", 0.5),
+    ("/mikrotik/vpn", 0.5),
+    ("/mikrotik/netwatch", 0.5),
+    ("/mikrotik/log-helper", 0.5),
+    ("/mikrotik/bandwidth-pcq", 0.5),
+    ("/mikrotik/fasttrack", 0.5),
+    ("/mikrotik/wifi-channels", 0.5),
+    ("/mikrotik/hardware-selector", 0.5),
+    ("/mikrotik/hotspot", 0.5),
+    ("/video-tools", 0.7),
+    ("/audio-tools", 0.7),
+    ("/ai-tools", 0.7),
+    ("/guncelleme-notlari", 0.3),
+    ("/pdf-tools", 0.8),
+    ("/pdf-tools/split", 0.6),
+    ("/pdf-tools/protect", 0.6),
+    ("/pdf-tools/unlock", 0.6),
+    ("/pdf-tools/rotate", 0.6),
+    ("/pdf-tools/page-numbers", 0.6),
+    ("/pdf-tools/compress", 0.6),
+    ("/pdf-tools/pdf-to-jpg", 0.6),
+    ("/pdf-tools/pdf-to-png", 0.6),
+    ("/pdf-tools/jpg-to-pdf", 0.6),
+    ("/pdf-tools/png-to-pdf", 0.6),
+    ("/pdf-tools/pdf-to-html", 0.6),
+    ("/pdf-tools/word-to-pdf", 0.6),
+    ("/pdf-tools/pdf-to-word", 0.6),
+    ("/pdf-tools/excel-to-pdf", 0.6),
+    ("/pdf-tools/pdf-to-excel", 0.6),
+    ("/pdf-tools/ppt-to-pdf", 0.6),
+    ("/audio-tools/trim", 0.5),
+    ("/audio-tools/record", 0.5),
+    ("/audio-tools/volume", 0.5),
+    ("/audio-tools/speed", 0.5),
+    ("/audio-tools/pitch", 0.5),
+    ("/audio-tools/equalizer", 0.5),
+    ("/audio-tools/joiner", 0.5),
+    ("/audio-tools/reverse", 0.5),
+    ("/video-tools/screen-record", 0.5),
+    ("/video-tools/rotate", 0.5),
+    ("/video-tools/trim", 0.5),
+    ("/video-tools/merge", 0.5),
+    ("/video-tools/editor", 0.5),
+    ("/video-tools/crop", 0.5),
+    ("/video-tools/loop", 0.5),
+    ("/video-tools/video-volume", 0.5),
+    ("/video-tools/video-speed", 0.5),
+    ("/video-tools/add-text", 0.5),
+    ("/video-tools/add-image", 0.5),
+    ("/video-tools/stabilize", 0.5),
+    ("/video-tools/remove-logo", 0.5),
+    ("/video-tools/add-audio", 0.5),
+    ("/video-tools/resize", 0.5),
+    ("/video-tools/text-to-speech", 0.5),
+    ("/video-tools/record-camera", 0.5),
+    ("/convert/image", 0.6),
+    ("/convert/audio", 0.6),
+    ("/convert/video", 0.6),
+    ("/convert/extract", 0.6),
+    ("/convert/document", 0.6),
+    ("/convert/ebook", 0.6),
+    ("/convert/font", 0.6),
+    ("/convert/archive", 0.6),
+]
+
+
+@app.route("/sitemap.xml")
+def sitemap():
+    root = request.host_url.rstrip("/")
+    entries = []
+    for path, priority in SITEMAP_ROUTES:
+        url = f"{root}{path}"
+        alt_links = "".join(
+            f'<xhtml:link rel="alternate" hreflang="{lang}" href="{root}{path}?lang={lang}" />'
+            for lang in SUPPORTED_LANGS
+        )
+        entries.append(
+            f"<url><loc>{url}</loc>{alt_links}<priority>{priority}</priority></url>"
+        )
+    xml = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" '
+        'xmlns:xhtml="http://www.w3.org/1999/xhtml">'
+        + "".join(entries)
+        + "</urlset>"
+    )
+    return Response(xml, mimetype="application/xml")
+
+
+@app.route("/robots.txt")
+def robots_txt():
+    root = request.host_url.rstrip("/")
+    lines = [
+        "User-agent: *",
+        "Disallow: /convert/extract/download",
+        f"Sitemap: {root}/sitemap.xml",
+    ]
+    return Response("\n".join(lines), mimetype="text/plain")
 
 # ZIP bomb koruması sabitleri
 _ZIP_MAX_FILES = 30
@@ -21,28 +138,30 @@ def _check_zip_safety(zip_ref: zipfile.ZipFile):
     members = [i for i in zip_ref.infolist() if not i.is_dir()]
 
     if len(members) > _ZIP_MAX_FILES:
-        return False, (
-            f"ZIP içinde maksimum {_ZIP_MAX_FILES} dosyaya izin verilmektedir "
-            f"(bu arşivde {len(members)} dosya var)."
+        return False, t(
+            "err.zip_too_many_files",
+            max_files=_ZIP_MAX_FILES,
+            count=len(members),
         )
 
     total = 0
     for info in members:
         if info.file_size > _ZIP_MAX_FILE_BYTES:
-            return False, (
-                f"'{info.filename}' dosyası çok büyük: "
-                f"maksimum {_ZIP_MAX_FILE_BYTES // (1024 * 1024)} MB."
+            return False, t(
+                "err.zip_file_too_large",
+                filename=info.filename,
+                max_mb=_ZIP_MAX_FILE_BYTES // (1024 * 1024),
             )
         if info.compress_size > 0 and (info.file_size / info.compress_size) > _ZIP_MAX_RATIO:
-            return False, (
-                f"Şüpheli sıkıştırma oranı tespit edildi "
-                f"({info.file_size // max(info.compress_size, 1)}:1). ZIP bombası olabilir."
+            return False, t(
+                "err.zip_suspicious_ratio",
+                ratio=info.file_size // max(info.compress_size, 1),
             )
         total += info.file_size
         if total > _ZIP_MAX_TOTAL_BYTES:
-            return False, (
-                f"Toplam çıkarılan boyut "
-                f"{_ZIP_MAX_TOTAL_BYTES // (1024 * 1024)} MB limitini aşıyor."
+            return False, t(
+                "err.zip_total_too_large",
+                max_mb=_ZIP_MAX_TOTAL_BYTES // (1024 * 1024),
             )
 
     return True, None
@@ -190,7 +309,7 @@ def pdf_tools():
         return render_template(
             "pdf_tools.html",
             download_url=None,
-            error="Lütfen en az iki PDF dosyası yükleyin.",
+            error=t("err.min_two_pdfs"),
         )
 
     merger = PdfMerger()
@@ -219,10 +338,10 @@ def pdf_split():
     range_str = request.form.get("page_range", "").strip()
 
     if not file or not file.filename.lower().endswith(".pdf"):
-        return render_template("pdf_split.html", error="Lütfen geçerli bir PDF dosyası seçin.")
+        return render_template("pdf_split.html", error=t("err.invalid_pdf"))
 
     if not range_str:
-        return render_template("pdf_split.html", error="Lütfen ayıklanacak sayfa aralığını belirtin.")
+        return render_template("pdf_split.html", error=t("err.enter_page_range"))
 
     try:
         reader = PdfReader(file.stream)
@@ -245,7 +364,7 @@ def pdf_split():
                     
         sorted_pages = sorted(list(pages_to_keep))
         if not sorted_pages:
-            return render_template("pdf_split.html", error="Belirtilen aralıkta geçerli sayfa bulunamadı.")
+            return render_template("pdf_split.html", error=t("err.no_valid_pages_in_range"))
 
         writer = PdfWriter()
         for p in sorted_pages:
@@ -262,7 +381,7 @@ def pdf_split():
             download_name="toolboxquick-split.pdf",
         )
     except Exception as e:
-        return render_template("pdf_split.html", error=f"Hata oluştu: {str(e)}")
+        return render_template("pdf_split.html", error=t("err.generic_error", error=str(e)))
 
 
 @app.route("/audio-tools/trim")
@@ -299,10 +418,10 @@ def pdf_protect():
     password = request.form.get("password")
 
     if not file or not file.filename.lower().endswith(".pdf"):
-        return render_template("pdf_protect.html", error="Lütfen geçerli bir PDF dosyası seçin.")
+        return render_template("pdf_protect.html", error=t("err.invalid_pdf"))
 
     if not password:
-        return render_template("pdf_protect.html", error="Lütfen bir şifre belirleyin.")
+        return render_template("pdf_protect.html", error=t("err.set_password"))
 
     try:
         reader = PdfReader(file.stream)
@@ -324,7 +443,7 @@ def pdf_protect():
             download_name="toolboxquick-protected.pdf"
         )
     except Exception as e:
-        return render_template("pdf_protect.html", error=f"Hata oluştu: {str(e)}")
+        return render_template("pdf_protect.html", error=t("err.generic_error", error=str(e)))
 
 
 @app.route("/pdf-tools/unlock", methods=["GET", "POST"])
@@ -336,20 +455,20 @@ def pdf_unlock():
     password = request.form.get("password")
 
     if not file or not file.filename.lower().endswith(".pdf"):
-        return render_template("pdf_unlock.html", error="Lütfen geçerli bir PDF dosyası seçin.")
+        return render_template("pdf_unlock.html", error=t("err.invalid_pdf"))
 
     if not password:
-        return render_template("pdf_unlock.html", error="Lütfen şifreyi girin.")
+        return render_template("pdf_unlock.html", error=t("err.enter_password"))
 
     try:
         reader = PdfReader(file.stream)
 
         if not reader.is_encrypted:
-            return render_template("pdf_unlock.html", error="Bu PDF dosyası zaten şifreli değil.")
+            return render_template("pdf_unlock.html", error=t("err.pdf_not_encrypted"))
 
         decryption_result = reader.decrypt(password)
         if decryption_result == 0:
-            return render_template("pdf_unlock.html", error="Hatalı şifre. Lütfen tekrar deneyin.")
+            return render_template("pdf_unlock.html", error=t("err.wrong_password"))
 
         writer = PdfWriter()
         for page in reader.pages:
@@ -366,7 +485,7 @@ def pdf_unlock():
             download_name="toolboxquick-unlocked.pdf"
         )
     except Exception as e:
-        return render_template("pdf_unlock.html", error=f"Hata oluştu: {str(e)}")
+        return render_template("pdf_unlock.html", error=t("err.generic_error", error=str(e)))
 
 
 @app.route("/audio-tools/volume")
@@ -411,7 +530,7 @@ def convert_extract():
 
     file = request.files.get("zip_file")
     if not file or not file.filename.lower().endswith(".zip"):
-        return render_template("convert_extract.html", files=None, error="Lütfen geçerli bir ZIP dosyası seçin.")
+        return render_template("convert_extract.html", files=None, error=t("err.invalid_zip"))
 
     try:
         zip_id = str(uuid.uuid4())
@@ -440,7 +559,7 @@ def convert_extract():
             error=None
         )
     except Exception as e:
-        return render_template("convert_extract.html", files=None, error=f"Hata oluştu: {str(e)}")
+        return render_template("convert_extract.html", files=None, error=t("err.generic_error", error=str(e)))
 
 
 @app.route("/convert/extract/download")
@@ -449,16 +568,16 @@ def convert_extract_download():
     file_path = request.args.get("file")
 
     if not zip_id or not file_path:
-        return "Geçersiz istek.", 400
+        return t("err.invalid_request"), 400
 
     zip_path = os.path.join(TEMP_DIR, f"{zip_id}.zip")
     if not os.path.exists(zip_path):
-        return "Arşiv bulunamadı veya süresi dolmuş.", 404
+        return t("err.archive_not_found_or_expired"), 404
 
     try:
         with zipfile.ZipFile(zip_path, 'r') as zip_ref:
             if file_path not in zip_ref.namelist():
-                return "Dosya arşiv içinde bulunamadı.", 404
+                return t("err.file_not_found_in_archive"), 404
 
             data = zip_ref.read(file_path)
             io_buf = BytesIO(data)
@@ -470,7 +589,7 @@ def convert_extract_download():
                 download_name=basename
             )
     except Exception as e:
-        return f"İndirme sırasında hata oluştu: {str(e)}", 500
+        return t("err.download_error", error=str(e)), 500
 
 
 # --- AUDIO TOOLS ---
@@ -526,23 +645,23 @@ def pdf_to_html():
 
 @app.route("/pdf-tools/word-to-pdf")
 def word_to_pdf():
-    return render_template("pdf_office.html", tool_type="word-pdf", tool_title="Word to PDF", tool_desc="Word (.docx) belgelerinizi yerel tarayıcınızda PDF formatına dönüştürün.", file_accept=".docx")
+    return render_template("pdf_office.html", tool_type="word-pdf", tool_title=t("office.word_to_pdf.title"), tool_desc=t("office.word_to_pdf.desc"), file_accept=".docx")
 
 @app.route("/pdf-tools/pdf-to-word")
 def pdf_to_word():
-    return render_template("pdf_office.html", tool_type="pdf-word", tool_title="PDF to Word", tool_desc="PDF belgelerinizdeki metinleri yerel tarayıcınızda Word (.doc) formatına dönüştürün.", file_accept=".pdf")
+    return render_template("pdf_office.html", tool_type="pdf-word", tool_title=t("office.pdf_to_word.title"), tool_desc=t("office.pdf_to_word.desc"), file_accept=".pdf")
 
 @app.route("/pdf-tools/excel-to-pdf")
 def excel_to_pdf():
-    return render_template("pdf_office.html", tool_type="excel-pdf", tool_title="Excel to PDF", tool_desc="Excel (.xlsx, .xls) tablolarınızı yerel tarayıcınızda PDF formatına dönüştürün.", file_accept=".xlsx,.xls")
+    return render_template("pdf_office.html", tool_type="excel-pdf", tool_title=t("office.excel_to_pdf.title"), tool_desc=t("office.excel_to_pdf.desc"), file_accept=".xlsx,.xls")
 
 @app.route("/pdf-tools/pdf-to-excel")
 def pdf_to_excel():
-    return render_template("pdf_office.html", tool_type="pdf-excel", tool_title="PDF to Excel", tool_desc="PDF belgelerinizdeki tabloları yerel tarayıcınızda Excel (.xlsx) formatına dönüştürün.", file_accept=".pdf")
+    return render_template("pdf_office.html", tool_type="pdf-excel", tool_title=t("office.pdf_to_excel.title"), tool_desc=t("office.pdf_to_excel.desc"), file_accept=".pdf")
 
 @app.route("/pdf-tools/ppt-to-pdf")
 def ppt_to_pdf():
-    return render_template("pdf_office.html", tool_type="ppt-pdf", tool_title="PPT to PDF", tool_desc="PowerPoint (.pptx) sunumlarınızı yerel tarayıcınızda PDF formatına dönüştürün.", file_accept=".pptx")
+    return render_template("pdf_office.html", tool_type="ppt-pdf", tool_title=t("office.ppt_to_pdf.title"), tool_desc=t("office.ppt_to_pdf.desc"), file_accept=".pptx")
 
 
 # --- VIDEO TOOLS ---
@@ -591,7 +710,7 @@ def convert_archive():
     target_format = request.form.get("target_format")
     
     if not file or not file.filename:
-        return render_template("convert_archive.html", error="Lütfen geçerli bir arşiv dosyası seçin.")
+        return render_template("convert_archive.html", error=t("err.invalid_archive"))
         
     try:
         in_buf = BytesIO(file.read())
@@ -617,7 +736,7 @@ def convert_archive():
                         if f:
                             files_dict[member.name] = f.read()
         else:
-            return render_template("convert_archive.html", error="Desteklenmeyen arşiv formatı.")
+            return render_template("convert_archive.html", error=t("err.unsupported_archive_format"))
             
         out_buf.seek(0)
         if target_format == "zip":
@@ -651,4 +770,4 @@ def convert_archive():
             download_name=download_name
         )
     except Exception as e:
-        return render_template("convert_archive.html", error=f"Hata oluştu: {str(e)}")
+        return render_template("convert_archive.html", error=t("err.generic_error", error=str(e)))

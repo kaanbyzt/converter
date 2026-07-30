@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}toolboxquick | Güncelleme Notları{% endblock %}
+{% block title %}toolboxquick | {{ t('changelog.title') }}{% endblock %}
 {% block head %}
 <style>
     .changelog-hero-title {
@@ -58,9 +58,9 @@
 
 {% block content %}
 <section class="py-4">
-    <h1 class="changelog-hero-title">📋 Güncelleme Notları</h1>
+    <h1 class="changelog-hero-title">📋 {{ t('changelog.hero_title') }}</h1>
     <p class="changelog-hero-subtitle">
-        toolboxquick'e bugüne kadar eklenen tüm özellikler, iyileştirmeler ve düzeltmeler tarih sırasıyla aşağıda listelenmiştir.
+        {{ t('changelog.hero_subtitle') }}
     </p>
 
     <div class="changelog-list">
@@ -68,58 +68,58 @@
         <div class="changelog-entry">
             <div class="changelog-date">2026-07-25</div>
             <ul class="changelog-items">
-                <li>Yapay Zeka Araçları bölümü eklendi: 19 AI aracının kullanım alanı, fiyat ve performansına göre karşılaştırılması, tıklanınca ilgili siteye yönlendirme.</li>
-                <li>AI Prompt Generator eklendi: 13 farklı göreve göre form alanlarını doldurup otomatik prompt oluşturan araç.</li>
-                <li>Video ve Ses araçları "Beta" olarak işaretlendi; ilgili kategori başlıklarına açıklayıcı uyarı notu eklendi.</li>
-                <li>MikroTik paneline girişte gizlilik ve sorumluluk reddi uyarılarını gösteren pop-up bildirim eklendi.</li>
-                <li>Ana sayfa kategori sıralaması güncellendi: Yapay Zeka, PDF, Dönüştürücüler, Video, Ses.</li>
-                <li>Kategori başlıklarındaki görüntü sorunları (beyaz çerçeve) giderildi.</li>
-                <li>Güncelleme notları ayrı bir sayfaya taşındı.</li>
+                <li>{{ t('changelog.20260725.1') }}</li>
+                <li>{{ t('changelog.20260725.2') }}</li>
+                <li>{{ t('changelog.20260725.3') }}</li>
+                <li>{{ t('changelog.20260725.4') }}</li>
+                <li>{{ t('changelog.20260725.5') }}</li>
+                <li>{{ t('changelog.20260725.6') }}</li>
+                <li>{{ t('changelog.20260725.7') }}</li>
             </ul>
         </div>
 
         <div class="changelog-entry">
             <div class="changelog-date">2026-07-24</div>
             <ul class="changelog-items">
-                <li>Karanlık temada arka plana yıldız ve meteor animasyonları eklendi.</li>
-                <li>MikroTik sayfalarının tamamına sorumluluk reddi uyarısı eklendi.</li>
+                <li>{{ t('changelog.20260724.1') }}</li>
+                <li>{{ t('changelog.20260724.2') }}</li>
             </ul>
         </div>
 
         <div class="changelog-entry">
             <div class="changelog-date">2026-06-24</div>
             <ul class="changelog-items">
-                <li>Yapay zeka entegrasyonları tamamen kaldırılıp %100 yerel araçlar paneline geçildi.</li>
-                <li>Karanlık / aydınlık tema desteği eklendi.</li>
-                <li>Video, ses, belge ve dönüştürücü araçları devreye alındı.</li>
-                <li>Ana sayfa kategorileri için mobil accordion menü, MikroTik paneli için hamburger menü eklendi.</li>
-                <li>ZIP bomb saldırılarına karşı güvenlik koruması eklendi.</li>
-                <li>MikroTik paneline ve sağ alt köşeye gizlilik/sorumluluk reddi uyarı kartları eklendi.</li>
-                <li>Mobil görünümde kategori başlığı ve genel arayüz düzeltmeleri yapıldı.</li>
-                <li>Kullanılmayan dosyalar temizlendi, proje yapısı sadeleştirildi.</li>
+                <li>{{ t('changelog.20260624.1') }}</li>
+                <li>{{ t('changelog.20260624.2') }}</li>
+                <li>{{ t('changelog.20260624.3') }}</li>
+                <li>{{ t('changelog.20260624.4') }}</li>
+                <li>{{ t('changelog.20260624.5') }}</li>
+                <li>{{ t('changelog.20260624.6') }}</li>
+                <li>{{ t('changelog.20260624.7') }}</li>
+                <li>{{ t('changelog.20260624.8') }}</li>
             </ul>
         </div>
 
         <div class="changelog-entry">
             <div class="changelog-date">2026-02-27</div>
             <ul class="changelog-items">
-                <li>Video, ses, PDF ve MikroTik araç sayfaları eklendi.</li>
-                <li>Marka adı "toolboxquick" olarak güncellendi.</li>
-                <li>Ana sayfa tasarımı sadeleştirilerek modern bir araç listesi haline getirildi.</li>
-                <li>Flask şablon yapısı ve Vercel dağıtım uyumu düzeltildi.</li>
+                <li>{{ t('changelog.20260227.1') }}</li>
+                <li>{{ t('changelog.20260227.2') }}</li>
+                <li>{{ t('changelog.20260227.3') }}</li>
+                <li>{{ t('changelog.20260227.4') }}</li>
             </ul>
         </div>
 
         <div class="changelog-entry">
             <div class="changelog-date">2026-02-09</div>
             <ul class="changelog-items">
-                <li>Proje Flask + Vercel altyapısına taşındı.</li>
-                <li>İlk ana sayfa tasarımı ve MikroTik taslağı oluşturuldu.</li>
+                <li>{{ t('changelog.20260209.1') }}</li>
+                <li>{{ t('changelog.20260209.2') }}</li>
             </ul>
         </div>
 
     </div>
 
-    <a href="/" class="text-secondary small d-inline-block mt-4">&larr; Ana sayfaya dön</a>
+    <a href="/" class="text-secondary small d-inline-block mt-4">&larr; {{ t('changelog.back_home') }}</a>
 </section>
 {% endblock %}

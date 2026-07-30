@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Video Dönüştürücü | toolboxquick{% endblock %}
+{% block title %}{{ t('convert_video.title') }} | toolboxquick{% endblock %}
 {% block head %}
 <style>
     .dropzone {
@@ -37,20 +37,20 @@
 
 {% block content %}
 <header class="mb-4">
-    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #10b981 !important;">Dönüştürücüler</p>
-    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">Video Dönüştürücü</h1>
+    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #10b981 !important;">{{ t('convert_video.kicker') }}</p>
+    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">{{ t('convert_video.heading') }}</h1>
     <p class="text-secondary mb-0">
-        Videolarınızı yükleyin, hedef formatı ve çözünürlüğü seçin, yerel olarak tarayıcınızda dönüştürüp indirin.
+        {{ t('convert_video.subtitle') }}
     </p>
 </header>
 
 <section class="tool-card p-4 mb-4">
     <div id="upload-stage">
-        <label class="form-label fw-semibold mb-2">Video Dosyanızı Seçin (MP4, WEBM, AVI, MOV, vb.)</label>
+        <label class="form-label fw-semibold mb-2">{{ t('convert_video.file_label') }}</label>
         <div class="dropzone" onclick="document.getElementById('video_file').click()">
             <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🎬</div>
-            <div class="fw-semibold mb-1" style="color: var(--text-color);">Bir video dosyası seçin veya sürükleyin</div>
-            <div class="text-secondary small">Dönüştürme işlemi tarayıcınızda yerel olarak yapılır.</div>
+            <div class="fw-semibold mb-1" style="color: var(--text-color);">{{ t('convert_video.file_placeholder') }}</div>
+            <div class="text-secondary small">{{ t('convert_video.file_hint') }}</div>
             <input type="file" id="video_file" class="file-input" accept="video/*" onchange="loadVideo(this)">
         </div>
     </div>
@@ -58,7 +58,7 @@
     <div id="editor-stage" class="d-none text-center">
         <div class="mb-3 d-flex justify-content-between align-items-center">
             <span id="file-name" class="fw-semibold text-success">video.mp4</span>
-            <button class="btn btn-sm btn-outline-danger" onclick="resetConverter()">Yeni Video Seç</button>
+            <button class="btn btn-sm btn-outline-danger" onclick="resetConverter()">{{ t('convert_video.new_file_btn') }}</button>
         </div>
 
         <div class="preview-container mb-4">
@@ -68,34 +68,34 @@
 
         <div class="row g-3 justify-content-center mb-4" style="max-width: 600px; margin: 0 auto; text-align: left;">
             <div class="col-md-6">
-                <label class="form-label fw-semibold mb-2">Hedef Format</label>
+                <label class="form-label fw-semibold mb-2">{{ t('convert_video.target_format_label') }}</label>
                 <select id="target-format" class="form-select" style="border-radius: 8px;">
-                    <option value="video/webm;codecs=vp9">WEBM (.webm)</option>
-                    <option value="video/mp4;codecs=avc1">MP4 (.mp4)</option>
+                    <option value="video/webm;codecs=vp9">{{ t('convert_video.opt_webm') }}</option>
+                    <option value="video/mp4;codecs=avc1">{{ t('convert_video.opt_mp4') }}</option>
                 </select>
                 <div class="form-text text-secondary small" id="support-warning"></div>
             </div>
             <div class="col-md-6">
-                <label class="form-label fw-semibold mb-2">Çözünürlük</label>
+                <label class="form-label fw-semibold mb-2">{{ t('convert_video.resolution_label') }}</label>
                 <select id="target-resolution" class="form-select" style="border-radius: 8px;">
-                    <option value="original">Orijinal Çözünürlük</option>
-                    <option value="1080p">1080p Full HD (1920x1080)</option>
-                    <option value="720p">720p HD (1280x720)</option>
-                    <option value="480p">480p (854x480)</option>
+                    <option value="original">{{ t('convert_video.opt_original') }}</option>
+                    <option value="1080p">{{ t('convert_video.opt_1080p') }}</option>
+                    <option value="720p">{{ t('convert_video.opt_720p') }}</option>
+                    <option value="480p">{{ t('convert_video.opt_480p') }}</option>
                 </select>
             </div>
         </div>
 
-        <div id="processing-msg" class="text-warning small mb-3 d-none">Lütfen bekleyin, video dönüştürülüyor...</div>
+        <div id="processing-msg" class="text-warning small mb-3 d-none">{{ t('convert_video.processing_msg') }}</div>
 
         <button class="btn btn-success px-5 py-2" id="convert-btn" onclick="startConversion()" style="border-radius: 8px; font-weight: 600;">
-            Dönüştür ve İndir 💾
+            {{ t('convert_video.convert_btn') }}
         </button>
     </div>
 </section>
 
 <section class="mt-4">
-    <a href="/" class="text-secondary small text-decoration-none">&larr; Ana sayfaya dön</a>
+    <a href="/" class="text-secondary small text-decoration-none">&larr; {{ t('convert_video.back_home') }}</a>
 </section>
 {% endblock %}
 
@@ -154,9 +154,9 @@ function checkFormatSupport() {
     if (!MediaRecorder.isTypeSupported('video/mp4') && !MediaRecorder.isTypeSupported('video/mp4;codecs=avc1')) {
         if (mp4Sel) {
             mp4Sel.disabled = true;
-            mp4Sel.textContent = 'MP4 (.mp4) - Tarayıcı Desteklemiyor';
+            mp4Sel.textContent = {{ t('convert_video.mp4_unsupported_opt')|tojson }};
         }
-        warning.textContent = 'Tarayıcınız MP4 kaydetmeyi desteklemiyor, varsayılan olarak WebM kullanılacaktır.';
+        warning.textContent = {{ t('convert_video.mp4_unsupported_warning')|tojson }};
     } else {
         warning.textContent = '';
     }

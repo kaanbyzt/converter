@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Arşiv Dönüştürücü | toolboxquick{% endblock %}
+{% block title %}{{ t('convert_archive.title') }} | toolboxquick{% endblock %}
 {% block head %}
 <style>
     .dropzone {
@@ -23,10 +23,10 @@
 
 {% block content %}
 <header class="mb-4">
-    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #10b981 !important;">Dönüştürücüler</p>
-    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">Arşiv Dönüştürücü</h1>
+    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #10b981 !important;">{{ t('convert_archive.kicker') }}</p>
+    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">{{ t('convert_archive.heading') }}</h1>
     <p class="text-secondary mb-0">
-        Arşivlerinizi (ZIP, TAR, GZ) yükleyin, hedef biçimi seçin ve sunucunuzda yerel olarak dönüştürüp indirin.
+        {{ t('convert_archive.subtitle') }}
     </p>
 </header>
 
@@ -39,10 +39,10 @@
 
     <form action="/convert/archive" method="post" enctype="multipart/form-data" id="archive-form">
         <div id="upload-stage">
-            <label class="form-label fw-semibold mb-2">Arşiv Dosyasını Seçin (.zip, .tar, .tar.gz)</label>
+            <label class="form-label fw-semibold mb-2">{{ t('convert_archive.file_label') }}</label>
             <div class="dropzone" onclick="document.getElementById('archive_file').click()">
                 <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🗄️</div>
-                <div class="fw-semibold mb-1" id="file-label" style="color: var(--text-color);">Bir arşiv dosyası seçin</div>
+                <div class="fw-semibold mb-1" id="file-label" style="color: var(--text-color);">{{ t('convert_archive.file_placeholder') }}</div>
                 <input type="file" name="archive_file" id="archive_file" class="file-input" accept=".zip,.tar,.gz,.tgz" required onchange="updateFileLabel(this)">
             </div>
         </div>
@@ -50,29 +50,29 @@
         <div id="editor-stage" class="d-none">
             <div class="mb-3 d-flex justify-content-between align-items-center">
                 <span id="file-name" class="fw-semibold text-success">arsiv.zip</span>
-                <button type="button" class="btn btn-sm btn-outline-danger" onclick="resetEditor()">Yeni Arşiv Yükle</button>
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="resetEditor()">{{ t('convert_archive.new_file_btn') }}</button>
             </div>
 
             <div class="mb-4" style="max-width: 300px; margin: 0 auto; text-align: left;">
-                <label class="form-label fw-semibold mb-2">Hedef Format</label>
+                <label class="form-label fw-semibold mb-2">{{ t('convert_archive.target_format_label') }}</label>
                 <select name="target_format" id="target-format" class="form-select" style="border-radius: 8px;">
-                    <option value="zip">ZIP Arşivi (.zip)</option>
-                    <option value="tar">TAR Arşivi (.tar)</option>
-                    <option value="tgz">TAR.GZ Arşivi (.tar.gz)</option>
+                    <option value="zip">{{ t('convert_archive.opt_zip') }}</option>
+                    <option value="tar">{{ t('convert_archive.opt_tar') }}</option>
+                    <option value="tgz">{{ t('convert_archive.opt_tgz') }}</option>
                 </select>
             </div>
 
-            <div id="processing-msg" class="text-warning small mb-3 d-none">Lütfen bekleyin, arşiv dönüştürülüyor...</div>
+            <div id="processing-msg" class="text-warning small mb-3 d-none">{{ t('convert_archive.processing_msg') }}</div>
 
             <button type="submit" class="btn btn-success px-5 py-2" id="process-btn" onclick="showProcessing()" style="border-radius: 8px; font-weight: 600;">
-                Dönüştür ve İndir 💾
+                {{ t('convert_archive.convert_btn') }}
             </button>
         </div>
     </form>
 </section>
 
 <section class="mt-4">
-    <a href="/" class="text-secondary small text-decoration-none">&larr; Ana sayfaya dön</a>
+    <a href="/" class="text-secondary small text-decoration-none">&larr; {{ t('convert_archive.back_home') }}</a>
 </section>
 {% endblock %}
 

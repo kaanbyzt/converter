@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Video Editor Studio | toolboxquick{% endblock %}
+{% block title %}{{ t('video_editor.page_title') }} | toolboxquick{% endblock %}
 {% block head %}
 <style>
     .dropzone {
@@ -69,19 +69,19 @@
 
 {% block content %}
 <header class="mb-4">
-    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #a855f7 !important;">Video Araçları</p>
-    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;" id="studio-title">Video Düzenleme Stüdyosu</h1>
+    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #a855f7 !important;">{{ t('video_editor.eyebrow') }}</p>
+    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;" id="studio-title">{{ t('video_editor.heading') }}</h1>
     <p class="text-secondary mb-0">
-        Videonuzu yükleyin, dilediğiniz düzenlemeleri tamamen tarayıcınızda yerel ve gizli olarak gerçekleştirip indirin.
+        {{ t('video_editor.description') }}
     </p>
 </header>
 
 <section class="tool-card p-4 mb-4">
     <div id="upload-stage">
-        <label class="form-label fw-semibold mb-2">Video Dosyanızı Seçin (MP4, WEBM, vb.)</label>
+        <label class="form-label fw-semibold mb-2">{{ t('video_editor.select_file_label') }}</label>
         <div class="dropzone" onclick="document.getElementById('video_file').click()">
             <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🎬</div>
-            <div class="fw-semibold mb-1" style="color: var(--text-color);">Bir video dosyası seçin veya sürükleyin</div>
+            <div class="fw-semibold mb-1" style="color: var(--text-color);">{{ t('video_editor.drop_or_select') }}</div>
             <input type="file" id="video_file" class="file-input" accept="video/*" onchange="loadVideo(this)">
         </div>
     </div>
@@ -89,7 +89,7 @@
     <div id="editor-stage" class="d-none">
         <div class="mb-3 d-flex justify-content-between align-items-center">
             <span id="file-name" class="fw-semibold text-purple-400">video.mp4</span>
-            <button class="btn btn-sm btn-outline-danger" onclick="resetEditor()">Yeni Video Seç</button>
+            <button class="btn btn-sm btn-outline-danger" onclick="resetEditor()">{{ t('video_editor.select_new_video') }}</button>
         </div>
 
         <div class="editor-layout">
@@ -100,20 +100,20 @@
                     <canvas id="output-canvas"></canvas>
                 </div>
                 <div class="w-100 d-flex justify-content-center gap-2">
-                    <button class="btn btn-sm btn-outline-secondary" onclick="togglePlay()" id="play-btn">Duraklat ⏸️</button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="togglePlay()" id="play-btn">{{ t('video_editor.pause') }} ⏸️</button>
                 </div>
             </div>
 
             <!-- Right side: Sidebar Control Tabs -->
             <div class="control-sidebar">
-                <h3 class="h6 fw-bold mb-3 border-bottom pb-2 text-purple-400">Düzenleme Ayarları</h3>
-                
+                <h3 class="h6 fw-bold mb-3 border-bottom pb-2 text-purple-400">{{ t('video_editor.settings_heading') }}</h3>
+
                 <!-- 1. Volume Tab -->
                 <div class="tool-tab-content" id="tab-volume">
-                    <label class="form-label fw-semibold mb-2">Ses Seviyesi</label>
+                    <label class="form-label fw-semibold mb-2">{{ t('video_editor.volume_label') }}</label>
                     <input type="range" class="form-range" id="vol-range" min="0" max="3" step="0.1" value="1" oninput="updateVolume(this.value)">
                     <div class="d-flex justify-content-between text-secondary small">
-                        <span>Sessiz</span>
+                        <span>{{ t('video_editor.volume_mute') }}</span>
                         <span>%100</span>
                         <span>%300</span>
                     </div>
@@ -121,26 +121,26 @@
 
                 <!-- 2. Speed Tab -->
                 <div class="tool-tab-content" id="tab-speed">
-                    <label class="form-label fw-semibold mb-2">Video Oynatma Hızı</label>
+                    <label class="form-label fw-semibold mb-2">{{ t('video_editor.speed_label') }}</label>
                     <select class="form-select" id="speed-select" onchange="updateSpeed(this.value)">
-                        <option value="0.5">0.5x Yavaş</option>
-                        <option value="1" selected>1.0x Normal</option>
-                        <option value="1.5">1.5x Hızlı</option>
-                        <option value="2">2.0x Çok Hızlı</option>
+                        <option value="0.5">0.5x {{ t('video_editor.speed_slow') }}</option>
+                        <option value="1" selected>1.0x {{ t('video_editor.speed_normal') }}</option>
+                        <option value="1.5">1.5x {{ t('video_editor.speed_fast') }}</option>
+                        <option value="2">2.0x {{ t('video_editor.speed_very_fast') }}</option>
                     </select>
                 </div>
 
                 <!-- 3. Text Overlay Tab -->
                 <div class="tool-tab-content" id="tab-text">
-                    <label class="form-label fw-semibold mb-2">Metin Ekle</label>
-                    <input type="text" class="form-control mb-2" id="text-input" placeholder="Metniniz" oninput="drawFrame()">
+                    <label class="form-label fw-semibold mb-2">{{ t('video_editor.add_text_label') }}</label>
+                    <input type="text" class="form-control mb-2" id="text-input" placeholder="{{ t('video_editor.your_text_placeholder') }}" oninput="drawFrame()">
                     <div class="row g-2">
                         <div class="col-6">
-                            <label class="form-label small text-secondary">X Konumu</label>
+                            <label class="form-label small text-secondary">{{ t('video_editor.x_position') }}</label>
                             <input type="number" class="form-control" id="text-x" value="50" oninput="drawFrame()">
                         </div>
                         <div class="col-6">
-                            <label class="form-label small text-secondary">Y Konumu</label>
+                            <label class="form-label small text-secondary">{{ t('video_editor.y_position') }}</label>
                             <input type="number" class="form-control" id="text-y" value="50" oninput="drawFrame()">
                         </div>
                     </div>
@@ -148,15 +148,15 @@
 
                 <!-- 4. Image Overlay Tab -->
                 <div class="tool-tab-content" id="tab-image">
-                    <label class="form-label fw-semibold mb-2">Görsel (Logo) Ekle</label>
+                    <label class="form-label fw-semibold mb-2">{{ t('video_editor.add_image_label') }}</label>
                     <input type="file" class="form-control mb-2" id="logo-file" accept="image/*" onchange="loadLogoImage(this)">
                     <div class="row g-2">
                         <div class="col-6">
-                            <label class="form-label small text-secondary">X Konumu</label>
+                            <label class="form-label small text-secondary">{{ t('video_editor.x_position') }}</label>
                             <input type="number" class="form-control" id="logo-x" value="20" oninput="drawFrame()">
                         </div>
                         <div class="col-6">
-                            <label class="form-label small text-secondary">Y Konumu</label>
+                            <label class="form-label small text-secondary">{{ t('video_editor.y_position') }}</label>
                             <input type="number" class="form-control" id="logo-y" value="20" oninput="drawFrame()">
                         </div>
                     </div>
@@ -164,33 +164,33 @@
 
                 <!-- 5. Loop Tab -->
                 <div class="tool-tab-content" id="tab-loop">
-                    <label class="form-label fw-semibold mb-2">Döngü Sayısı</label>
+                    <label class="form-label fw-semibold mb-2">{{ t('video_editor.loop_count_label') }}</label>
                     <select class="form-select" id="loop-count">
-                        <option value="1" selected>1 Defa (Değişiklik Yok)</option>
-                        <option value="2">2 Defa Tekrarla</option>
-                        <option value="3">3 Defa Tekrarla</option>
-                        <option value="5">5 Defa Tekrarla</option>
+                        <option value="1" selected>{{ t('video_editor.loop_once') }}</option>
+                        <option value="2">{{ t('video_editor.loop_twice') }}</option>
+                        <option value="3">{{ t('video_editor.loop_three') }}</option>
+                        <option value="5">{{ t('video_editor.loop_five') }}</option>
                     </select>
                 </div>
 
                 <!-- 6. Crop Tab -->
                 <div class="tool-tab-content" id="tab-crop">
-                    <label class="form-label fw-semibold mb-2">Çerçeve Kırpma</label>
+                    <label class="form-label fw-semibold mb-2">{{ t('video_editor.crop_label') }}</label>
                     <div class="row g-2">
                         <div class="col-6">
-                            <label class="form-label small text-secondary">X Başlangıç</label>
+                            <label class="form-label small text-secondary">{{ t('video_editor.x_start') }}</label>
                             <input type="number" class="form-control" id="crop-x" value="0" oninput="drawFrame()">
                         </div>
                         <div class="col-6">
-                            <label class="form-label small text-secondary">Y Başlangıç</label>
+                            <label class="form-label small text-secondary">{{ t('video_editor.y_start') }}</label>
                             <input type="number" class="form-control" id="crop-y" value="0" oninput="drawFrame()">
                         </div>
                         <div class="col-6">
-                            <label class="form-label small text-secondary">Genişlik</label>
+                            <label class="form-label small text-secondary">{{ t('video_editor.width_label') }}</label>
                             <input type="number" class="form-control" id="crop-w" value="0" oninput="drawFrame()">
                         </div>
                         <div class="col-6">
-                            <label class="form-label small text-secondary">Yükseklik</label>
+                            <label class="form-label small text-secondary">{{ t('video_editor.height_label') }}</label>
                             <input type="number" class="form-control" id="crop-h" value="0" oninput="drawFrame()">
                         </div>
                     </div>
@@ -198,22 +198,22 @@
 
                 <!-- 7. Remove Logo Tab -->
                 <div class="tool-tab-content" id="tab-remove-logo">
-                    <label class="form-label fw-semibold mb-2">Logoyu Kapat (Mozaik/Blur)</label>
+                    <label class="form-label fw-semibold mb-2">{{ t('video_editor.remove_logo_label') }}</label>
                     <div class="row g-2">
                         <div class="col-6">
-                            <label class="form-label small text-secondary">Logo X</label>
+                            <label class="form-label small text-secondary">{{ t('video_editor.logo_x') }}</label>
                             <input type="number" class="form-control" id="blur-x" value="20" oninput="drawFrame()">
                         </div>
                         <div class="col-6">
-                            <label class="form-label small text-secondary">Logo Y</label>
+                            <label class="form-label small text-secondary">{{ t('video_editor.logo_y') }}</label>
                             <input type="number" class="form-control" id="blur-y" value="20" oninput="drawFrame()">
                         </div>
                         <div class="col-6">
-                            <label class="form-label small text-secondary">Genişlik</label>
+                            <label class="form-label small text-secondary">{{ t('video_editor.width_label') }}</label>
                             <input type="number" class="form-control" id="blur-w" value="80" oninput="drawFrame()">
                         </div>
                         <div class="col-6">
-                            <label class="form-label small text-secondary">Yükseklik</label>
+                            <label class="form-label small text-secondary">{{ t('video_editor.height_label') }}</label>
                             <input type="number" class="form-control" id="blur-h" value="40" oninput="drawFrame()">
                         </div>
                     </div>
@@ -221,16 +221,16 @@
 
                 <!-- 8. Add Audio Tab -->
                 <div class="tool-tab-content" id="tab-add-audio">
-                    <label class="form-label fw-semibold mb-2">Arka Plan Müziği Ekle</label>
+                    <label class="form-label fw-semibold mb-2">{{ t('video_editor.add_audio_label') }}</label>
                     <input type="file" class="form-control mb-2" id="bg-audio-file" accept="audio/*" onchange="loadAudioTrack(this)">
-                    <div class="form-text text-secondary small">Videonun orijinal sesinin yerini alacaktır.</div>
+                    <div class="form-text text-secondary small">{{ t('video_editor.add_audio_hint') }}</div>
                 </div>
 
                 <!-- 9. Resize Tab -->
                 <div class="tool-tab-content" id="tab-resize">
-                    <label class="form-label fw-semibold mb-2">Yeniden Boyutlandır (Resize)</label>
+                    <label class="form-label fw-semibold mb-2">{{ t('video_editor.resize_label') }}</label>
                     <select class="form-select" id="resize-select" onchange="drawFrame()">
-                        <option value="original" selected>Orijinal Çözünürlük</option>
+                        <option value="original" selected>{{ t('video_editor.resize_original') }}</option>
                         <option value="1080p">1080p Full HD (1920x1080)</option>
                         <option value="720p">720p HD (1280x720)</option>
                         <option value="480p">480p (854x480)</option>
@@ -239,19 +239,19 @@
 
                 <!-- 10. Stabilize Tab -->
                 <div class="tool-tab-content" id="tab-stabilize">
-                    <label class="form-label fw-semibold mb-2">Sarsıntı Azaltma (Stabilize)</label>
+                    <label class="form-label fw-semibold mb-2">{{ t('video_editor.stabilize_label') }}</label>
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" id="stabilize-toggle" onchange="drawFrame()">
-                        <label class="form-check-label text-secondary small" for="stabilize-toggle">Yumuşak Kamera Dengeleyiciyi Etkinleştir</label>
+                        <label class="form-check-label text-secondary small" for="stabilize-toggle">{{ t('video_editor.stabilize_toggle_label') }}</label>
                     </div>
                 </div>
 
                 <hr class="my-3">
 
-                <div id="processing-msg" class="text-warning small mb-3 d-none">Lütfen bekleyin, video render ediliyor...</div>
+                <div id="processing-msg" class="text-warning small mb-3 d-none">{{ t('video_editor.rendering_msg') }}</div>
 
                 <button class="btn btn-purple text-white w-100 py-2 fw-semibold" id="export-btn" onclick="startExport()" style="background-color: #a855f7; border-color: #a855f7;">
-                    Dışa Aktar ve İndir 💾
+                    {{ t('video_editor.export_download_btn') }} 💾
                 </button>
             </div>
         </div>
@@ -259,7 +259,7 @@
 </section>
 
 <section class="mt-4">
-    <a href="/" class="text-secondary small text-decoration-none">&larr; Ana sayfaya dön</a>
+    <a href="/" class="text-secondary small text-decoration-none">&larr; {{ t('video_editor.back_home') }}</a>
 </section>
 {% endblock %}
 
@@ -336,10 +336,10 @@ function togglePlay() {
     const playBtn = document.getElementById('play-btn');
     if (videoEl.paused) {
         videoEl.play();
-        playBtn.textContent = 'Duraklat ⏸️';
+        playBtn.textContent = {{ t('video_editor.pause')|tojson }} + ' ⏸️';
     } else {
         videoEl.pause();
-        playBtn.textContent = 'Oynat ▶️';
+        playBtn.textContent = {{ t('video_editor.play')|tojson }} + ' ▶️';
     }
 }
 
@@ -377,7 +377,7 @@ async function loadAudioTrack(input) {
         const arrayBuffer = await file.arrayBuffer();
         bgAudioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
     } catch (e) {
-        alert('Ses dosyası yüklenemedi.');
+        alert({{ t('video_editor.audio_load_failed')|tojson }});
     }
 }
 
@@ -547,16 +547,16 @@ window.onload = () => {
             
             // Adjust title based on active parameter
             const titlesMap = {
-                'volume': 'Video Ses Seviyesi Değiştirici',
-                'speed': 'Video Oynatma Hızı Ayarlayıcı',
-                'text': 'Videoya Metin Ekleme',
-                'image': 'Videoya Görsel & Logo Ekleme',
-                'loop': 'Videoyu Döngüye Alma (Loop)',
-                'crop': 'Video Çerçevesi Kırpıcı (Crop)',
-                'remove-logo': 'Logoyu Kapatma & Sansürleme',
-                'add-audio': 'Videoya Müzik / Ses Ekleme',
-                'resize': 'Video Çözünürlüğü Değiştirici',
-                'stabilize': 'Video Sarsıntı Sabitleyici'
+                'volume': {{ t('video_editor.tool_title_volume')|tojson }},
+                'speed': {{ t('video_editor.tool_title_speed')|tojson }},
+                'text': {{ t('video_editor.tool_title_text')|tojson }},
+                'image': {{ t('video_editor.tool_title_image')|tojson }},
+                'loop': {{ t('video_editor.tool_title_loop')|tojson }},
+                'crop': {{ t('video_editor.tool_title_crop')|tojson }},
+                'remove-logo': {{ t('video_editor.tool_title_remove_logo')|tojson }},
+                'add-audio': {{ t('video_editor.tool_title_add_audio')|tojson }},
+                'resize': {{ t('video_editor.tool_title_resize')|tojson }},
+                'stabilize': {{ t('video_editor.tool_title_stabilize')|tojson }}
             };
             if (titlesMap[tool]) {
                 document.getElementById('studio-title').textContent = titlesMap[tool];

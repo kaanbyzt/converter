@@ -1,30 +1,30 @@
 {% extends "mikrotik_base.html" %}
-{% block title %}Donanım Seçici{% endblock %}
+{% block title %}{{ t('mk_hardware.title') }}{% endblock %}
 {% block content %}
 <div class="page-header">
-    <h1>MikroTik Donanım Seçici</h1>
-    <p>Projenizin veya işletmenizin ihtiyaçlarına en uygun RouterBOARD modelini hızlıca filtreleyin.</p>
+    <h1>{{ t('mk_hardware.h1') }}</h1>
+    <p>{{ t('mk_hardware.desc') }}</p>
 </div>
-<p class="script-warn">⚠️ Öneriler genel bilgi amaçlıdır; satın alma kararınızdan önce güncel teknik özellikleri üretici sitesinden doğrulayın.</p>
+<p class="script-warn">{{ t('mk_hardware.top_warning') }}</p>
 <div class="tool-grid-4">
     <div class="card card-space">
         <div>
-            <label class="form-label">Ağ Ölçeği / Tipi</label>
+            <label class="form-label">{{ t('mk_hardware.type_label') }}</label>
             <select id="type" class="form-select" onchange="filter()">
-                <option value="all">Tüm Cihazlar</option>
-                <option value="home-office">Ev / Küçük Ofis (SOHO)</option>
-                <option value="medium-business">Orta Ölçekli İşletme</option>
-                <option value="enterprise">Kurumsal / Veri Merkezi / ISP</option>
+                <option value="all">{{ t('mk_hardware.opt_all') }}</option>
+                <option value="home-office">{{ t('mk_hardware.opt_home') }}</option>
+                <option value="medium-business">{{ t('mk_hardware.opt_medium') }}</option>
+                <option value="enterprise">{{ t('mk_hardware.opt_enterprise') }}</option>
             </select>
         </div>
         <div class="form-divider"></div>
         <label class="checkbox-row">
             <input type="checkbox" id="sfp" onchange="filter()">
-            <span>10G SFP+ Portu Olsun</span>
+            <span>{{ t('mk_hardware.sfp_chk') }}</span>
         </label>
     </div>
     <div>
-        <h2 id="count-title" style="font-size:1rem;font-weight:600;color:#f9fafb;margin-bottom:1rem;">Uygun Modeller</h2>
+        <h2 id="count-title" style="font-size:1rem;font-weight:600;color:#f9fafb;margin-bottom:1rem;">{{ t('mk_hardware.count_title') }}</h2>
         <div id="devices"></div>
     </div>
 </div>
@@ -32,25 +32,25 @@
 {% block scripts %}
 <script>
 const DEVICES = [
-    { model:"hEX (RB750Gr3)", type:"home-office", ports:"1G", sfp:"Yok", ipsec:"Var", desc:"Ev ve küçük ofisler için fiyat performans canavarı standart kablolu router." },
-    { model:"hAP ax3", type:"home-office", ports:"1G & 2.5G", sfp:"Yok", ipsec:"Var", desc:"Güçlü işlemcili, Wi-Fi 6 destekli üst düzey ev/ofis routerı." },
-    { model:"RB4011 iGS+RM", type:"medium-business", ports:"1G", sfp:"1x 10G SFP+", ipsec:"Çok Güçlü", desc:"Orta ölçekli işletmeler, siber kafeler ve yoğun ağlar için 10 çekirdek gücünde router." },
-    { model:"RB5009 UG+S+IN", type:"medium-business", ports:"1G & 2.5G", sfp:"1x 10G SFP+", ipsec:"Mükemmel", desc:"Yeni nesil kompakt güç. Ağır yükler ve modern 2.5G/10G ağlar için mükemmel seçim." },
-    { model:"CCR2004-16G-2S+", type:"enterprise", ports:"1G", sfp:"2x 10G SFP+", ipsec:"Donanımsal", desc:"Büyük işletmeler ve veri merkezleri için tam donanımlı Cloud Core Router." },
-    { model:"CCR2116-12G-4S+", type:"enterprise", ports:"1G", sfp:"4x 10G SFP+", ipsec:"Ultra Güçlü", desc:"Büyük ISP'ler ve devasa trafik yönetimi için geliştirilmiş ekstrem performans routerı." },
+    { model:"hEX (RB750Gr3)", type:"home-office", ports:"1G", sfp:{{ t('mk_hardware.sfp_none')|tojson }}, ipsec:{{ t('mk_hardware.ipsec_var')|tojson }}, desc:{{ t('mk_hardware.d1')|tojson }} },
+    { model:"hAP ax3", type:"home-office", ports:"1G & 2.5G", sfp:{{ t('mk_hardware.sfp_none')|tojson }}, ipsec:{{ t('mk_hardware.ipsec_var')|tojson }}, desc:{{ t('mk_hardware.d2')|tojson }} },
+    { model:"RB4011 iGS+RM", type:"medium-business", ports:"1G", sfp:"1x 10G SFP+", ipsec:{{ t('mk_hardware.ipsec_cok_guclu')|tojson }}, desc:{{ t('mk_hardware.d3')|tojson }} },
+    { model:"RB5009 UG+S+IN", type:"medium-business", ports:"1G & 2.5G", sfp:"1x 10G SFP+", ipsec:{{ t('mk_hardware.ipsec_mukemmel')|tojson }}, desc:{{ t('mk_hardware.d4')|tojson }} },
+    { model:"CCR2004-16G-2S+", type:"enterprise", ports:"1G", sfp:"2x 10G SFP+", ipsec:{{ t('mk_hardware.ipsec_donanimsal')|tojson }}, desc:{{ t('mk_hardware.d5')|tojson }} },
+    { model:"CCR2116-12G-4S+", type:"enterprise", ports:"1G", sfp:"4x 10G SFP+", ipsec:{{ t('mk_hardware.ipsec_ultra_guclu')|tojson }}, desc:{{ t('mk_hardware.d6')|tojson }} },
 ];
 function filter() {
     const t = document.getElementById('type').value;
     const needSfp = document.getElementById('sfp').checked;
     const list = DEVICES.filter(d => {
         const tm = t === 'all' || d.type === t;
-        const sm = !needSfp || d.sfp !== 'Yok';
+        const sm = !needSfp || d.sfp !== {{ t('mk_hardware.sfp_none')|tojson }};
         return tm && sm;
     });
-    document.getElementById('count-title').textContent = `Uygun Modeller (${list.length})`;
+    document.getElementById('count-title').textContent = `${ {{ t('mk_hardware.count_title')|tojson }} } (${list.length})`;
     const cont = document.getElementById('devices');
     if (list.length === 0) {
-        cont.innerHTML = '<div class="empty-state">Aradığınız kriterlere uygun cihaz bulunamadı. Filtreleri esnetmeyi deneyebilirsiniz.</div>';
+        cont.innerHTML = `<div class="empty-state">${ {{ t('mk_hardware.empty_state')|tojson }} }</div>`;
         return;
     }
     cont.innerHTML = list.map(d => `
@@ -61,9 +61,9 @@ function filter() {
             </div>
             <div class="device-desc">${d.desc}</div>
             <div class="device-specs">
-                <div class="spec-block"><small>Port Hızları</small><span>${d.ports}</span></div>
-                <div class="spec-block"><small>SFP+ Desteği</small><span>${d.sfp}</span></div>
-                <div class="spec-block"><small>IPsec Hızl.</small><span class="val-green">${d.ipsec}</span></div>
+                <div class="spec-block"><small>${ {{ t('mk_hardware.port_speeds_label')|tojson }} }</small><span>${d.ports}</span></div>
+                <div class="spec-block"><small>${ {{ t('mk_hardware.sfp_support_label')|tojson }} }</small><span>${d.sfp}</span></div>
+                <div class="spec-block"><small>${ {{ t('mk_hardware.ipsec_label')|tojson }} }</small><span class="val-green">${d.ipsec}</span></div>
             </div>
         </div>
     `).join('');

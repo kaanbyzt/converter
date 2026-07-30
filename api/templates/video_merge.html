@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Videoları Birleştir | toolboxquick{% endblock %}
+{% block title %}{{ t('video_merge.page_title') }} | toolboxquick{% endblock %}
 {% block head %}
 <style>
     .dropzone {
@@ -36,27 +36,27 @@
 
 {% block content %}
 <header class="mb-4">
-    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #a855f7 !important;">Video Araçları</p>
-    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">Videoları Birleştirici</h1>
+    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #a855f7 !important;">{{ t('video_merge.eyebrow') }}</p>
+    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">{{ t('video_merge.heading') }}</h1>
     <p class="text-secondary mb-0">
-        Birden fazla video dosyasını seçin, sırayla birleştirip tek bir video olarak yerel indirin.
+        {{ t('video_merge.description') }}
     </p>
 </header>
 
 <section class="tool-card p-4 mb-4">
     <div id="upload-stage">
-        <label class="form-label fw-semibold mb-2">Video Dosyalarınızı Seçin (En az 2 adet)</label>
+        <label class="form-label fw-semibold mb-2">{{ t('video_merge.select_files_label') }}</label>
         <div class="dropzone" onclick="document.getElementById('video_files').click()">
             <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔀</div>
-            <div class="fw-semibold mb-1" style="color: var(--text-color);">Videoları seçmek için tıklayın</div>
+            <div class="fw-semibold mb-1" style="color: var(--text-color);">{{ t('video_merge.click_to_select') }}</div>
             <input type="file" id="video_files" class="file-input" accept="video/*" multiple onchange="loadVideos(this)">
         </div>
     </div>
 
     <div id="editor-stage" class="d-none text-center">
         <div class="mb-3 d-flex justify-content-between align-items-center">
-            <span id="files-count" class="fw-semibold text-purple-400">2 dosya seçildi</span>
-            <button class="btn btn-sm btn-outline-danger" onclick="resetEditor()">Yeniden Seç</button>
+            <span id="files-count" class="fw-semibold text-purple-400">{{ t('video_merge.files_selected', count=2) }}</span>
+            <button class="btn btn-sm btn-outline-danger" onclick="resetEditor()">{{ t('video_merge.reselect') }}</button>
         </div>
 
         <div class="preview-container mb-4">
@@ -66,16 +66,16 @@
             <canvas id="output-canvas"></canvas>
         </div>
 
-        <div id="processing-msg" class="text-warning small mb-3 d-none">Lütfen bekleyin, videolar birleştirilip kaydediliyor...</div>
+        <div id="processing-msg" class="text-warning small mb-3 d-none">{{ t('video_merge.processing') }}</div>
 
         <button class="btn btn-primary px-5 py-2" id="download-btn" onclick="startExport()" style="border-radius: 8px; font-weight: 600;">
-            Birleştir ve İndir 💾
+            {{ t('video_merge.merge_download_btn') }} 💾
         </button>
     </div>
 </section>
 
 <section class="mt-4">
-    <a href="/" class="text-secondary small text-decoration-none">&larr; Ana sayfaya dön</a>
+    <a href="/" class="text-secondary small text-decoration-none">&larr; {{ t('video_merge.back_home') }}</a>
 </section>
 {% endblock %}
 
@@ -105,12 +105,12 @@ function resetEditor() {
 
 function loadVideos(input) {
     if (!input.files || input.files.length < 2) {
-        alert('Lütfen en az iki adet video dosyası seçin.');
+        alert({{ t('video_merge.select_at_least_two')|tojson }});
         return;
     }
-    
+
     videoFiles = Array.from(input.files);
-    document.getElementById('files-count').textContent = videoFiles.length + ' dosya seçildi';
+    document.getElementById('files-count').textContent = {{ t('video_merge.files_selected')|tojson }}.replace('{count}', videoFiles.length);
 
     document.getElementById('upload-stage').classList.add('d-none');
     document.getElementById('editor-stage').classList.remove('d-none');

@@ -1,31 +1,35 @@
 {% extends "mikrotik_base.html" %}
-{% block title %}DHCP Sunucusu{% endblock %}
+{% block title %}{{ t('mk_dhcp.title') }}{% endblock %}
 {% block content %}
-<div class="page-header"><h1>DHCP Sunucu ve IP Havuzu Oluşturucu</h1><p>Cihazlarınızın ağdan otomatik IP, Gateway ve DNS alabilmesi için servis kurulum kodlarını hazırlayın.</p></div>
+<div class="page-header"><h1>{{ t('mk_dhcp.heading') }}</h1><p>{{ t('mk_dhcp.intro') }}</p></div>
 <div class="tool-grid">
     <div class="card card-space">
-        <div><label class="form-label">IP Havuz Adı</label><input type="text" id="pool" class="form-input" value="dhcp_havuzu" oninput="update()"></div>
-        <div><label class="form-label">Dağıtılacak IP Aralığı</label><input type="text" id="range" class="form-input" value="192.168.1.100-192.168.1.200" oninput="update()" placeholder="Örn: 192.168.1.100-192.168.1.200"></div>
-        <div><label class="form-label">Arayüz (Interface)</label><input type="text" id="iface" class="form-input" value="bridge-local" oninput="update()"></div>
-        <div><label class="form-label">Varsayılan Geçit (Gateway)</label><input type="text" id="gw" class="form-input" value="192.168.1.1" oninput="update()"></div>
-        <div><label class="form-label">DNS Sunucuları (Virgülle Ayır)</label><input type="text" id="dns" class="form-input" value="8.8.8.8,1.1.1.1" oninput="update()"></div>
+        <div><label class="form-label">{{ t('mk_dhcp.label_pool') }}</label><input type="text" id="pool" class="form-input" value="dhcp_havuzu" oninput="update()"></div>
+        <div><label class="form-label">{{ t('mk_dhcp.label_range') }}</label><input type="text" id="range" class="form-input" value="192.168.1.100-192.168.1.200" oninput="update()" placeholder="{{ t('mk_dhcp.placeholder_range') }}"></div>
+        <div><label class="form-label">{{ t('mk_dhcp.label_iface') }}</label><input type="text" id="iface" class="form-input" value="bridge-local" oninput="update()"></div>
+        <div><label class="form-label">{{ t('mk_dhcp.label_gw') }}</label><input type="text" id="gw" class="form-input" value="192.168.1.1" oninput="update()"></div>
+        <div><label class="form-label">{{ t('mk_dhcp.label_dns') }}</label><input type="text" id="dns" class="form-input" value="8.8.8.8,1.1.1.1" oninput="update()"></div>
     </div>
     <div class="script-card">
-        <div class="script-header"><div class="script-title"><span class="dot"></span>DHCP Konfigürasyon Scripti</div><button class="copy-btn" onclick="copy()">Kopyala</button></div>
-        <p class="script-warn">⚠️ Kopyalamadan önce script'i inceleyin; cihazınıza uygulamadan önce yedek alın ve mümkünse test ortamında deneyin.</p>
+        <div class="script-header"><div class="script-title"><span class="dot"></span>{{ t('mk_dhcp.script_title') }}</div><button class="copy-btn" onclick="copy()">{{ t('mk_dhcp.copy_btn') }}</button></div>
+        <p class="script-warn">⚠️ {{ t('mk_dhcp.copy_warning') }}</p>
         <pre id="out" class="script-pre"></pre>
     </div>
 </div>
 {% endblock %}
 {% block scripts %}
 <script>
+const STEP1 = {{ t('mk_dhcp.comment_pool_step')|tojson }};
+const STEP2 = {{ t('mk_dhcp.comment_dhcp_step')|tojson }};
+const STEP3 = {{ t('mk_dhcp.comment_network_step')|tojson }};
+const LOCAL_LAN_COMMENT = {{ t('mk_dhcp.comment_local_lan')|tojson }};
 function update(){
     const pool=document.getElementById('pool').value,range=document.getElementById('range').value,iface=document.getElementById('iface').value,gw=document.getElementById('gw').value,dns=document.getElementById('dns').value;
     const base=gw.substring(0,gw.lastIndexOf('.'))+'.0/24';
-    let s=`# 1. IP Havuzunu (IP Pool) Tanımla\n/ip pool\nadd name=${pool} ranges=${range}\n\n# 2. DHCP Sunucusunu Oluştur ve Havuza Bağla\n/ip dhcp-server\nadd address-pool=${pool} disabled=no interface=${iface} lease-time=10h name="DHCP_Sunucusu"\n\n# 3. Dağıtılacak Ağ Detaylarını (Gateway ve DNS) Belirt\n/ip dhcp-server network\nadd address=${base} comment="Yerel LAN Agi" dns-server=${dns} gateway=${gw}\n`;
+    let s=`# ${STEP1}\n/ip pool\nadd name=${pool} ranges=${range}\n\n# ${STEP2}\n/ip dhcp-server\nadd address-pool=${pool} disabled=no interface=${iface} lease-time=10h name="DHCP_Sunucusu"\n\n# ${STEP3}\n/ip dhcp-server network\nadd address=${base} comment="${LOCAL_LAN_COMMENT}" dns-server=${dns} gateway=${gw}\n`;
     document.getElementById('out').textContent=s;
 }
-function copy(){navigator.clipboard.writeText(document.getElementById('out').textContent);const b=document.querySelector('.copy-btn');b.textContent='Kopyalandı!';setTimeout(()=>b.textContent='Kopyala',1500);}
+function copy(){navigator.clipboard.writeText(document.getElementById('out').textContent);const b=document.querySelector('.copy-btn');b.textContent={{ t('mk_dhcp.copied')|tojson }};setTimeout(()=>b.textContent={{ t('mk_dhcp.copy_btn')|tojson }},1500);}
 update();
 </script>
 {% endblock %}

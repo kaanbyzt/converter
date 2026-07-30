@@ -1,32 +1,32 @@
 {% extends "mikrotik_base.html" %}
-{% block title %}Güvenlik Duvarı Şablonları{% endblock %}
+{% block title %}{{ t('mk_firewall.title') }}{% endblock %}
 {% block content %}
 <div class="page-header">
-    <h1>Güvenlik Duvarı (Firewall) Şablonları</h1>
-    <p>RouterOS cihazınızı siber saldırılara, taramalara ve yetkisiz erişimlere karşı koruyacak kurallar.</p>
+    <h1>{{ t('mk_firewall.h1') }}</h1>
+    <p>{{ t('mk_firewall.desc') }}</p>
 </div>
 <div class="tool-grid">
     <div class="card card-space">
         <div>
-            <label class="form-label">Güvenlik Senaryosu</label>
+            <label class="form-label">{{ t('mk_firewall.scenario_label') }}</label>
             <select id="scenario" class="form-select" onchange="toggleScenario()">
-                <option value="basic">Temel Router Koruması (Önerilen)</option>
-                <option value="brute">SSH Brute-Force Önleyici (Saldırı Engelleme)</option>
-                <option value="winbox">Winbox Erişim Kısıtlama (Whitelist)</option>
+                <option value="basic">{{ t('mk_firewall.opt_basic') }}</option>
+                <option value="brute">{{ t('mk_firewall.opt_brute') }}</option>
+                <option value="winbox">{{ t('mk_firewall.opt_winbox') }}</option>
             </select>
         </div>
         <div id="winbox-sec" style="display:none;">
-            <label class="form-label" style="font-size:0.7rem;">Yönetici (Güvenli) IP Adresi</label>
-            <input type="text" id="secip" class="form-input form-input-sm" value="192.168.1.100" oninput="update()" placeholder="Örn: 192.168.1.100">
-            <p class="form-hint-warn">⚠️ Kendi IP adresinizi doğru girdiğinizden emin olun, aksi takdirde cihazın erişimini engelleyebilirsiniz.</p>
+            <label class="form-label" style="font-size:0.7rem;">{{ t('mk_firewall.secip_label') }}</label>
+            <input type="text" id="secip" class="form-input form-input-sm" value="192.168.1.100" oninput="update()" placeholder="{{ t('mk_firewall.secip_placeholder') }}">
+            <p class="form-hint-warn">{{ t('mk_firewall.secip_warn') }}</p>
         </div>
     </div>
     <div class="script-card">
         <div class="script-header">
-            <div class="script-title"><span class="dot"></span> Filtre Kuralları (Filter Rules)</div>
-            <button class="copy-btn" onclick="copy()">Kopyala</button>
+            <div class="script-title"><span class="dot"></span> {{ t('mk_firewall.script_title') }}</div>
+            <button class="copy-btn" onclick="copy()">{{ t('mk_firewall.copy') }}</button>
         </div>
-        <p class="script-warn">⚠️ Kopyalamadan önce script'i inceleyin; cihazınıza uygulamadan önce yedek alın ve mümkünse test ortamında deneyin.</p>
+        <p class="script-warn">{{ t('mk_firewall.review_warning') }}</p>
         <pre id="out" class="script-pre"></pre>
     </div>
 </div>
@@ -43,25 +43,25 @@ function update() {
     const secip = document.getElementById('secip').value;
     let out = `/ip firewall filter\n`;
     if (s === 'basic') {
-        out += `# 1. Geçersiz (Invalid) Bağlantıları Engelle\nadd action=drop chain=input connection-state=invalid comment="Gecersiz baglantilari engelle"\n`;
-        out += `# 2. Halihazırda Kurulmuş ve Güvenli Bağlantılara İzin Ver\nadd action=accept chain=input connection-state=established,related comment="Guvenli baglantilara izin ver"\n`;
-        out += `# 3. Ping (ICMP) İsteklerini Sınırla (Ping Flood Koruması)\nadd action=accept chain=input icmp-options=8:0-0 protocol=icmp limit=5,5:packet comment="Ping sinirla"\nadd action=drop chain=input protocol=icmp comment="Fazla pingleri engelle"\n`;
-        out += `# 4. Geri Kalan Tüm Dış Girişleri Kapat\nadd action=drop chain=input in-interface-list=WAN comment="WAN uzerinden gelen diger her seyi engelle"\n`;
+        out += `# ${ {{ t('mk_firewall.c_basic1_title')|tojson }} }\nadd action=drop chain=input connection-state=invalid comment="${ {{ t('mk_firewall.c_basic1_comment')|tojson }} }"\n`;
+        out += `# ${ {{ t('mk_firewall.c_basic2_title')|tojson }} }\nadd action=accept chain=input connection-state=established,related comment="${ {{ t('mk_firewall.c_basic2_comment')|tojson }} }"\n`;
+        out += `# ${ {{ t('mk_firewall.c_basic3_title')|tojson }} }\nadd action=accept chain=input icmp-options=8:0-0 protocol=icmp limit=5,5:packet comment="${ {{ t('mk_firewall.c_basic3_comment1')|tojson }} }"\nadd action=drop chain=input protocol=icmp comment="${ {{ t('mk_firewall.c_basic3_comment2')|tojson }} }"\n`;
+        out += `# ${ {{ t('mk_firewall.c_basic4_title')|tojson }} }\nadd action=drop chain=input in-interface-list=WAN comment="${ {{ t('mk_firewall.c_basic4_comment')|tojson }} }"\n`;
     } else if (s === 'brute') {
-        out += `# SSH Brute Force Koruması (Aşamalı Engelleme)\nadd action=drop chain=input dst-port=22 protocol=tcp src-address-list=SSH_Kara_Liste comment="Kara listedekileri engelle"\n`;
+        out += `# ${ {{ t('mk_firewall.c_brute_title')|tojson }} }\nadd action=drop chain=input dst-port=22 protocol=tcp src-address-list=SSH_Kara_Liste comment="${ {{ t('mk_firewall.c_brute_comment1')|tojson }} }"\n`;
         out += `add action=add-src-to-address-list address-list=SSH_Kara_Liste address-list-timeout=4w2d chain=input dst-port=22 protocol=tcp src-address-list=SSH_Asama3\n`;
         out += `add action=add-src-to-address-list address-list=SSH_Asama3 address-list-timeout=1m chain=input dst-port=22 protocol=tcp src-address-list=SSH_Asama2\n`;
         out += `add action=add-src-to-address-list address-list=SSH_Asama2 address-list-timeout=1m chain=input dst-port=22 protocol=tcp src-address-list=SSH_Asama1\n`;
-        out += `add action=add-src-to-address-list address-list=SSH_Asama1 address-list-timeout=1m chain=input dst-port=22 protocol=tcp comment="Ilk hatali denemeyi izle"\n`;
+        out += `add action=add-src-to-address-list address-list=SSH_Asama1 address-list-timeout=1m chain=input dst-port=22 protocol=tcp comment="${ {{ t('mk_firewall.c_brute_comment2')|tojson }} }"\n`;
     } else {
-        out += `# Winbox (8291) Portuna Sadece Güvenli Bilgisayarın Erişmesine İzin Ver\nadd action=accept chain=input dst-port=8291 protocol=tcp src-address=${secip} comment="Sadece guvenli IPye Winbox izni ver"\nadd action=drop chain=input dst-port=8291 protocol=tcp comment="Geri kalan herkese Winboxu kapat"\n`;
+        out += `# ${ {{ t('mk_firewall.c_winbox_title')|tojson }} }\nadd action=accept chain=input dst-port=8291 protocol=tcp src-address=${secip} comment="${ {{ t('mk_firewall.c_winbox_comment1')|tojson }} }"\nadd action=drop chain=input dst-port=8291 protocol=tcp comment="${ {{ t('mk_firewall.c_winbox_comment2')|tojson }} }"\n`;
     }
     document.getElementById('out').textContent = out;
 }
 function copy() {
     navigator.clipboard.writeText(document.getElementById('out').textContent);
     const btn = document.querySelector('.copy-btn');
-    btn.textContent = 'Kopyalandı!'; setTimeout(() => btn.textContent = 'Kopyala', 1500);
+    btn.textContent = {{ t('mk_firewall.copied')|tojson }}; setTimeout(() => btn.textContent = {{ t('mk_firewall.copy')|tojson }}, 1500);
 }
 update();
 </script>

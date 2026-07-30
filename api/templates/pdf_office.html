@@ -28,43 +28,43 @@
 
 {% block content %}
 <header class="mb-4">
-    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #f97316 !important;">PDF Araçları</p>
+    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #f97316 !important;">{{ t('pdf_office.category') }}</p>
     <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">{{ tool_title }}</h1>
     <p class="text-secondary mb-0">
-        {{ tool_desc }} (İşlem tamamen tarayıcınızda yerel ve gizli olarak gerçekleştirilir).
+        {{ tool_desc }} {{ t('pdf_office.desc_suffix') }}
     </p>
 </header>
 
 <section class="tool-card p-4 mb-4">
     <div id="upload-stage">
-        <label class="form-label fw-semibold mb-2">Dosyanızı Seçin</label>
+        <label class="form-label fw-semibold mb-2">{{ t('pdf_office.select_label') }}</label>
         <div class="dropzone" onclick="document.getElementById('office_file').click()">
             <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">📄</div>
-            <div class="fw-semibold mb-1" style="color: var(--text-color);">Dönüştürülecek dosyayı seçin</div>
+            <div class="fw-semibold mb-1" style="color: var(--text-color);">{{ t('pdf_office.dropzone_text') }}</div>
             <input type="file" id="office_file" class="file-input" accept="{{ file_accept }}" onchange="loadOfficeFile(this)">
         </div>
     </div>
 
     <div id="editor-stage" class="d-none text-center">
         <div class="mb-3 d-flex justify-content-between align-items-center">
-            <span id="file-name" class="fw-semibold text-orange-400">dosya</span>
-            <button class="btn btn-sm btn-outline-danger" onclick="resetEditor()">Yeni Dosya Yükle</button>
+            <span id="file-name" class="fw-semibold text-orange-400">{{ t('pdf_office.default_filename') }}</span>
+            <button class="btn btn-sm btn-outline-danger" onclick="resetEditor()">{{ t('pdf_office.reset_btn') }}</button>
         </div>
 
         <div class="alert alert-info py-2 my-4 small" style="max-width: 400px; margin: 0 auto;">
-            Dosyanız yerel algoritmalarda çözümlenecek ve dönüştürülecektir.
+            {{ t('pdf_office.info_note') }}
         </div>
 
-        <div id="processing-msg" class="text-warning small mb-3 d-none">Lütfen bekleyin, dönüştürme yapılıyor...</div>
+        <div id="processing-msg" class="text-warning small mb-3 d-none">{{ t('pdf_office.processing_msg') }}</div>
 
         <button class="btn btn-warning text-white px-5 py-2" id="process-btn" onclick="processAndDownload()" style="border-radius: 8px; font-weight: 600; background-color: #f97316; border-color: #f97316;">
-            Dönüştür ve İndir 💾
+            {{ t('pdf_office.submit_btn') }}
         </button>
     </div>
 </section>
 
 <section class="mt-4">
-    <a href="/" class="text-secondary small text-decoration-none">&larr; Ana sayfaya dön</a>
+    <a href="/" class="text-secondary small text-decoration-none">&larr; {{ t('pdf_office.back_home') }}</a>
 </section>
 {% endblock %}
 
@@ -113,7 +113,7 @@ async function processAndDownload() {
             await convertPPTToPDF();
         }
     } catch (e) {
-        alert('Dönüştürme işlemi sırasında hata oluştu.');
+        alert({{ t('pdf_office.err_process_failed')|tojson }});
         console.error(e);
     } finally {
         document.getElementById('processing-msg').classList.add('d-none');
@@ -276,7 +276,7 @@ async function convertPPTToPDF() {
     pdf.setFontSize(24);
     pdf.text(originalFileName, 50, 100);
     pdf.setFontSize(14);
-    pdf.text("Sunum Belgesi (Dönüştürüldü)", 50, 120);
+    pdf.text({{ t('pdf_office.ppt_converted_label')|tojson }}, 50, 120);
     
     // We create a mock formatted landscape document matching standard presentation layout
     pdf.save(originalFileName + '.pdf');

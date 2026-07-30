@@ -1,19 +1,19 @@
 {% extends "mikrotik_base.html" %}
-{% block title %}Subnet Hesaplayıcı{% endblock %}
+{% block title %}{{ t('mk_subnet.title') }}{% endblock %}
 {% block content %}
 <div class="page-header">
-    <h1>Subnet (Alt Ağ) Hesaplayıcı</h1>
-    <p>IPv4 adresleri için ağ aralığını, kullanılabilir IP sayısını ve subnet maskesini hesaplayın.</p>
+    <h1>{{ t('mk_subnet.heading') }}</h1>
+    <p>{{ t('mk_subnet.intro') }}</p>
 </div>
-<p class="script-warn">⚠️ Bu hesaplama genel bilgi amaçlıdır; sonuçları kendi ağ ortamınıza uygulamadan önce doğrulayın.</p>
+<p class="script-warn">⚠️ {{ t('mk_subnet.warning') }}</p>
 <div class="tool-grid">
     <div class="card card-space">
         <div>
-            <label class="form-label">IP Adresi</label>
-            <input type="text" id="ip" class="form-input" value="192.168.1.1" oninput="update()" placeholder="Örn: 192.168.1.1">
+            <label class="form-label">{{ t('mk_subnet.label_ip') }}</label>
+            <input type="text" id="ip" class="form-input" value="192.168.1.1" oninput="update()" placeholder="{{ t('mk_subnet.placeholder_ip') }}">
         </div>
         <div>
-            <label class="form-label">CIDR (Alt Ağ Maskesi)</label>
+            <label class="form-label">{{ t('mk_subnet.label_cidr') }}</label>
             <select id="cidr" class="form-select" onchange="update()">
                 <option value="8">/8</option><option value="16">/16</option>
                 <option value="24" selected>/24</option>
@@ -23,12 +23,12 @@
             </select>
         </div>
         <div>
-            <label class="form-label" style="font-size:0.7rem;color:#6b7280;margin-bottom:0.5rem;">YA DA ÖZEL CIDR GİRİN</label>
+            <label class="form-label" style="font-size:0.7rem;color:#6b7280;margin-bottom:0.5rem;">{{ t('mk_subnet.label_custom_cidr') }}</label>
             <select id="cidr-full" class="form-select" onchange="document.getElementById('cidr').value=this.value;update()"></select>
         </div>
     </div>
     <div class="card">
-        <h2 style="font-size:1rem;font-weight:600;color:#f9fafb;margin-bottom:1rem;padding-bottom:0.5rem;border-bottom:1px solid #374151;">Ağ Detayları</h2>
+        <h2 style="font-size:1rem;font-weight:600;color:#f9fafb;margin-bottom:1rem;padding-bottom:0.5rem;border-bottom:1px solid #374151;">{{ t('mk_subnet.results_heading') }}</h2>
         <div id="results" style="display:flex;flex-direction:column;gap:0.5rem;"></div>
     </div>
 </div>
@@ -59,7 +59,7 @@ function update() {
     const cidr = parseInt(document.getElementById('cidr').value || document.getElementById('cidr-full').value);
     const res = document.getElementById('results');
     if (!isValid(ip)) {
-        res.innerHTML = '<div style="text-align:center;padding:2rem;color:#f87171;">Geçerli bir IPv4 adresi girin.</div>';
+        res.innerHTML = '<div style="text-align:center;padding:2rem;color:#f87171;">' + {{ t('mk_subnet.js_invalid_ip')|tojson }} + '</div>';
         return;
     }
     const ipNum = ip.split('.').reduce((a,o) => (a<<8)+parseInt(o), 0) >>> 0;
@@ -67,14 +67,14 @@ function update() {
     const netNum = (ipNum & maskNum) >>> 0;
     const bcastNum = (netNum | ~maskNum) >>> 0;
     const total = cidr < 31 ? Math.pow(2, 32-cidr) - 2 : 0;
-    const first = cidr < 31 ? numToIp(netNum+1) : 'Yok';
-    const last = cidr < 31 ? numToIp(bcastNum-1) : 'Yok';
+    const first = cidr < 31 ? numToIp(netNum+1) : {{ t('mk_subnet.js_none')|tojson }};
+    const last = cidr < 31 ? numToIp(bcastNum-1) : {{ t('mk_subnet.js_none')|tojson }};
     res.innerHTML = `
-        <div class="result-row"><span class="result-label">Ağ Adresi (Network)</span><span class="result-value val-blue">${numToIp(netNum)}</span></div>
-        <div class="result-row"><span class="result-label">Yayın Adresi (Broadcast)</span><span class="result-value val-orange">${numToIp(bcastNum)}</span></div>
-        <div class="result-row"><span class="result-label">Subnet Maskesi</span><span class="result-value val-green">${numToIp(maskNum)}</span></div>
-        <div class="result-row"><span class="result-label">Kullanılabilir IP Aralığı</span><span class="result-value val-white">${first} &ndash; ${last}</span></div>
-        <div class="result-highlight"><span class="result-label" style="color:#93c5fd;font-weight:500;">Toplam Kullanılabilir Host</span><span class="result-value" style="font-size:1.4rem;color:#f9fafb;">${total.toLocaleString('tr-TR')}</span></div>
+        <div class="result-row"><span class="result-label">${ {{ t('mk_subnet.js_network_address')|tojson }} }</span><span class="result-value val-blue">${numToIp(netNum)}</span></div>
+        <div class="result-row"><span class="result-label">${ {{ t('mk_subnet.js_broadcast_address')|tojson }} }</span><span class="result-value val-orange">${numToIp(bcastNum)}</span></div>
+        <div class="result-row"><span class="result-label">${ {{ t('mk_subnet.js_subnet_mask')|tojson }} }</span><span class="result-value val-green">${numToIp(maskNum)}</span></div>
+        <div class="result-row"><span class="result-label">${ {{ t('mk_subnet.js_available_range')|tojson }} }</span><span class="result-value val-white">${first} &ndash; ${last}</span></div>
+        <div class="result-highlight"><span class="result-label" style="color:#93c5fd;font-weight:500;">${ {{ t('mk_subnet.js_total_hosts')|tojson }} }</span><span class="result-value" style="font-size:1.4rem;color:#f9fafb;">${total.toLocaleString('tr-TR')}</span></div>
     `;
 }
 update();

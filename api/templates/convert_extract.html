@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Arşiv Açıcı | toolboxquick{% endblock %}
+{% block title %}{{ t('convert_extract.title') }} | toolboxquick{% endblock %}
 {% block head %}
 <style>
     .dropzone {
@@ -23,10 +23,10 @@
 
 {% block content %}
 <header class="mb-4">
-    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #10b981 !important;">Dönüştürücüler</p>
-    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">Arşiv Açıcı (ZIP Extractor)</h1>
+    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #10b981 !important;">{{ t('convert_extract.kicker') }}</p>
+    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">{{ t('convert_extract.heading') }}</h1>
     <p class="text-secondary mb-0">
-        Yüklediğiniz ZIP arşiv dosyalarının içeriğini görüntüleyin ve içindeki dosyaları tek tek ayıklayıp indirin.
+        {{ t('convert_extract.subtitle') }}
     </p>
 </header>
 
@@ -40,30 +40,30 @@
     {% if not files %}
     <!-- UPLOAD STATE -->
     <form action="/convert/extract" method="post" enctype="multipart/form-data">
-        <label class="form-label fw-semibold mb-2">Arşiv Dosyanızı Seçin (.zip)</label>
+        <label class="form-label fw-semibold mb-2">{{ t('convert_extract.file_label') }}</label>
         <div class="dropzone" onclick="document.getElementById('zip_file').click()">
             <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🗄️</div>
-            <div class="fw-semibold mb-1" id="file-label" style="color: var(--text-color);">Bir adet ZIP dosyası seçin</div>
+            <div class="fw-semibold mb-1" id="file-label" style="color: var(--text-color);">{{ t('convert_extract.file_placeholder') }}</div>
             <input type="file" name="zip_file" id="zip_file" class="file-input" accept=".zip" required onchange="updateFileLabel(this)">
         </div>
         <button type="submit" class="btn btn-primary px-4 py-2 mt-4" style="border-radius: 8px; font-weight: 600;">
-            Arşivi Oku
+            {{ t('convert_extract.read_btn') }}
         </button>
     </form>
     {% else %}
     <!-- LISTING STATE -->
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <span class="fw-semibold text-success">{{ archive_name }} ({{ files|length }} dosya)</span>
-        <a class="btn btn-sm btn-outline-danger" href="/convert/extract">Yeni Arşiv Yükle</a>
+        <span class="fw-semibold text-success">{{ archive_name }} ({{ files|length }} {{ t('convert_extract.file_count') }})</span>
+        <a class="btn btn-sm btn-outline-danger" href="/convert/extract">{{ t('convert_extract.new_archive_btn') }}</a>
     </div>
 
     <div class="table-responsive">
         <table class="table table-hover align-middle" style="color: var(--text-color);">
             <thead>
                 <tr style="border-color: var(--navbar-border);">
-                    <th scope="col" style="color: var(--text-secondary);">Dosya Yolu</th>
-                    <th scope="col" style="color: var(--text-secondary);" class="text-end">Boyut</th>
-                    <th scope="col" style="color: var(--text-secondary);" class="text-end">İşlem</th>
+                    <th scope="col" style="color: var(--text-secondary);">{{ t('convert_extract.col_path') }}</th>
+                    <th scope="col" style="color: var(--text-secondary);" class="text-end">{{ t('convert_extract.col_size') }}</th>
+                    <th scope="col" style="color: var(--text-secondary);" class="text-end">{{ t('convert_extract.col_action') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -72,7 +72,7 @@
                     <td class="font-mono small" style="word-break: break-all;">{{ file.name }}</td>
                     <td class="text-end small text-secondary">{{ (file.size / 1024)|round(1) }} KB</td>
                     <td class="text-end">
-                        <a href="/convert/extract/download?id={{ zip_id }}&file={{ file.name|urlencode }}" class="btn btn-sm btn-outline-primary py-1 px-3" style="border-radius: 6px;">İndir 📥</a>
+                        <a href="/convert/extract/download?id={{ zip_id }}&file={{ file.name|urlencode }}" class="btn btn-sm btn-outline-primary py-1 px-3" style="border-radius: 6px;">{{ t('convert_extract.download_btn') }}</a>
                     </td>
                 </tr>
                 {% endfor %}
@@ -83,7 +83,7 @@
 </section>
 
 <section class="mt-4">
-    <a href="/" class="text-secondary small text-decoration-none">&larr; Ana sayfaya dön</a>
+    <a href="/" class="text-secondary small text-decoration-none">&larr; {{ t('convert_extract.back_home') }}</a>
 </section>
 {% endblock %}
 
@@ -95,7 +95,7 @@ function updateFileLabel(input) {
         label.textContent = input.files[0].name + " (" + (input.files[0].size / 1024 / 1024).toFixed(2) + " MB)";
         label.style.color = '#3b82f6';
     } else {
-        label.textContent = "Bir adet ZIP dosyası seçin";
+        label.textContent = {{ t('convert_extract.file_placeholder')|tojson }};
         label.style.color = 'var(--text-color)';
     }
 }

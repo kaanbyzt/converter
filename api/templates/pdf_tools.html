@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}PDF Birleştirici | toolboxquick{% endblock %}
+{% block title %}{{ t('pdf_tools_page.title') }} | toolboxquick{% endblock %}
 {% block head %}
 <style>
     .dropzone {
@@ -23,10 +23,10 @@
 
 {% block content %}
 <header class="mb-4">
-    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #f97316 !important;">PDF Araçları</p>
-    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">PDF Birleştirici</h1>
+    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #f97316 !important;">{{ t('pdf_tools_page.category') }}</p>
+    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">{{ t('pdf_tools_page.heading') }}</h1>
     <p class="text-secondary mb-0">
-        Birden fazla PDF dosyasını yükleyin ve tek bir PDF dosyası olarak birleştirip indirin.
+        {{ t('pdf_tools_page.desc') }}
     </p>
 </header>
 
@@ -38,29 +38,29 @@
     {% endif %}
 
     <form action="/pdf-tools" method="post" enctype="multipart/form-data">
-        <label class="form-label fw-semibold mb-2">PDF Dosyalarınızı Seçin</label>
-        
+        <label class="form-label fw-semibold mb-2">{{ t('pdf_tools_page.select_label') }}</label>
+
         <div class="dropzone mb-4" onclick="document.getElementById('pdf_files').click()">
             <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">📂</div>
-            <div class="fw-semibold mb-1" style="color: var(--text-color);">Dosyaları seçmek için tıklayın</div>
-            <div class="text-secondary small">Birden fazla PDF seçebilirsiniz (En az 2 dosya gereklidir)</div>
+            <div class="fw-semibold mb-1" style="color: var(--text-color);">{{ t('pdf_tools_page.dropzone_text') }}</div>
+            <div class="text-secondary small">{{ t('pdf_tools_page.dropzone_hint') }}</div>
             <input type="file" name="pdf_files" id="pdf_files" class="file-input" multiple accept="application/pdf" onchange="showFiles(this)">
         </div>
 
         <div id="selected-files" class="mb-4 d-none">
-            <h4 class="h6 mb-2" style="color: var(--text-color);">Seçilen Dosyalar:</h4>
+            <h4 class="h6 mb-2" style="color: var(--text-color);">{{ t('pdf_tools_page.selected_files_title') }}</h4>
             <ul id="files-list" class="list-group list-group-flush border rounded" style="background: transparent;">
             </ul>
         </div>
 
         <button type="submit" class="btn btn-primary px-4 py-2" style="border-radius: 8px; font-weight: 600;">
-            PDF'leri Birleştir ve İndir
+            {{ t('pdf_tools_page.submit_btn') }}
         </button>
     </form>
 </section>
 
 <section class="mt-4">
-    <a href="/" class="text-secondary small text-decoration-none">&larr; Ana sayfaya dön</a>
+    <a href="/" class="text-secondary small text-decoration-none">&larr; {{ t('pdf_tools_page.back_home') }}</a>
 </section>
 {% endblock %}
 

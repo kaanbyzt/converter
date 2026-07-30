@@ -1,44 +1,44 @@
 {% extends "mikrotik_base.html" %}
-{% block title %}Port & Servis Yönetimi{% endblock %}
+{% block title %}{{ t('mk_port.title') }}{% endblock %}
 {% block content %}
 <div class="page-header">
-    <h1>Port ve Servis Yönetimi</h1>
-    <p>RouterBOARD üzerindeki açık servisleri görüntüleyin, varsayılan portları değiştirerek dışarıdan gelecek taramaları engelleyin.</p>
+    <h1>{{ t('mk_port.h1') }}</h1>
+    <p>{{ t('mk_port.desc') }}</p>
 </div>
 <div class="tool-grid">
     <div class="card card-space">
         <div>
-            <label class="form-label">Yöneteceğiniz Servis</label>
+            <label class="form-label">{{ t('mk_port.svc_label') }}</label>
             <select id="svc" class="form-select" onchange="svcChange()">
-                <option value="winbox" data-port="8291">Winbox (Varsayılan: 8291)</option>
-                <option value="ssh" data-port="22">SSH (Varsayılan: 22)</option>
-                <option value="www" data-port="80">WebFig / HTTP (Varsayılan: 80)</option>
-                <option value="api" data-port="8728">API (Varsayılan: 8728)</option>
+                <option value="winbox" data-port="8291">{{ t('mk_port.opt_winbox') }}</option>
+                <option value="ssh" data-port="22">{{ t('mk_port.opt_ssh') }}</option>
+                <option value="www" data-port="80">{{ t('mk_port.opt_www') }}</option>
+                <option value="api" data-port="8728">{{ t('mk_port.opt_api') }}</option>
             </select>
         </div>
         <div>
-            <label class="form-label">Uygulanacak Eylem</label>
+            <label class="form-label">{{ t('mk_port.act_label') }}</label>
             <select id="svcact" class="form-select" onchange="toggleAction()">
-                <option value="change-port">Port Numarasını Değiştir (Önerilen)</option>
-                <option value="secure-subnet">Sadece Belirli Ağ Bloklarına Aç (IP Whitelist)</option>
-                <option value="disable">Servisi Tamamen Kapat (Disable)</option>
+                <option value="change-port">{{ t('mk_port.opt_change_port') }}</option>
+                <option value="secure-subnet">{{ t('mk_port.opt_secure_subnet') }}</option>
+                <option value="disable">{{ t('mk_port.opt_disable') }}</option>
             </select>
         </div>
         <div id="port-field">
-            <label class="form-label">Yeni Port Numarası</label>
+            <label class="form-label">{{ t('mk_port.newport_label') }}</label>
             <input type="number" id="newport" class="form-input" value="8291" oninput="update()">
         </div>
         <div id="subnet-field" style="display:none;">
-            <label class="form-label">İzin Verilecek Ağ (Subnet)</label>
+            <label class="form-label">{{ t('mk_port.subnet_label') }}</label>
             <input type="text" id="subnet" class="form-input" value="192.168.1.0/24" oninput="update()">
         </div>
     </div>
     <div class="script-card">
         <div class="script-header">
-            <div class="script-title"><span class="dot"></span> Servis Yapılandırma Komutu</div>
-            <button class="copy-btn" onclick="copy()">Kopyala</button>
+            <div class="script-title"><span class="dot"></span> {{ t('mk_port.script_title') }}</div>
+            <button class="copy-btn" onclick="copy()">{{ t('mk_port.copy') }}</button>
         </div>
-        <p class="script-warn">⚠️ Kopyalamadan önce script'i inceleyin; cihazınıza uygulamadan önce yedek alın ve mümkünse test ortamında deneyin.</p>
+        <p class="script-warn">{{ t('mk_port.review_warning') }}</p>
         <pre id="out" class="script-pre"></pre>
     </div>
 </div>
@@ -61,20 +61,20 @@ function update() {
     const act = document.getElementById('svcact').value;
     const port = document.getElementById('newport').value;
     const subnet = document.getElementById('subnet').value;
-    let s = `# MikroTik Servis Güvenlik Yapılandırması\n/ip service\n`;
+    let s = `# ${ {{ t('mk_port.c_title')|tojson }} }\n/ip service\n`;
     if (act === 'change-port') {
-        s += `set ${svc} port=${port} disabled=no comment="Guvenlik amaciyla port degistirildi"\n`;
+        s += `set ${svc} port=${port} disabled=no comment="${ {{ t('mk_port.c_change_port')|tojson }} }"\n`;
     } else if (act === 'disable') {
-        s += `set ${svc} disabled=yes comment="Kullanilmadigi icin kapatildi"\n`;
+        s += `set ${svc} disabled=yes comment="${ {{ t('mk_port.c_disable')|tojson }} }"\n`;
     } else {
-        s += `set ${svc} address=${subnet} disabled=no comment="Sadece belirtilen aga izin verildi"\n`;
+        s += `set ${svc} address=${subnet} disabled=no comment="${ {{ t('mk_port.c_secure_subnet')|tojson }} }"\n`;
     }
     document.getElementById('out').textContent = s;
 }
 function copy() {
     navigator.clipboard.writeText(document.getElementById('out').textContent);
     const btn = document.querySelector('.copy-btn');
-    btn.textContent = 'Kopyalandı!'; setTimeout(() => btn.textContent = 'Kopyala', 1500);
+    btn.textContent = {{ t('mk_port.copied')|tojson }}; setTimeout(() => btn.textContent = {{ t('mk_port.copy')|tojson }}, 1500);
 }
 update();
 </script>

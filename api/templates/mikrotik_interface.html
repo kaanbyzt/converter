@@ -1,36 +1,38 @@
 {% extends "mikrotik_base.html" %}
-{% block title %}Arayüz & IP Yönetimi{% endblock %}
+{% block title %}{{ t('mk_interface.title') }}{% endblock %}
 {% block content %}
-<div class="page-header"><h1>Arayüz ve IP Adres Yönetimi</h1><p>RouterBOARD üzerindeki fiziksel veya sanal portlara IP atamaları yapın ve port durumlarını kontrol edin.</p></div>
+<div class="page-header"><h1>{{ t('mk_interface.heading') }}</h1><p>{{ t('mk_interface.intro') }}</p></div>
 <div class="tool-grid">
     <div class="card card-space">
-        <div><label class="form-label">Arayüz Adı (Interface)</label><input type="text" id="iface" class="form-input" value="ether2" oninput="update()" placeholder="Örn: ether2 veya bridge-lan"></div>
-        <div><label class="form-label">Atanacak IP & Subnet</label><input type="text" id="ip" class="form-input" value="192.168.10.1/24" oninput="update()" placeholder="Örn: 192.168.10.1/24"></div>
-        <div><label class="form-label">Kural Açıklaması (Comment)</label><input type="text" id="comment" class="form-input" value="Sirket_Yerel_Agi" oninput="update()" placeholder="Örn: Muhasebe_Blogu"></div>
+        <div><label class="form-label">{{ t('mk_interface.label_iface') }}</label><input type="text" id="iface" class="form-input" value="ether2" oninput="update()" placeholder="{{ t('mk_interface.placeholder_iface') }}"></div>
+        <div><label class="form-label">{{ t('mk_interface.label_ip') }}</label><input type="text" id="ip" class="form-input" value="192.168.10.1/24" oninput="update()" placeholder="{{ t('mk_interface.placeholder_ip') }}"></div>
+        <div><label class="form-label">{{ t('mk_interface.label_comment') }}</label><input type="text" id="comment" class="form-input" value="Sirket_Yerel_Agi" oninput="update()" placeholder="{{ t('mk_interface.placeholder_comment') }}"></div>
         <div>
-            <label class="form-label">Port Durumu</label>
+            <label class="form-label">{{ t('mk_interface.label_status') }}</label>
             <select id="status" class="form-select" onchange="update()">
-                <option value="enable">Arayüzü Aktif Et (Enable)</option>
-                <option value="disable">Arayüzü Kapat (Disable / Shutdown)</option>
+                <option value="enable">{{ t('mk_interface.status_enable') }}</option>
+                <option value="disable">{{ t('mk_interface.status_disable') }}</option>
             </select>
         </div>
     </div>
     <div class="script-card">
-        <div class="script-header"><div class="script-title"><span class="dot"></span>Arayüz ve IP Komut Satırı</div><button class="copy-btn" onclick="copy()">Kopyala</button></div>
-        <p class="script-warn">⚠️ Kopyalamadan önce script'i inceleyin; cihazınıza uygulamadan önce yedek alın ve mümkünse test ortamında deneyin.</p>
+        <div class="script-header"><div class="script-title"><span class="dot"></span>{{ t('mk_interface.script_title') }}</div><button class="copy-btn" onclick="copy()">{{ t('mk_interface.copy_btn') }}</button></div>
+        <p class="script-warn">⚠️ {{ t('mk_interface.copy_warning') }}</p>
         <pre id="out" class="script-pre"></pre>
     </div>
 </div>
 {% endblock %}
 {% block scripts %}
 <script>
+const STEP1 = {{ t('mk_interface.comment_step1')|tojson }};
+const STEP2 = {{ t('mk_interface.comment_step2')|tojson }};
 function update(){
     const iface=document.getElementById('iface').value,ip=document.getElementById('ip').value,comment=document.getElementById('comment').value,status=document.getElementById('status').value;
     const cm=comment?` comment="${comment}"`:'' ;
-    let s=`# 1. Arayüz Durumunu Yapılandır\n/interface\n${status} ${iface}\n\n# 2. Belirtilen Arayüze IP Adresi Ata\n/ip address\nadd address=${ip} interface=${iface}${cm}\n`;
+    let s=`# ${STEP1}\n/interface\n${status} ${iface}\n\n# ${STEP2}\n/ip address\nadd address=${ip} interface=${iface}${cm}\n`;
     document.getElementById('out').textContent=s;
 }
-function copy(){navigator.clipboard.writeText(document.getElementById('out').textContent);const b=document.querySelector('.copy-btn');b.textContent='Kopyalandı!';setTimeout(()=>b.textContent='Kopyala',1500);}
+function copy(){navigator.clipboard.writeText(document.getElementById('out').textContent);const b=document.querySelector('.copy-btn');b.textContent={{ t('mk_interface.copied')|tojson }};setTimeout(()=>b.textContent={{ t('mk_interface.copy_btn')|tojson }},1500);}
 update();
 </script>
 {% endblock %}

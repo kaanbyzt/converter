@@ -1,15 +1,15 @@
 {% extends "mikrotik_base.html" %}
-{% block title %}Araçlar Paneli{% endblock %}
+{% block title %}{{ t('mk_dashboard.title') }}{% endblock %}
 {% block content %}
 <div class="page-header" style="margin-bottom: 2.5rem; text-align: center; max-width: 800px; margin-left: auto; margin-right: auto;">
     <h1 style="font-size: 2.2rem; font-weight: 800; background: linear-gradient(to right, #60a5fa, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-        MikroTik RouterOS Yapılandırma Paneli
+        {{ t('mk_dashboard.heading') }}
     </h1>
     <p style="color: #9ca3af; font-size: 0.95rem; margin-top: 0.5rem; line-height: 1.6;">
-        Ağınızı optimize etmek, güvenlik duvarı kuralları oluşturmak ve otomasyon scriptleri üretmek için yerel ve matematiksel araç kutusunu kullanın. Herhangi bir yapay zeka bağlantısı olmadan, tüm hesaplamalar tarayıcınızda güvenli bir şekilde yapılır.
+        {{ t('mk_dashboard.intro') }}
     </p>
 </div>
-<p class="script-warn" style="max-width: 800px; margin-left: auto; margin-right: auto; margin-bottom: 1.5rem; border-radius: 0.5rem; border-bottom: none;">⚠️ Bu paneldeki tüm araç ve scriptler yardımcı/örnek niteliğindedir; uygulamadan önce yedek alın ve kendi sorumluluğunuzda kullanın.</p>
+<p class="script-warn" style="max-width: 800px; margin-left: auto; margin-right: auto; margin-bottom: 1.5rem; border-radius: 0.5rem; border-bottom: none;">⚠️ {{ t('mk_dashboard.warning') }}</p>
 
 <style>
     .dashboard-grid {
@@ -76,30 +76,30 @@
 <div class="dashboard-grid">
     <!-- Category 1: Ağ Yönetimi -->
     <div class="dash-category">
-        <div class="dash-category-title">🌐 Ağ Yönetimi</div>
+        <div class="dash-category-title">🌐 {{ t('mk_dashboard.cat_network') }}</div>
         <ul class="dash-list">
             <li class="dash-item">
                 <a href="/mikrotik/subnet">
-                    <span class="dash-item-title">Subnet Hesaplayıcı</span>
-                    <span class="dash-item-desc">CIDR, IP aralıkları ve host sayısını yerel matematiksel olarak hesaplayın.</span>
+                    <span class="dash-item-title">{{ t('mk_dashboard.item_subnet_title') }}</span>
+                    <span class="dash-item-desc">{{ t('mk_dashboard.item_subnet_desc') }}</span>
                 </a>
             </li>
             <li class="dash-item">
                 <a href="/mikrotik/ip-guide">
-                    <span class="dash-item-title">IPv4 Adresleme Rehberi</span>
-                    <span class="dash-item-desc">A, B, C sınıfı IP blokları ve alt ağ maskeleri hakkında teknik kılavuz.</span>
+                    <span class="dash-item-title">{{ t('mk_dashboard.item_ipguide_title') }}</span>
+                    <span class="dash-item-desc">{{ t('mk_dashboard.item_ipguide_desc') }}</span>
                 </a>
             </li>
             <li class="dash-item">
                 <a href="/mikrotik/dhcp-server">
-                    <span class="dash-item-title">DHCP Sunucu Kurulumu</span>
-                    <span class="dash-item-desc">Cihazların otomatik IP alabilmesi için DHCP Pool, Server ve Network komutları.</span>
+                    <span class="dash-item-title">{{ t('mk_dashboard.item_dhcp_title') }}</span>
+                    <span class="dash-item-desc">{{ t('mk_dashboard.item_dhcp_desc') }}</span>
                 </a>
             </li>
             <li class="dash-item">
                 <a href="/mikrotik/interface-ip">
-                    <span class="dash-item-title">Arayüz & IP Yönetimi</span>
-                    <span class="dash-item-desc">Fiziksel ve sanal portlara (LAN, WAN, Bridge) IP atama sihirbazı.</span>
+                    <span class="dash-item-title">{{ t('mk_dashboard.item_iface_title') }}</span>
+                    <span class="dash-item-desc">{{ t('mk_dashboard.item_iface_desc') }}</span>
                 </a>
             </li>
         </ul>
@@ -107,30 +107,30 @@
 
     <!-- Category 2: NAT & Yönlendirme -->
     <div class="dash-category">
-        <div class="dash-category-title">🔀 NAT & Yönlendirme</div>
+        <div class="dash-category-title">🔀 {{ t('mk_dashboard.cat_nat') }}</div>
         <ul class="dash-list">
             <li class="dash-item">
                 <a href="/mikrotik/port-forward">
-                    <span class="dash-item-title">Port Yönlendirme (Dst-NAT)</span>
-                    <span class="dash-item-desc">Dış ağdaki istekleri yerel sunucularınıza (RDP, Web, vb.) yönlendirme kuralları.</span>
+                    <span class="dash-item-title">{{ t('mk_dashboard.item_portfwd_title') }}</span>
+                    <span class="dash-item-desc">{{ t('mk_dashboard.item_portfwd_desc') }}</span>
                 </a>
             </li>
             <li class="dash-item">
                 <a href="/mikrotik/src-nat">
-                    <span class="dash-item-title">İnternet Çıkış (Src-NAT/Masquerade)</span>
-                    <span class="dash-item-desc">Yerel ağdaki cihazların dış dünyaya güvenle açılması için NAT konfigürasyonu.</span>
+                    <span class="dash-item-title">{{ t('mk_dashboard.item_srcnat_title') }}</span>
+                    <span class="dash-item-desc">{{ t('mk_dashboard.item_srcnat_desc') }}</span>
                 </a>
             </li>
             <li class="dash-item">
                 <a href="/mikrotik/routing">
-                    <span class="dash-item-title">Statik Yönlendirme (Routing)</span>
-                    <span class="dash-item-desc">Farklı ağ geçitleri ve yedek hatlar (Failover) için yönlendirme tabloları.</span>
+                    <span class="dash-item-title">{{ t('mk_dashboard.item_routing_title') }}</span>
+                    <span class="dash-item-desc">{{ t('mk_dashboard.item_routing_desc') }}</span>
                 </a>
             </li>
             <li class="dash-item">
                 <a href="/mikrotik/load-balance">
-                    <span class="dash-item-title">Load Balance (PCC)</span>
-                    <span class="dash-item-desc">Birden fazla WAN (İnternet) hattını birleştirme ve yük paylaşımı yapma.</span>
+                    <span class="dash-item-title">{{ t('mk_dashboard.item_lb_title') }}</span>
+                    <span class="dash-item-desc">{{ t('mk_dashboard.item_lb_desc') }}</span>
                 </a>
             </li>
         </ul>
@@ -138,30 +138,30 @@
 
     <!-- Category 3: Güvenlik & VPN -->
     <div class="dash-category">
-        <div class="dash-category-title">🛡️ Güvenlik & VPN</div>
+        <div class="dash-category-title">🛡️ {{ t('mk_dashboard.cat_security') }}</div>
         <ul class="dash-list">
             <li class="dash-item">
                 <a href="/mikrotik/firewall">
-                    <span class="dash-item-title">Güvenlik Duvarı Şablonları</span>
-                    <span class="dash-item-desc">DDoS koruması, tarama engelleme ve genel RouterOS filtre kuralları.</span>
+                    <span class="dash-item-title">{{ t('mk_dashboard.item_firewall_title') }}</span>
+                    <span class="dash-item-desc">{{ t('mk_dashboard.item_firewall_desc') }}</span>
                 </a>
             </li>
             <li class="dash-item">
                 <a href="/mikrotik/dns-security">
-                    <span class="dash-item-title">DNS Güvenliği (Sinkhole)</span>
-                    <span class="dash-item-desc">Reklam, zararlı yazılım ve telemetri domainlerini router seviyesinde engelleme.</span>
+                    <span class="dash-item-title">{{ t('mk_dashboard.item_dns_title') }}</span>
+                    <span class="dash-item-desc">{{ t('mk_dashboard.item_dns_desc') }}</span>
                 </a>
             </li>
             <li class="dash-item">
                 <a href="/mikrotik/port-services">
-                    <span class="dash-item-title">Port & Servis Yönetimi</span>
-                    <span class="dash-item-desc">Winbox, Webfig, SSH gibi varsayılan yönetim portlarını kapatma veya değiştirme.</span>
+                    <span class="dash-item-title">{{ t('mk_dashboard.item_ports_title') }}</span>
+                    <span class="dash-item-desc">{{ t('mk_dashboard.item_ports_desc') }}</span>
                 </a>
             </li>
             <li class="dash-item">
                 <a href="/mikrotik/vpn">
-                    <span class="dash-item-title">WireGuard VPN Kurulumu</span>
-                    <span class="dash-item-desc">RouterOS v7 ile gelen yüksek hızlı, şifreli VPN tünelleri oluşturma.</span>
+                    <span class="dash-item-title">{{ t('mk_dashboard.item_vpn_title') }}</span>
+                    <span class="dash-item-desc">{{ t('mk_dashboard.item_vpn_desc') }}</span>
                 </a>
             </li>
         </ul>
@@ -169,36 +169,36 @@
 
     <!-- Category 4: İzleme & Optimizasyon -->
     <div class="dash-category">
-        <div class="dash-category-title">⚡ Optimizasyon & İzleme</div>
+        <div class="dash-category-title">⚡ {{ t('mk_dashboard.cat_optimization') }}</div>
         <ul class="dash-list">
             <li class="dash-item">
                 <a href="/mikrotik/netwatch">
-                    <span class="dash-item-title">Netwatch İzleme Scriptleri</span>
-                    <span class="dash-item-desc">Hedef IP kesintisinde otomatik mail veya telegram bildirimi gönderen scriptler.</span>
+                    <span class="dash-item-title">{{ t('mk_dashboard.item_netwatch_title') }}</span>
+                    <span class="dash-item-desc">{{ t('mk_dashboard.item_netwatch_desc') }}</span>
                 </a>
             </li>
             <li class="dash-item">
                 <a href="/mikrotik/log-helper">
-                    <span class="dash-item-title">Log & Uyarı Asistanı</span>
-                    <span class="dash-item-desc">Kritik sistem loglarını izleme ve SMTP/Telegram entegrasyon zamanlayıcıları.</span>
+                    <span class="dash-item-title">{{ t('mk_dashboard.item_log_title') }}</span>
+                    <span class="dash-item-desc">{{ t('mk_dashboard.item_log_desc') }}</span>
                 </a>
             </li>
             <li class="dash-item">
                 <a href="/mikrotik/bandwidth-pcq">
-                    <span class="dash-item-title">PCQ Bant Genişliği (QoS)</span>
-                    <span class="dash-item-desc">Kullanıcılar arası internet hızını dinamik ve adil şekilde paylaştırma kuralları.</span>
+                    <span class="dash-item-title">{{ t('mk_dashboard.item_pcq_title') }}</span>
+                    <span class="dash-item-desc">{{ t('mk_dashboard.item_pcq_desc') }}</span>
                 </a>
             </li>
             <li class="dash-item">
                 <a href="/mikrotik/fasttrack">
-                    <span class="dash-item-title">FastTrack Optimizer</span>
-                    <span class="dash-item-desc">İşlemci yükünü azaltarak veri paketlerinin çok daha hızlı yönlendirilmesini sağlama.</span>
+                    <span class="dash-item-title">{{ t('mk_dashboard.item_fasttrack_title') }}</span>
+                    <span class="dash-item-desc">{{ t('mk_dashboard.item_fasttrack_desc') }}</span>
                 </a>
             </li>
             <li class="dash-item">
                 <a href="/mikrotik/wifi-channels">
-                    <span class="dash-item-title">Wi-Fi Frekans Kılavuzu</span>
-                    <span class="dash-item-desc">Kablosuz ağlarda çakışmaları önlemek için en uygun kanal ve frekans seçimi.</span>
+                    <span class="dash-item-title">{{ t('mk_dashboard.item_wifi_title') }}</span>
+                    <span class="dash-item-desc">{{ t('mk_dashboard.item_wifi_desc') }}</span>
                 </a>
             </li>
         </ul>
@@ -207,10 +207,10 @@
 
 <div class="card card-space" style="background: rgba(59, 130, 246, 0.05); border-color: rgba(59, 130, 246, 0.2); text-align: center; padding: 1.5rem;">
     <h3 style="color: #93c5fd; font-size: 1.05rem; margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
-        📖 Scriptler Nasıl Çalıştırılır?
+        📖 {{ t('mk_dashboard.howto_heading') }}
     </h3>
     <p style="color: #d1d5db; font-size: 0.85rem; max-width: 700px; margin: 0 auto; line-height: 1.6;">
-        Araçlar tarafından üretilen konfigürasyon kodlarını router'ınıza uygulamak için Winbox'tan <strong>New Terminal</strong> açıp yapıştırmanız yeterlidir. Daha fazla detaylı yönergeler için <a href="/mikrotik/nasil-kullanilir" style="color: #60a5fa; text-decoration: underline;">Kullanım Kılavuzunu</a> inceleyebilirsiniz.
+        {{ t('mk_dashboard.howto_body')|safe }}
     </p>
 </div>
 {% endblock %}

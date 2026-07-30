@@ -1,21 +1,21 @@
 {% extends "mikrotik_base.html" %}
-{% block title %}Hotspot Yönetimi{% endblock %}
+{% block title %}{{ t('mk_hotspot.title') }}{% endblock %}
 {% block content %}
-<div class="page-header"><h1>Hotspot Kullanıcı ve Profil Yönetimi</h1><p>Misafir ağlarınız için hız sınırları ve oturum süreleri belirlenmiş kullanıcı hesapları ile profiller oluşturun.</p></div>
+<div class="page-header"><h1>{{ t('mk_hotspot.h1') }}</h1><p>{{ t('mk_hotspot.desc') }}</p></div>
 <div class="tool-grid">
     <div class="card card-space">
-        <div class="section-label">Profil Ayarları</div>
-        <div><label class="form-label" style="font-size:0.7rem;">Profil Adı</label><input type="text" id="profile" class="form-input form-input-sm" value="Vip_Misafir" oninput="update()"></div>
-        <div><label class="form-label" style="font-size:0.7rem;">Hız Limiti (Rx/Tx)</label><input type="text" id="rate" class="form-input form-input-sm" value="10M/2M" oninput="update()" placeholder="Örn: 10M/2M"></div>
-        <div><label class="form-label" style="font-size:0.7rem;">Oturum Süresi (Süre Sonu Çıkış)</label><input type="text" id="timeout" class="form-input form-input-sm" value="02:00:00" oninput="update()" placeholder="saat:dakika:saniye"></div>
+        <div class="section-label">{{ t('mk_hotspot.section_profile') }}</div>
+        <div><label class="form-label" style="font-size:0.7rem;">{{ t('mk_hotspot.profile_label') }}</label><input type="text" id="profile" class="form-input form-input-sm" value="{{ t('mk_hotspot.profile_default') }}" oninput="update()"></div>
+        <div><label class="form-label" style="font-size:0.7rem;">{{ t('mk_hotspot.rate_label') }}</label><input type="text" id="rate" class="form-input form-input-sm" value="10M/2M" oninput="update()" placeholder="{{ t('mk_hotspot.rate_placeholder') }}"></div>
+        <div><label class="form-label" style="font-size:0.7rem;">{{ t('mk_hotspot.timeout_label') }}</label><input type="text" id="timeout" class="form-input form-input-sm" value="02:00:00" oninput="update()" placeholder="{{ t('mk_hotspot.timeout_placeholder') }}"></div>
         <div class="form-divider"></div>
-        <div class="section-label">Kullanıcı Tanımlama</div>
-        <div><label class="form-label" style="font-size:0.7rem;">Kullanıcı Adı</label><input type="text" id="uname" class="form-input form-input-sm" value="misafir01" oninput="update()"></div>
-        <div><label class="form-label" style="font-size:0.7rem;">Şifre</label><input type="text" id="pass" class="form-input form-input-sm" value="mikrotik2026" oninput="update()"></div>
+        <div class="section-label">{{ t('mk_hotspot.section_user') }}</div>
+        <div><label class="form-label" style="font-size:0.7rem;">{{ t('mk_hotspot.uname_label') }}</label><input type="text" id="uname" class="form-input form-input-sm" value="{{ t('mk_hotspot.uname_default') }}" oninput="update()"></div>
+        <div><label class="form-label" style="font-size:0.7rem;">{{ t('mk_hotspot.pass_label') }}</label><input type="text" id="pass" class="form-input form-input-sm" value="mikrotik2026" oninput="update()"></div>
     </div>
     <div class="script-card">
-        <div class="script-header"><div class="script-title"><span class="dot"></span>Hotspot Komut Scripti</div><button class="copy-btn" onclick="copy()">Kopyala</button></div>
-        <p class="script-warn">⚠️ Kopyalamadan önce script'i inceleyin; cihazınıza uygulamadan önce yedek alın ve mümkünse test ortamında deneyin.</p>
+        <div class="script-header"><div class="script-title"><span class="dot"></span>{{ t('mk_hotspot.script_title') }}</div><button class="copy-btn" onclick="copy()">{{ t('mk_hotspot.copy') }}</button></div>
+        <p class="script-warn">{{ t('mk_hotspot.review_warning') }}</p>
         <pre id="out" class="script-pre"></pre>
     </div>
 </div>
@@ -24,10 +24,10 @@
 <script>
 function update(){
     const p=document.getElementById('profile').value,r=document.getElementById('rate').value,t=document.getElementById('timeout').value,u=document.getElementById('uname').value,pw=document.getElementById('pass').value;
-    let s=`# 1. Hotspot Kullanıcı Profili Oluştur (Hız ve Süre Limitli)\n/ip hotspot user profile\nadd name="${p}" rate-limit="${r}" session-timeout=${t} shared-users=1 comment="Web uzerinden olusturuldu"\n\n# 2. Bu Profile Bağlı Kullanıcı Hesabı Tanımla\n/ip hotspot user\nadd name="${u}" password="${pw}" profile="${p}" comment="Aktif kullanici"\n`;
+    let s=`# ${ {{ t('mk_hotspot.c1_title')|tojson }} }\n/ip hotspot user profile\nadd name="${p}" rate-limit="${r}" session-timeout=${t} shared-users=1 comment="${ {{ t('mk_hotspot.c1_comment')|tojson }} }"\n\n# ${ {{ t('mk_hotspot.c2_title')|tojson }} }\n/ip hotspot user\nadd name="${u}" password="${pw}" profile="${p}" comment="${ {{ t('mk_hotspot.c2_comment')|tojson }} }"\n`;
     document.getElementById('out').textContent=s;
 }
-function copy(){navigator.clipboard.writeText(document.getElementById('out').textContent);const b=document.querySelector('.copy-btn');b.textContent='Kopyalandı!';setTimeout(()=>b.textContent='Kopyala',1500);}
+function copy(){navigator.clipboard.writeText(document.getElementById('out').textContent);const b=document.querySelector('.copy-btn');b.textContent={{ t('mk_hotspot.copied')|tojson }};setTimeout(()=>b.textContent={{ t('mk_hotspot.copy')|tojson }},1500);}
 update();
 </script>
 {% endblock %}

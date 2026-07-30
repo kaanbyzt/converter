@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Ses Hızlandırıcı | toolboxquick{% endblock %}
+{% block title %}{{ t('audio_speed.heading') }} | toolboxquick{% endblock %}
 {% block head %}
 <style>
     .dropzone {
@@ -23,19 +23,19 @@
 
 {% block content %}
 <header class="mb-4">
-    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #3b82f6 !important;">Ses Araçları</p>
-    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">Ses Hızlandırıcı</h1>
+    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #3b82f6 !important;">{{ t('audio_speed.category') }}</p>
+    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">{{ t('audio_speed.heading') }}</h1>
     <p class="text-secondary mb-0">
-        Ses dosyalarınızı yükleyin, çalma hızını ton bozulması olmadan hızlandırın veya yavaşlatın.
+        {{ t('audio_speed.description') }}
     </p>
 </header>
 
 <section class="tool-card p-4 mb-4">
     <div id="upload-stage">
-        <label class="form-label fw-semibold mb-2">Ses Dosyanızı Seçin (MP3, WAV, vb.)</label>
+        <label class="form-label fw-semibold mb-2">{{ t('audio_speed.upload_label') }}</label>
         <div class="dropzone" onclick="document.getElementById('audio_file').click()">
             <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">⚡</div>
-            <div class="fw-semibold mb-1" style="color: var(--text-color);">Dosya yüklemek için tıklayın</div>
+            <div class="fw-semibold mb-1" style="color: var(--text-color);">{{ t('audio_speed.upload_cta') }}</div>
             <input type="file" id="audio_file" class="file-input" accept="audio/*" onchange="loadAudio(this)">
         </div>
     </div>
@@ -43,27 +43,27 @@
     <div id="editor-stage" class="d-none text-center">
         <div class="mb-3 d-flex justify-content-between align-items-center">
             <span id="file-name" class="fw-semibold text-blue-400">ses-dosyasi.mp3</span>
-            <button class="btn btn-sm btn-outline-danger" onclick="resetEditor()">Yeni Dosya Yükle</button>
+            <button class="btn btn-sm btn-outline-danger" onclick="resetEditor()">{{ t('audio_speed.new_file_btn') }}</button>
         </div>
 
         <div class="my-4" style="max-width: 400px; margin: 0 auto;">
-            <label class="form-label fw-semibold mb-2">Hız Oranı: <span id="speed-pct" class="text-blue-400">1.0x</span></label>
+            <label class="form-label fw-semibold mb-2">{{ t('audio_speed.rate_label') }} <span id="speed-pct" class="text-blue-400">1.0x</span></label>
             <input type="range" id="speed-slider" class="form-range" min="0.5" max="2" step="0.1" value="1" oninput="updateSpeedLabel(this.value)">
             <div class="d-flex justify-content-between small text-secondary">
-                <span>Yavaş (0.5x)</span>
-                <span>Normal (1.0x)</span>
-                <span>Hızlı (2.0x)</span>
+                <span>{{ t('audio_speed.range_low') }}</span>
+                <span>{{ t('audio_speed.range_mid') }}</span>
+                <span>{{ t('audio_speed.range_high') }}</span>
             </div>
         </div>
 
         <button class="btn btn-primary px-5 py-2 mt-2" onclick="processAndDownload()" style="border-radius: 8px; font-weight: 600;">
-            Hızı Değiştir ve İndir 💾
+            {{ t('audio_speed.process_btn') }} 💾
         </button>
     </div>
 </section>
 
 <section class="mt-4">
-    <a href="/" class="text-secondary small text-decoration-none">&larr; Ana sayfaya dön</a>
+    <a href="/" class="text-secondary small text-decoration-none">&larr; {{ t('audio_speed.back_link') }}</a>
 </section>
 {% endblock %}
 
@@ -94,7 +94,7 @@ async function loadAudio(input) {
         const arrayBuffer = await file.arrayBuffer();
         audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
     } catch(err) {
-        alert('Ses dosyası çözümlenemedi. Lütfen geçerli bir dosya yükleyin.');
+        alert({{ t('audio_speed.decode_error')|tojson }});
         resetEditor();
     }
 }
@@ -185,7 +185,7 @@ async function processAndDownload() {
         a.click();
         URL.revokeObjectURL(url);
     } catch(err) {
-        alert('Hızlandırma işlemi sırasında bir hata oluştu: ' + err.message);
+        alert({{ t('audio_speed.process_error')|tojson }} + ': ' + err.message);
     }
 }
 </script>

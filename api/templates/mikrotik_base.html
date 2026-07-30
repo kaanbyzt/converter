@@ -1,11 +1,69 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="{{ CURRENT_LANG }}" dir="{{ 'rtl' if IS_RTL else 'ltr' }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}MikroTik{% endblock %} | toolboxquick</title>
+    <meta name="description" content="{% block meta_description %}{{ t('seo.default_description') }}{% endblock %}">
+    <link rel="canonical" href="{{ SEO_CANONICAL }}">
+    {% for lang, url in SEO_HREFLANG %}
+    <link rel="alternate" hreflang="{{ lang }}" href="{{ url }}">
+    {% endfor %}
+    <link rel="alternate" hreflang="x-default" href="{{ SEO_HREFLANG_DEFAULT }}">
+    <style>
+        [dir="rtl"] .top-bar-home { margin-left: 0; margin-right: auto; }
+        [dir="rtl"] .sidebar { border-right: none; border-left: 1px solid rgba(55,65,81,0.8); }
+        [dir="rtl"] .mk-notice-toggle-btn { right: auto; left: 1.25rem; }
+        [dir="rtl"] .mk-notice-card.mk-privacy { border-left: none; border-right: 3px solid #22c55e; }
+        [dir="rtl"] .mk-notice-card.mk-disclaimer { border-left: none; border-right: 3px solid #f59e0b; }
+        .lang-switcher { position: relative; }
+        .lang-toggle-btn {
+            background: none;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            color: #cbd5e1;
+            border-radius: 8px;
+            padding: 0.3rem 0.6rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-size: 0.8rem;
+        }
+        .lang-toggle-btn:hover { background-color: rgba(148, 163, 184, 0.1); }
+        .lang-dropdown {
+            display: none;
+            position: absolute;
+            top: calc(100% + 0.4rem);
+            right: 0;
+            background: #1f2937;
+            border: 1px solid rgba(55,65,81,0.9);
+            border-radius: 10px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            padding: 0.35rem;
+            z-index: 60;
+            min-width: 150px;
+        }
+        [dir="rtl"] .lang-dropdown { right: auto; left: 0; }
+        .lang-dropdown.open { display: block; }
+        .lang-option {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.35rem 0.55rem;
+            border-radius: 6px;
+            text-decoration: none;
+            color: #e5e7eb;
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+        .lang-option:hover { background: rgba(59,130,246,0.15); }
+        .lang-option.active { font-weight: 700; color: #93c5fd; }
+    </style>
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html {
+            overflow-x: hidden;
+        }
         body {
             background: #0b0f17;
             color: #f9fafb;
@@ -14,18 +72,27 @@
             flex-direction: column;
             height: 100vh;
             overflow: hidden;
+            overflow-wrap: break-word;
         }
         /* TOP BAR */
         .top-bar {
             background: #111827;
             border-bottom: 1px solid rgba(55,65,81,0.7);
-            padding: 0 1.25rem;
             height: 48px;
+            flex-shrink: 0;
+            z-index: 20;
+        }
+        .top-bar-inner {
+            max-width: 1140px;
+            margin: 0 auto;
+            height: 100%;
+            padding: 0 1.25rem;
             display: flex;
             align-items: center;
             gap: 1rem;
-            flex-shrink: 0;
-            z-index: 20;
+        }
+        @media (min-width: 1400px) {
+            .top-bar-inner { max-width: 1320px; }
         }
         .top-bar a { text-decoration: none; }
         .top-bar-brand {
@@ -466,65 +533,80 @@
 </head>
 <body>
     <div class="top-bar">
-        <button class="hamburger-btn" id="sidebar-toggle" aria-label="Menü Aç" onclick="toggleSidebar()">
-            <svg width="18" height="14" viewBox="0 0 18 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                <line x1="0" y1="1" x2="18" y2="1"/>
-                <line x1="0" y1="7" x2="18" y2="7"/>
-                <line x1="0" y1="13" x2="18" y2="13"/>
-            </svg>
-        </button>
-        <a href="/" class="top-bar-brand">toolboxquick</a>
-        <span class="top-bar-sep">/</span>
-        <span class="top-bar-section">MikroTik Araçları</span>
-        <a href="/" class="top-bar-home">Ana Sayfa &larr;</a>
+        <div class="top-bar-inner">
+            <button class="hamburger-btn" id="sidebar-toggle" aria-label="{{ t('mk.topbar.menu_aria') }}" onclick="toggleSidebar()">
+                <svg width="18" height="14" viewBox="0 0 18 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <line x1="0" y1="1" x2="18" y2="1"/>
+                    <line x1="0" y1="7" x2="18" y2="7"/>
+                    <line x1="0" y1="13" x2="18" y2="13"/>
+                </svg>
+            </button>
+            <a href="/" class="top-bar-brand">toolboxquick</a>
+            <span class="top-bar-sep">/</span>
+            <span class="top-bar-section">{{ t('mk.topbar.section') }}</span>
+            <a href="/" class="top-bar-home">&larr; {{ t('mk.topbar.home') }}</a>
+            <div class="lang-switcher">
+                <button id="lang-toggle" class="lang-toggle-btn" aria-label="{{ t('nav.lang_aria') }}"
+                    aria-haspopup="true" aria-expanded="false">
+                    <span>{{ LANG_META[CURRENT_LANG].flag }}</span> <span>{{ CURRENT_LANG|upper }}</span>
+                </button>
+                <div class="lang-dropdown" id="lang-dropdown">
+                    {% for code in SUPPORTED_LANGS %}
+                    <a class="lang-option{{ ' active' if code == CURRENT_LANG else '' }}" href="{{ LANG_URLS[code] }}">
+                        <span>{{ LANG_META[code].flag }}</span> <span>{{ LANG_META[code].name }}</span>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
     </div>
     <!-- Sidebar backdrop (mobile only) -->
     <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeSidebar()"></div>
     <div class="app-layout">
         <aside class="sidebar">
-            <div class="sidebar-title">MikroTik Araçları</div>
+            <div class="sidebar-title">{{ t('mk.sidebar.title') }}</div>
             <nav>
-                <div class="sidebar-group">Genel</div>
+                <div class="sidebar-group">{{ t('mk.sidebar.group.general') }}</div>
                 <ul>
-                    <li><a href="/mikrotik" class="{{ 'active' if active_page == 'dashboard' else '' }}">Araçlar Paneli</a></li>
-                    <li><a href="/mikrotik/nasil-kullanilir" class="{{ 'active' if active_page == 'nasil-kullanilir' else '' }}">Nasıl Kullanılır?</a></li>
+                    <li><a href="/mikrotik" class="{{ 'active' if active_page == 'dashboard' else '' }}">{{ t('mk.sidebar.dashboard') }}</a></li>
+                    <li><a href="/mikrotik/nasil-kullanilir" class="{{ 'active' if active_page == 'nasil-kullanilir' else '' }}">{{ t('mk.sidebar.guide') }}</a></li>
                 </ul>
-                <div class="sidebar-group">Ağ Yönetimi</div>
+                <div class="sidebar-group">{{ t('mk.sidebar.group.network') }}</div>
                 <ul>
-                    <li><a href="/mikrotik/subnet" class="{{ 'active' if active_page == 'subnet' else '' }}">Subnet Hesaplayıcı</a></li>
-                    <li><a href="/mikrotik/ip-guide" class="{{ 'active' if active_page == 'ip-guide' else '' }}">IPv4 Adresleme Rehberi</a></li>
-                    <li><a href="/mikrotik/dhcp-server" class="{{ 'active' if active_page == 'dhcp-server' else '' }}">DHCP Sunucusu</a></li>
-                    <li><a href="/mikrotik/interface-ip" class="{{ 'active' if active_page == 'interface-ip' else '' }}">Arayüz & IP Yönetimi</a></li>
+                    <li><a href="/mikrotik/subnet" class="{{ 'active' if active_page == 'subnet' else '' }}">{{ t('mk.sidebar.subnet') }}</a></li>
+                    <li><a href="/mikrotik/ip-guide" class="{{ 'active' if active_page == 'ip-guide' else '' }}">{{ t('mk.sidebar.ip_guide') }}</a></li>
+                    <li><a href="/mikrotik/dhcp-server" class="{{ 'active' if active_page == 'dhcp-server' else '' }}">{{ t('mk.sidebar.dhcp') }}</a></li>
+                    <li><a href="/mikrotik/interface-ip" class="{{ 'active' if active_page == 'interface-ip' else '' }}">{{ t('mk.sidebar.interface') }}</a></li>
                 </ul>
-                <div class="sidebar-group">NAT & Yönlendirme</div>
+                <div class="sidebar-group">{{ t('mk.sidebar.group.nat') }}</div>
                 <ul>
-                    <li><a href="/mikrotik/port-forward" class="{{ 'active' if active_page == 'port-forward' else '' }}">Port Yönlendirme (NAT)</a></li>
-                    <li><a href="/mikrotik/src-nat" class="{{ 'active' if active_page == 'src-nat' else '' }}">İnternet Çıkış (Src-NAT)</a></li>
-                    <li><a href="/mikrotik/routing" class="{{ 'active' if active_page == 'routing' else '' }}">Yönlendirme Asistanı</a></li>
-                    <li><a href="/mikrotik/load-balance" class="{{ 'active' if active_page == 'load-balance' else '' }}">Load Balance (PCC)</a></li>
+                    <li><a href="/mikrotik/port-forward" class="{{ 'active' if active_page == 'port-forward' else '' }}">{{ t('mk.sidebar.port_forward') }}</a></li>
+                    <li><a href="/mikrotik/src-nat" class="{{ 'active' if active_page == 'src-nat' else '' }}">{{ t('mk.sidebar.src_nat') }}</a></li>
+                    <li><a href="/mikrotik/routing" class="{{ 'active' if active_page == 'routing' else '' }}">{{ t('mk.sidebar.routing') }}</a></li>
+                    <li><a href="/mikrotik/load-balance" class="{{ 'active' if active_page == 'load-balance' else '' }}">{{ t('mk.sidebar.load_balance') }}</a></li>
                 </ul>
-                <div class="sidebar-group">Güvenlik</div>
+                <div class="sidebar-group">{{ t('mk.sidebar.group.security') }}</div>
                 <ul>
-                    <li><a href="/mikrotik/firewall" class="{{ 'active' if active_page == 'firewall' else '' }}">Güvenlik Duvarı Şablonları</a></li>
-                    <li><a href="/mikrotik/dns-security" class="{{ 'active' if active_page == 'dns-security' else '' }}">DNS Güvenliği</a></li>
-                    <li><a href="/mikrotik/port-services" class="{{ 'active' if active_page == 'port-services' else '' }}">Port & Servis Yönetimi</a></li>
+                    <li><a href="/mikrotik/firewall" class="{{ 'active' if active_page == 'firewall' else '' }}">{{ t('mk.sidebar.firewall') }}</a></li>
+                    <li><a href="/mikrotik/dns-security" class="{{ 'active' if active_page == 'dns-security' else '' }}">{{ t('mk.sidebar.dns') }}</a></li>
+                    <li><a href="/mikrotik/port-services" class="{{ 'active' if active_page == 'port-services' else '' }}">{{ t('mk.sidebar.port_services') }}</a></li>
                 </ul>
-                <div class="sidebar-group">VPN & İzleme</div>
+                <div class="sidebar-group">{{ t('mk.sidebar.group.vpn') }}</div>
                 <ul>
-                    <li><a href="/mikrotik/vpn" class="{{ 'active' if active_page == 'vpn' else '' }}">WireGuard VPN</a></li>
-                    <li><a href="/mikrotik/netwatch" class="{{ 'active' if active_page == 'netwatch' else '' }}">Netwatch İzleme</a></li>
-                    <li><a href="/mikrotik/log-helper" class="{{ 'active' if active_page == 'log-helper' else '' }}">Log & Uyarı Asistanı</a></li>
+                    <li><a href="/mikrotik/vpn" class="{{ 'active' if active_page == 'vpn' else '' }}">{{ t('mk.sidebar.vpn') }}</a></li>
+                    <li><a href="/mikrotik/netwatch" class="{{ 'active' if active_page == 'netwatch' else '' }}">{{ t('mk.sidebar.netwatch') }}</a></li>
+                    <li><a href="/mikrotik/log-helper" class="{{ 'active' if active_page == 'log-helper' else '' }}">{{ t('mk.sidebar.log') }}</a></li>
                 </ul>
-                <div class="sidebar-group">Optimizasyon</div>
+                <div class="sidebar-group">{{ t('mk.sidebar.group.optimization') }}</div>
                 <ul>
-                    <li><a href="/mikrotik/bandwidth-pcq" class="{{ 'active' if active_page == 'bandwidth-pcq' else '' }}">PCQ Bant Genişliği</a></li>
-                    <li><a href="/mikrotik/fasttrack" class="{{ 'active' if active_page == 'fasttrack' else '' }}">FastTrack Optimizer</a></li>
-                    <li><a href="/mikrotik/wifi-channels" class="{{ 'active' if active_page == 'wifi-channels' else '' }}">Wi-Fi Kanal Rehberi</a></li>
+                    <li><a href="/mikrotik/bandwidth-pcq" class="{{ 'active' if active_page == 'bandwidth-pcq' else '' }}">{{ t('mk.sidebar.bandwidth') }}</a></li>
+                    <li><a href="/mikrotik/fasttrack" class="{{ 'active' if active_page == 'fasttrack' else '' }}">{{ t('mk.sidebar.fasttrack') }}</a></li>
+                    <li><a href="/mikrotik/wifi-channels" class="{{ 'active' if active_page == 'wifi-channels' else '' }}">{{ t('mk.sidebar.wifi') }}</a></li>
                 </ul>
-                <div class="sidebar-group">Donanım & Servisler</div>
+                <div class="sidebar-group">{{ t('mk.sidebar.group.hardware') }}</div>
                 <ul>
-                    <li><a href="/mikrotik/hardware-selector" class="{{ 'active' if active_page == 'hardware-selector' else '' }}">Donanım Seçici</a></li>
-                    <li><a href="/mikrotik/hotspot" class="{{ 'active' if active_page == 'hotspot' else '' }}">Hotspot Yönetimi</a></li>
+                    <li><a href="/mikrotik/hardware-selector" class="{{ 'active' if active_page == 'hardware-selector' else '' }}">{{ t('mk.sidebar.hardware') }}</a></li>
+                    <li><a href="/mikrotik/hotspot" class="{{ 'active' if active_page == 'hotspot' else '' }}">{{ t('mk.sidebar.hotspot') }}</a></li>
                 </ul>
             </nav>
         </aside>
@@ -551,6 +633,22 @@
         backdrop.classList.remove('visible');
         document.getElementById('sidebar-toggle').setAttribute('aria-expanded', 'false');
     }
+    (function () {
+        const langBtn = document.getElementById('lang-toggle');
+        const langDropdown = document.getElementById('lang-dropdown');
+        if (!langBtn || !langDropdown) return;
+        langBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            const isOpen = langDropdown.classList.toggle('open');
+            langBtn.setAttribute('aria-expanded', String(isOpen));
+        });
+        document.addEventListener('click', function (e) {
+            if (!langDropdown.contains(e.target) && e.target !== langBtn) {
+                langDropdown.classList.remove('open');
+                langBtn.setAttribute('aria-expanded', 'false');
+            }
+        });
+    })();
     // Close sidebar on nav link click (mobile)
     document.querySelectorAll('.sidebar nav ul li a').forEach(link => {
         link.addEventListener('click', function() {
@@ -581,29 +679,29 @@
     <div class="mk-modal-overlay" id="mkModalOverlay">
         <div class="mk-modal-box" role="dialog" aria-modal="true" aria-labelledby="mkModalTitle">
             <div class="mk-modal-header">
-                <span class="mk-modal-title" id="mkModalTitle">⚠️ Önemli Uyarılar</span>
-                <button type="button" class="mk-modal-close" onclick="closeMkNotice()" aria-label="Kapat">✕</button>
+                <span class="mk-modal-title" id="mkModalTitle">⚠️ {{ t('mk.modal.title') }}</span>
+                <button type="button" class="mk-modal-close" onclick="closeMkNotice()" aria-label="{{ t('mk.modal.close_aria') }}">✕</button>
             </div>
             <div class="mk-modal-body">
                 <div class="mk-notice-card mk-privacy">
                     <span class="mk-notice-icon">🔒</span>
                     <p class="mk-notice-text">
-                        Yüklediğiniz belge, evrak ve görseller web sitesinde tutulmamaktadır. Tüm işlemler tarayıcınızda yerel olarak gerçekleşir.
+                        {{ t('notice.privacy') }}
                     </p>
                 </div>
                 <div class="mk-notice-card mk-disclaimer">
                     <span class="mk-notice-icon">⚠️</span>
                     <p class="mk-notice-text">
-                        Burada üretilen script ve komutlar yalnızca yardımcı örnek niteliğindedir; cihazınıza özgü doğrulamayı siz yapmalısınız. Uygulamadan önce mutlaka mevcut konfigürasyonunuzun yedeğini (export) alın ve mümkünse önce test ortamında deneyin. Komutları kendi sorumluluğunuzda uygularsınız; oluşabilecek veri kaybı, kesinti veya diğer zararlardan site ve içerik sahibi sorumlu tutulamaz.
+                        {{ t('mk.modal.disclaimer') }}
                     </p>
                 </div>
             </div>
             <div class="mk-modal-footer">
-                <button type="button" class="mk-modal-ok-btn" onclick="closeMkNotice()">Anladım</button>
+                <button type="button" class="mk-modal-ok-btn" onclick="closeMkNotice()">{{ t('mk.modal.ok') }}</button>
             </div>
         </div>
     </div>
-    <button class="mk-notice-toggle-btn" onclick="openMkNotice()" aria-label="Uyarılar" title="Uyarılar">ℹ</button>
+    <button class="mk-notice-toggle-btn" onclick="openMkNotice()" aria-label="{{ t('mk.notice_toggle_aria') }}" title="{{ t('mk.notice_toggle_aria') }}">ℹ</button>
 
 </body>
 </html>

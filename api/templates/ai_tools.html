@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}toolboxquick | Yapay Zeka Araçları Karşılaştırma & AI Prompt Generator{% endblock %}
+{% block title %}toolboxquick | {{ t('ai_tools.title') }}{% endblock %}
 {% block head %}
 <style>
     .ai-hero-title {
@@ -29,12 +29,14 @@
     /* === Tabs === */
     .ai-tabs {
         display: flex;
+        flex-wrap: wrap;
         gap: 0.4rem;
         background: var(--card-bg);
         border: 1px solid var(--card-border);
         padding: 0.35rem;
         border-radius: 0.7rem;
         width: fit-content;
+        max-width: 100%;
         margin-bottom: 1.75rem;
     }
     .ai-tab-btn {
@@ -48,7 +50,6 @@
         background: transparent;
         color: var(--text-secondary);
         transition: background 0.15s, color 0.15s;
-        white-space: nowrap;
     }
     .ai-tab-btn.active { background: #0891b2; color: #fff; }
     .ai-tab-btn:hover:not(.active) { color: var(--text-color); }
@@ -81,7 +82,7 @@
         box-shadow: 0 4px 24px rgba(34, 211, 238, 0.12);
         color: inherit;
     }
-    .ai-card-head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+    .ai-card-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem 0.75rem; flex-wrap: wrap; }
     .ai-card-title { display: flex; align-items: center; gap: 0.6rem; }
     .ai-icon {
         width: 42px; height: 42px; border-radius: 10px;
@@ -204,17 +205,17 @@
 
 {% block content %}
 <section class="py-4">
-    <h1 class="ai-hero-title">🤖 Yapay Zeka Araçları</h1>
+    <h1 class="ai-hero-title">🤖 {{ t('ai_tools.hero_title') }}</h1>
     <p class="ai-hero-subtitle">
-        Popüler yapay zeka modellerini kullanım alanı, fiyatlandırma ve performansına göre karşılaştırın; size uygun aracı seçin ve doğrudan sitesine gidin. "AI Prompt Generator" sekmesi ise birkaç detay girmeniz yeterli olacak şekilde, işinize uygun yapay zeka için otomatik olarak hazır bir prompt oluşturur.
+        {{ t('ai_tools.hero_subtitle') }}
     </p>
     <div class="ai-disclaimer">
-        ⚠️ Bu sayfa bağımsız bir karşılaştırma rehberidir; listelenen yapay zeka araçlarıyla herhangi bir bağlantımız/ortaklığımız yoktur. Fiyatlar ve özellikler sağlayıcı tarafından değiştirilebilir, güncel bilgi için ilgili sitesini kontrol edin.
+        ⚠️ {{ t('ai_tools.disclaimer') }}
     </div>
 
     <div class="ai-tabs">
-        <button class="ai-tab-btn active" data-tab="compare" onclick="aiSwitchTab('compare')">🤖 AI Karşılaştırma</button>
-        <button class="ai-tab-btn" data-tab="prompt" onclick="aiSwitchTab('prompt')">🎯 AI Prompt Generator</button>
+        <button class="ai-tab-btn active" data-tab="compare" onclick="aiSwitchTab('compare')">🤖 {{ t('ai_tools.tab_compare') }}</button>
+        <button class="ai-tab-btn" data-tab="prompt" onclick="aiSwitchTab('prompt')">🎯 {{ t('ai_tools.tab_prompt') }}</button>
     </div>
 
     <!-- === TAB 1: KARŞILAŞTIRMA === -->
@@ -230,16 +231,16 @@
                             <div class="ai-maker">OpenAI</div>
                         </div>
                     </div>
-                    <span class="ai-price-badge">Ücretsiz + Pro</span>
+                    <span class="ai-price-badge">{{ t('ai_tools.badge.free_pro') }}</span>
                 </div>
-                <p class="ai-desc">Genel amaçlı sohbet, yazı, kod ve görsel üretimi (DALL·E entegre) sunan en yaygın kullanılan asistan. Günlük kullanım için en dengeli seçenek.</p>
-                <div class="ai-price-line">Ücretsiz plan · <b>Plus $20/ay</b> · Pro $200/ay</div>
+                <p class="ai-desc">{{ t('ai_tools.card.chatgpt.desc') }}</p>
+                <div class="ai-price-line">{{ t('ai_tools.card.chatgpt.price')|safe }}</div>
                 <div class="ai-perf">
-                    <div class="ai-perf-row"><span class="ai-perf-label">Yazı</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:95%"></div></div></div>
-                    <div class="ai-perf-row"><span class="ai-perf-label">Kod</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:85%"></div></div></div>
-                    <div class="ai-perf-row"><span class="ai-perf-label">Görsel</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:80%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.yazi') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:95%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.kod') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:85%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.gorsel') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:80%"></div></div></div>
                 </div>
-                <div class="ai-cta">Şimdi Dene →</div>
+                <div class="ai-cta">{{ t('ai_tools.cta') }}</div>
             </a>
 
             <a href="https://claude.ai" target="_blank" rel="noopener" class="ai-card" style="--ai-accent:#d97757;">
@@ -251,16 +252,16 @@
                             <div class="ai-maker">Anthropic</div>
                         </div>
                     </div>
-                    <span class="ai-price-badge">Ücretsiz + Pro</span>
+                    <span class="ai-price-badge">{{ t('ai_tools.badge.free_pro') }}</span>
                 </div>
-                <p class="ai-desc">Uzun metin analizi, yazılım geliştirme ve titiz yazım işlerinde öne çıkar. Büyük dosya/kod tabanlarını yorumlamada güçlü.</p>
-                <div class="ai-price-line">Ücretsiz plan · <b>Pro $20/ay</b> · Max $100-200/ay</div>
+                <p class="ai-desc">{{ t('ai_tools.card.claude.desc') }}</p>
+                <div class="ai-price-line">{{ t('ai_tools.card.claude.price')|safe }}</div>
                 <div class="ai-perf">
-                    <div class="ai-perf-row"><span class="ai-perf-label">Yazı</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:96%"></div></div></div>
-                    <div class="ai-perf-row"><span class="ai-perf-label">Kod</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:97%"></div></div></div>
-                    <div class="ai-perf-row"><span class="ai-perf-label">Görsel</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:0%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.yazi') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:96%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.kod') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:97%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.gorsel') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:0%"></div></div></div>
                 </div>
-                <div class="ai-cta">Şimdi Dene →</div>
+                <div class="ai-cta">{{ t('ai_tools.cta') }}</div>
             </a>
 
             <a href="https://gemini.google.com" target="_blank" rel="noopener" class="ai-card" style="--ai-accent:#4285f4;">
@@ -272,16 +273,16 @@
                             <div class="ai-maker">Google</div>
                         </div>
                     </div>
-                    <span class="ai-price-badge">Ücretsiz + Pro</span>
+                    <span class="ai-price-badge">{{ t('ai_tools.badge.free_pro') }}</span>
                 </div>
-                <p class="ai-desc">Google arama, Docs, Gmail ve Android ile derin entegrasyon. Güncel bilgiye erişim ve araştırma için güçlü.</p>
-                <div class="ai-price-line">Ücretsiz plan · <b>Google AI Pro ~$22/ay</b></div>
+                <p class="ai-desc">{{ t('ai_tools.card.gemini.desc') }}</p>
+                <div class="ai-price-line">{{ t('ai_tools.card.gemini.price')|safe }}</div>
                 <div class="ai-perf">
-                    <div class="ai-perf-row"><span class="ai-perf-label">Araştırma</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:92%"></div></div></div>
-                    <div class="ai-perf-row"><span class="ai-perf-label">Kod</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:85%"></div></div></div>
-                    <div class="ai-perf-row"><span class="ai-perf-label">Görsel</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:82%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.arastirma') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:92%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.kod') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:85%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.gorsel') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:82%"></div></div></div>
                 </div>
-                <div class="ai-cta">Şimdi Dene →</div>
+                <div class="ai-cta">{{ t('ai_tools.cta') }}</div>
             </a>
 
             <a href="https://perplexity.ai" target="_blank" rel="noopener" class="ai-card" style="--ai-accent:#20808d;">
@@ -293,16 +294,16 @@
                             <div class="ai-maker">Perplexity AI</div>
                         </div>
                     </div>
-                    <span class="ai-price-badge">Ücretsiz + Pro</span>
+                    <span class="ai-price-badge">{{ t('ai_tools.badge.free_pro') }}</span>
                 </div>
-                <p class="ai-desc">Kaynak gösteren "AI arama motoru". Güncel olaylar ve doğrulanabilir bilgi gerektiren araştırmalar için ideal.</p>
-                <div class="ai-price-line">Ücretsiz plan · <b>Pro $20/ay</b></div>
+                <p class="ai-desc">{{ t('ai_tools.card.perplexity.desc') }}</p>
+                <div class="ai-price-line">{{ t('ai_tools.card.perplexity.price')|safe }}</div>
                 <div class="ai-perf">
-                    <div class="ai-perf-row"><span class="ai-perf-label">Araştırma</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:97%"></div></div></div>
-                    <div class="ai-perf-row"><span class="ai-perf-label">Yazı</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:78%"></div></div></div>
-                    <div class="ai-perf-row"><span class="ai-perf-label">Kod</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:70%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.arastirma') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:97%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.yazi') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:78%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.kod') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:70%"></div></div></div>
                 </div>
-                <div class="ai-cta">Şimdi Dene →</div>
+                <div class="ai-cta">{{ t('ai_tools.cta') }}</div>
             </a>
 
             <a href="https://copilot.microsoft.com" target="_blank" rel="noopener" class="ai-card" style="--ai-accent:#4f6bed;">
@@ -314,16 +315,16 @@
                             <div class="ai-maker">Microsoft</div>
                         </div>
                     </div>
-                    <span class="ai-price-badge">Ücretsiz + Pro</span>
+                    <span class="ai-price-badge">{{ t('ai_tools.badge.free_pro') }}</span>
                 </div>
-                <p class="ai-desc">Word, Excel, PowerPoint ve Windows ile bütünleşik. Ofis dokümanları ve iş akışları için pratik.</p>
-                <div class="ai-price-line">Ücretsiz plan · <b>Copilot Pro $20/ay</b> · M365 dahil</div>
+                <p class="ai-desc">{{ t('ai_tools.card.copilot.desc') }}</p>
+                <div class="ai-price-line">{{ t('ai_tools.card.copilot.price')|safe }}</div>
                 <div class="ai-perf">
-                    <div class="ai-perf-row"><span class="ai-perf-label">Ofis işleri</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:93%"></div></div></div>
-                    <div class="ai-perf-row"><span class="ai-perf-label">Yazı</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:82%"></div></div></div>
-                    <div class="ai-perf-row"><span class="ai-perf-label">Kod</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:80%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.ofis') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:93%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.yazi') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:82%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.kod') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:80%"></div></div></div>
                 </div>
-                <div class="ai-cta">Şimdi Dene →</div>
+                <div class="ai-cta">{{ t('ai_tools.cta') }}</div>
             </a>
 
             <a href="https://grok.com" target="_blank" rel="noopener" class="ai-card" style="--ai-accent:#7c7c7c;">
@@ -335,16 +336,16 @@
                             <div class="ai-maker">xAI</div>
                         </div>
                     </div>
-                    <span class="ai-price-badge">Sınırlı Ücretsiz</span>
+                    <span class="ai-price-badge">{{ t('ai_tools.badge.limited_free') }}</span>
                 </div>
-                <p class="ai-desc">X (Twitter) verisine gerçek zamanlı erişimi sayesinde güncel olaylar ve sosyal medya trend analizinde öne çıkar.</p>
-                <div class="ai-price-line">Sınırlı ücretsiz · <b>X Premium+ ~$40/ay</b></div>
+                <p class="ai-desc">{{ t('ai_tools.card.grok.desc') }}</p>
+                <div class="ai-price-line">{{ t('ai_tools.card.grok.price')|safe }}</div>
                 <div class="ai-perf">
-                    <div class="ai-perf-row"><span class="ai-perf-label">Güncel bilgi</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:94%"></div></div></div>
-                    <div class="ai-perf-row"><span class="ai-perf-label">Yazı</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:83%"></div></div></div>
-                    <div class="ai-perf-row"><span class="ai-perf-label">Kod</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:82%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.guncel') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:94%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.yazi') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:83%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.kod') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:82%"></div></div></div>
                 </div>
-                <div class="ai-cta">Şimdi Dene →</div>
+                <div class="ai-cta">{{ t('ai_tools.cta') }}</div>
             </a>
 
             <a href="https://chat.deepseek.com" target="_blank" rel="noopener" class="ai-card" style="--ai-accent:#4d6bfe;">
@@ -356,16 +357,16 @@
                             <div class="ai-maker">DeepSeek AI</div>
                         </div>
                     </div>
-                    <span class="ai-price-badge">Çoğunlukla Ücretsiz</span>
+                    <span class="ai-price-badge">{{ t('ai_tools.badge.mostly_free') }}</span>
                 </div>
-                <p class="ai-desc">Kodlama ve matematikte güçlü, çok düşük maliyetli açık modeller sunar. Fiyat/performans oranı en yüksek seçeneklerden.</p>
-                <div class="ai-price-line">Web ücretsiz · <b>API çok düşük ücretli</b></div>
+                <p class="ai-desc">{{ t('ai_tools.card.deepseek.desc') }}</p>
+                <div class="ai-price-line">{{ t('ai_tools.card.deepseek.price')|safe }}</div>
                 <div class="ai-perf">
-                    <div class="ai-perf-row"><span class="ai-perf-label">Kod</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:90%"></div></div></div>
-                    <div class="ai-perf-row"><span class="ai-perf-label">Fiyat/Performans</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:98%"></div></div></div>
-                    <div class="ai-perf-row"><span class="ai-perf-label">Yazı</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:80%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.kod') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:90%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.fiyat_performans') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:98%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.yazi') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:80%"></div></div></div>
                 </div>
-                <div class="ai-cta">Şimdi Dene →</div>
+                <div class="ai-cta">{{ t('ai_tools.cta') }}</div>
             </a>
 
             <a href="https://midjourney.com" target="_blank" rel="noopener" class="ai-card" style="--ai-accent:#8b5cf6;">
@@ -377,15 +378,15 @@
                             <div class="ai-maker">Midjourney Inc.</div>
                         </div>
                     </div>
-                    <span class="ai-price-badge">Ücretli</span>
+                    <span class="ai-price-badge">{{ t('ai_tools.badge.paid') }}</span>
                 </div>
-                <p class="ai-desc">Görsel/resim üretiminde sektör standardı; sanatsal ve fotogerçekçi görsellerde en yüksek kalite.</p>
-                <div class="ai-price-line">Ücretsiz deneme yok · <b>$10 - $120/ay</b></div>
+                <p class="ai-desc">{{ t('ai_tools.card.midjourney.desc') }}</p>
+                <div class="ai-price-line">{{ t('ai_tools.card.midjourney.price')|safe }}</div>
                 <div class="ai-perf">
-                    <div class="ai-perf-row"><span class="ai-perf-label">Görsel</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:98%"></div></div></div>
-                    <div class="ai-perf-row"><span class="ai-perf-label">Hız</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:75%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.gorsel') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:98%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.hiz') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:75%"></div></div></div>
                 </div>
-                <div class="ai-cta">Şimdi Dene →</div>
+                <div class="ai-cta">{{ t('ai_tools.cta') }}</div>
             </a>
 
             <a href="https://suno.com" target="_blank" rel="noopener" class="ai-card" style="--ai-accent:#f472b6;">
@@ -397,15 +398,15 @@
                             <div class="ai-maker">Suno AI</div>
                         </div>
                     </div>
-                    <span class="ai-price-badge">Ücretsiz + Pro</span>
+                    <span class="ai-price-badge">{{ t('ai_tools.badge.free_pro') }}</span>
                 </div>
-                <p class="ai-desc">Metinden tam şarkı (söz + müzik) üretir. Müzik/jingle prodüksiyonunda hızlı ve pratik bir seçenek.</p>
-                <div class="ai-price-line">Sınırlı ücretsiz · <b>$10 - $30/ay</b></div>
+                <p class="ai-desc">{{ t('ai_tools.card.suno.desc') }}</p>
+                <div class="ai-price-line">{{ t('ai_tools.card.suno.price')|safe }}</div>
                 <div class="ai-perf">
-                    <div class="ai-perf-row"><span class="ai-perf-label">Müzik</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:95%"></div></div></div>
-                    <div class="ai-perf-row"><span class="ai-perf-label">Hız</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:88%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.muzik') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:95%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.hiz') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:88%"></div></div></div>
                 </div>
-                <div class="ai-cta">Şimdi Dene →</div>
+                <div class="ai-cta">{{ t('ai_tools.cta') }}</div>
             </a>
 
             <a href="https://meta.ai" target="_blank" rel="noopener" class="ai-card" style="--ai-accent:#0668e1;">
@@ -417,16 +418,16 @@
                             <div class="ai-maker">Meta</div>
                         </div>
                     </div>
-                    <span class="ai-price-badge">Ücretsiz</span>
+                    <span class="ai-price-badge">{{ t('ai_tools.badge.free') }}</span>
                 </div>
-                <p class="ai-desc">WhatsApp, Instagram ve Facebook içine gömülü olarak gelir. Tamamen ücretsiz, günlük sohbet ve görsel üretimi için pratiktir.</p>
-                <div class="ai-price-line">Tamamen ücretsiz</div>
+                <p class="ai-desc">{{ t('ai_tools.card.meta.desc') }}</p>
+                <div class="ai-price-line">{{ t('ai_tools.card.meta.price') }}</div>
                 <div class="ai-perf">
-                    <div class="ai-perf-row"><span class="ai-perf-label">Yazı</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:78%"></div></div></div>
-                    <div class="ai-perf-row"><span class="ai-perf-label">Görsel</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:80%"></div></div></div>
-                    <div class="ai-perf-row"><span class="ai-perf-label">Erişilebilirlik</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:96%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.yazi') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:78%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.gorsel') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:80%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.erisilebilirlik') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:96%"></div></div></div>
                 </div>
-                <div class="ai-cta">Şimdi Dene →</div>
+                <div class="ai-cta">{{ t('ai_tools.cta') }}</div>
             </a>
 
             <a href="https://chat.mistral.ai" target="_blank" rel="noopener" class="ai-card" style="--ai-accent:#fa520f;">
@@ -438,16 +439,16 @@
                             <div class="ai-maker">Mistral AI</div>
                         </div>
                     </div>
-                    <span class="ai-price-badge">Ücretsiz + Pro</span>
+                    <span class="ai-price-badge">{{ t('ai_tools.badge.free_pro') }}</span>
                 </div>
-                <p class="ai-desc">Avrupa merkezli, gizlilik odaklı genel amaçlı asistan. Çok dillilikte ve hızlı yanıt sürelerinde güçlü.</p>
-                <div class="ai-price-line">Ücretsiz plan · <b>Pro ~$15/ay</b></div>
+                <p class="ai-desc">{{ t('ai_tools.card.lechat.desc') }}</p>
+                <div class="ai-price-line">{{ t('ai_tools.card.lechat.price')|safe }}</div>
                 <div class="ai-perf">
-                    <div class="ai-perf-row"><span class="ai-perf-label">Hız</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:90%"></div></div></div>
-                    <div class="ai-perf-row"><span class="ai-perf-label">Yazı</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:82%"></div></div></div>
-                    <div class="ai-perf-row"><span class="ai-perf-label">Gizlilik</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:92%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.hiz') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:90%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.yazi') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:82%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.gizlilik') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:92%"></div></div></div>
                 </div>
-                <div class="ai-cta">Şimdi Dene →</div>
+                <div class="ai-cta">{{ t('ai_tools.cta') }}</div>
             </a>
 
             <a href="https://github.com/features/copilot" target="_blank" rel="noopener" class="ai-card" style="--ai-accent:#8250df;">
@@ -459,15 +460,15 @@
                             <div class="ai-maker">GitHub / Microsoft</div>
                         </div>
                     </div>
-                    <span class="ai-price-badge">Ücretsiz + Pro</span>
+                    <span class="ai-price-badge">{{ t('ai_tools.badge.free_pro') }}</span>
                 </div>
-                <p class="ai-desc">IDE içinde satır satır kod tamamlama ve sohbet asistanı. Yazılım geliştiricilerin günlük iş akışına doğrudan entegre olur.</p>
-                <div class="ai-price-line">Sınırlı ücretsiz · <b>Pro $10/ay</b></div>
+                <p class="ai-desc">{{ t('ai_tools.card.ghcopilot.desc') }}</p>
+                <div class="ai-price-line">{{ t('ai_tools.card.ghcopilot.price')|safe }}</div>
                 <div class="ai-perf">
-                    <div class="ai-perf-row"><span class="ai-perf-label">Kod tamamlama</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:94%"></div></div></div>
-                    <div class="ai-perf-row"><span class="ai-perf-label">IDE entegrasyonu</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:97%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.kod_tamamlama') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:94%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.ide') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:97%"></div></div></div>
                 </div>
-                <div class="ai-cta">Şimdi Dene →</div>
+                <div class="ai-cta">{{ t('ai_tools.cta') }}</div>
             </a>
 
             <a href="https://cursor.com" target="_blank" rel="noopener" class="ai-card" style="--ai-accent:#00a3ff;">
@@ -479,15 +480,15 @@
                             <div class="ai-maker">Anysphere</div>
                         </div>
                     </div>
-                    <span class="ai-price-badge">Ücretsiz + Pro</span>
+                    <span class="ai-price-badge">{{ t('ai_tools.badge.free_pro') }}</span>
                 </div>
-                <p class="ai-desc">Yapay zeka destekli, sıfırdan tasarlanmış kod editörü. Tüm proje genelinde kod üretimi ve refactor için güçlü.</p>
-                <div class="ai-price-line">Ücretsiz plan · <b>Pro $20/ay</b></div>
+                <p class="ai-desc">{{ t('ai_tools.card.cursor.desc') }}</p>
+                <div class="ai-price-line">{{ t('ai_tools.card.cursor.price')|safe }}</div>
                 <div class="ai-perf">
-                    <div class="ai-perf-row"><span class="ai-perf-label">Kod</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:95%"></div></div></div>
-                    <div class="ai-perf-row"><span class="ai-perf-label">Proje analizi</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:93%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.kod') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:95%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.proje_analizi') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:93%"></div></div></div>
                 </div>
-                <div class="ai-cta">Şimdi Dene →</div>
+                <div class="ai-cta">{{ t('ai_tools.cta') }}</div>
             </a>
 
             <a href="https://elevenlabs.io" target="_blank" rel="noopener" class="ai-card" style="--ai-accent:#000000;">
@@ -499,15 +500,15 @@
                             <div class="ai-maker">ElevenLabs</div>
                         </div>
                     </div>
-                    <span class="ai-price-badge">Ücretsiz + Pro</span>
+                    <span class="ai-price-badge">{{ t('ai_tools.badge.free_pro') }}</span>
                 </div>
-                <p class="ai-desc">Gerçekçi metin okuma (TTS) ve ses klonlama alanında sektör lideri. Seslendirme, dublaj ve podcast üretiminde tercih edilir.</p>
-                <div class="ai-price-line">Ücretsiz plan · <b>$5 - $330/ay</b></div>
+                <p class="ai-desc">{{ t('ai_tools.card.elevenlabs.desc') }}</p>
+                <div class="ai-price-line">{{ t('ai_tools.card.elevenlabs.price')|safe }}</div>
                 <div class="ai-perf">
-                    <div class="ai-perf-row"><span class="ai-perf-label">Ses kalitesi</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:97%"></div></div></div>
-                    <div class="ai-perf-row"><span class="ai-perf-label">Ses klonlama</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:95%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.ses_kalitesi') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:97%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.ses_klonlama') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:95%"></div></div></div>
                 </div>
-                <div class="ai-cta">Şimdi Dene →</div>
+                <div class="ai-cta">{{ t('ai_tools.cta') }}</div>
             </a>
 
             <a href="https://runwayml.com" target="_blank" rel="noopener" class="ai-card" style="--ai-accent:#00ffcc;">
@@ -519,15 +520,15 @@
                             <div class="ai-maker">Runway AI</div>
                         </div>
                     </div>
-                    <span class="ai-price-badge">Ücretsiz + Pro</span>
+                    <span class="ai-price-badge">{{ t('ai_tools.badge.free_pro') }}</span>
                 </div>
-                <p class="ai-desc">Metinden veya görselden video üreten öncü araçlardan biri. Film/reklam prodüksiyonunda AI video efektleri için kullanılır.</p>
-                <div class="ai-price-line">Sınırlı ücretsiz · <b>$12 - $76/ay</b></div>
+                <p class="ai-desc">{{ t('ai_tools.card.runway.desc') }}</p>
+                <div class="ai-price-line">{{ t('ai_tools.card.runway.price')|safe }}</div>
                 <div class="ai-perf">
-                    <div class="ai-perf-row"><span class="ai-perf-label">Video üretimi</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:93%"></div></div></div>
-                    <div class="ai-perf-row"><span class="ai-perf-label">Görsel efekt</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:90%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.video_uretimi') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:93%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.gorsel_efekt') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:90%"></div></div></div>
                 </div>
-                <div class="ai-cta">Şimdi Dene →</div>
+                <div class="ai-cta">{{ t('ai_tools.cta') }}</div>
             </a>
 
             <a href="https://leonardo.ai" target="_blank" rel="noopener" class="ai-card" style="--ai-accent:#a855f7;">
@@ -539,15 +540,15 @@
                             <div class="ai-maker">Leonardo AI</div>
                         </div>
                     </div>
-                    <span class="ai-price-badge">Ücretsiz + Pro</span>
+                    <span class="ai-price-badge">{{ t('ai_tools.badge.free_pro') }}</span>
                 </div>
-                <p class="ai-desc">Görsel üretiminde Midjourney'e alternatif; oyun/karakter tasarımı ve tutarlı stil şablonlarında öne çıkar.</p>
-                <div class="ai-price-line">Ücretsiz plan · <b>$12 - $60/ay</b></div>
+                <p class="ai-desc">{{ t('ai_tools.card.leonardo.desc') }}</p>
+                <div class="ai-price-line">{{ t('ai_tools.card.leonardo.price')|safe }}</div>
                 <div class="ai-perf">
-                    <div class="ai-perf-row"><span class="ai-perf-label">Görsel</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:93%"></div></div></div>
-                    <div class="ai-perf-row"><span class="ai-perf-label">Fiyat/Performans</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:88%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.gorsel') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:93%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.fiyat_performans') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:88%"></div></div></div>
                 </div>
-                <div class="ai-cta">Şimdi Dene →</div>
+                <div class="ai-cta">{{ t('ai_tools.cta') }}</div>
             </a>
 
             <a href="https://notion.so" target="_blank" rel="noopener" class="ai-card" style="--ai-accent:#e5e5e5;">
@@ -559,15 +560,15 @@
                             <div class="ai-maker">Notion</div>
                         </div>
                     </div>
-                    <span class="ai-price-badge">Ek Ücretli</span>
+                    <span class="ai-price-badge">{{ t('ai_tools.badge.addon_paid') }}</span>
                 </div>
-                <p class="ai-desc">Notion çalışma alanınızın içine gömülü yazma, özetleme ve görev yönetimi asistanı. Not/doküman ağırlıklı ekipler için pratik.</p>
-                <div class="ai-price-line">Notion'a ek · <b>$8-10/kullanıcı/ay</b></div>
+                <p class="ai-desc">{{ t('ai_tools.card.notion.desc') }}</p>
+                <div class="ai-price-line">{{ t('ai_tools.card.notion.price')|safe }}</div>
                 <div class="ai-perf">
-                    <div class="ai-perf-row"><span class="ai-perf-label">Not/Doküman</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:92%"></div></div></div>
-                    <div class="ai-perf-row"><span class="ai-perf-label">Özetleme</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:90%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.not_dokuman') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:92%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.ozetleme') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:90%"></div></div></div>
                 </div>
-                <div class="ai-cta">Şimdi Dene →</div>
+                <div class="ai-cta">{{ t('ai_tools.cta') }}</div>
             </a>
 
             <a href="https://character.ai" target="_blank" rel="noopener" class="ai-card" style="--ai-accent:#ff6f61;">
@@ -579,15 +580,15 @@
                             <div class="ai-maker">Character AI</div>
                         </div>
                     </div>
-                    <span class="ai-price-badge">Ücretsiz + Pro</span>
+                    <span class="ai-price-badge">{{ t('ai_tools.badge.free_pro') }}</span>
                 </div>
-                <p class="ai-desc">Kişiselleştirilmiş karakterlerle rol yapma ve sohbet deneyimi. Eğlence, hikaye anlatımı ve yaratıcı yazım için tercih edilir.</p>
-                <div class="ai-price-line">Ücretsiz plan · <b>c.ai+ $10/ay</b></div>
+                <p class="ai-desc">{{ t('ai_tools.card.characterai.desc') }}</p>
+                <div class="ai-price-line">{{ t('ai_tools.card.characterai.price')|safe }}</div>
                 <div class="ai-perf">
-                    <div class="ai-perf-row"><span class="ai-perf-label">Rol yapma</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:94%"></div></div></div>
-                    <div class="ai-perf-row"><span class="ai-perf-label">Yaratıcı yazım</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:87%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.rol_yapma') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:94%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.yaratici_yazim') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:87%"></div></div></div>
                 </div>
-                <div class="ai-cta">Şimdi Dene →</div>
+                <div class="ai-cta">{{ t('ai_tools.cta') }}</div>
             </a>
 
             <a href="https://poe.com" target="_blank" rel="noopener" class="ai-card" style="--ai-accent:#5865f2;">
@@ -599,15 +600,15 @@
                             <div class="ai-maker">Quora</div>
                         </div>
                     </div>
-                    <span class="ai-price-badge">Ücretsiz + Pro</span>
+                    <span class="ai-price-badge">{{ t('ai_tools.badge.free_pro') }}</span>
                 </div>
-                <p class="ai-desc">Tek arayüzden ChatGPT, Claude, Gemini gibi birçok modele erişim sağlayan toplayıcı platform. Modelleri kıyaslamak isteyenler için pratik.</p>
-                <div class="ai-price-line">Ücretsiz plan · <b>Pro $20/ay</b></div>
+                <p class="ai-desc">{{ t('ai_tools.card.poe.desc') }}</p>
+                <div class="ai-price-line">{{ t('ai_tools.card.poe.price')|safe }}</div>
                 <div class="ai-perf">
-                    <div class="ai-perf-row"><span class="ai-perf-label">Model çeşitliliği</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:96%"></div></div></div>
-                    <div class="ai-perf-row"><span class="ai-perf-label">Kullanım kolaylığı</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:88%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.model_cesitliligi') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:96%"></div></div></div>
+                    <div class="ai-perf-row"><span class="ai-perf-label">{{ t('ai_tools.perf.kullanim_kolayligi') }}</span><div class="ai-perf-bar"><div class="ai-perf-fill" style="width:88%"></div></div></div>
                 </div>
-                <div class="ai-cta">Şimdi Dene →</div>
+                <div class="ai-cta">{{ t('ai_tools.cta') }}</div>
             </a>
 
         </div>
@@ -618,14 +619,14 @@
         <div class="pg-layout">
             <div class="pg-task-list" id="pgTaskList"></div>
             <div class="pg-result">
-                <div class="pg-result-title">Önerilen Yapay Zeka(lar)</div>
+                <div class="pg-result-title">{{ t('ai_tools.pg_reco_title') }}</div>
                 <div class="pg-reco-list" id="pgRecoList"></div>
-                <div class="pg-result-title">Detayları Girin</div>
+                <div class="pg-result-title">{{ t('ai_tools.pg_details_title') }}</div>
                 <div class="pg-fields" id="pgFields"></div>
-                <button type="button" class="pg-generate-btn" onclick="pgGenerate()">✨ Prompt Oluştur</button>
-                <div class="pg-result-title">Oluşturulan Prompt</div>
+                <button type="button" class="pg-generate-btn" onclick="pgGenerate()">✨ {{ t('ai_tools.pg_generate_btn') }}</button>
+                <div class="pg-result-title">{{ t('ai_tools.pg_generated_title') }}</div>
                 <div class="pg-prompt-box">
-                    <button class="pg-copy-btn" onclick="pgCopyPrompt()">Kopyala</button>
+                    <button class="pg-copy-btn" onclick="pgCopyPrompt()">{{ t('ai_tools.pg_copy_btn') }}</button>
                     <span id="pgPromptText"></span>
                 </div>
                 <p class="pg-note" id="pgNote"></p>
@@ -635,6 +636,104 @@
 </section>
 
 <script>
+    const PG_I18N = {{ {
+        'genel': {
+            'label': t('ai_tools.pg.genel.label'), 'note': t('ai_tools.pg.genel.note'), 'template': t('ai_tools.pg.genel.template'),
+            'fields': {
+                'konu': {'label': t('ai_tools.pg.genel.field.konu.label'), 'default': t('ai_tools.pg.genel.field.konu.default')},
+                'ton': {'label': t('ai_tools.pg.genel.field.ton.label'), 'options': [t('ai_tools.pg.genel.field.ton.opt.sade'), t('ai_tools.pg.genel.field.ton.opt.samimi'), t('ai_tools.pg.genel.field.ton.opt.profesyonel'), t('ai_tools.pg.genel.field.ton.opt.esprili')]}
+            }
+        },
+        'kod': {
+            'label': t('ai_tools.pg.kod.label'), 'note': t('ai_tools.pg.kod.note'), 'template': t('ai_tools.pg.kod.template'),
+            'fields': {
+                'dil': {'label': t('ai_tools.pg.kod.field.dil.label')},
+                'hedef': {'label': t('ai_tools.pg.kod.field.hedef.label'), 'default': t('ai_tools.pg.kod.field.hedef.default')},
+                'kod': {'label': t('ai_tools.pg.kod.field.kod.label')}
+            }
+        },
+        'kod-editor': {
+            'label': t('ai_tools.pg.kod_editor.label'), 'note': t('ai_tools.pg.kod_editor.note'), 'template': t('ai_tools.pg.kod_editor.template'),
+            'fields': {
+                'dil': {'label': t('ai_tools.pg.kod_editor.field.dil.label')},
+                'istek': {'label': t('ai_tools.pg.kod_editor.field.istek.label'), 'default': t('ai_tools.pg.kod_editor.field.istek.default')}
+            }
+        },
+        'yazi': {
+            'label': t('ai_tools.pg.yazi.label'), 'note': t('ai_tools.pg.yazi.note'), 'template': t('ai_tools.pg.yazi.template'),
+            'fields': {
+                'konu': {'label': t('ai_tools.pg.yazi.field.konu.label'), 'default': t('ai_tools.pg.yazi.field.konu.default')},
+                'uzunluk': {'label': t('ai_tools.pg.yazi.field.uzunluk.label'), 'options': [t('ai_tools.pg.yazi.field.uzunluk.opt.300'), t('ai_tools.pg.yazi.field.uzunluk.opt.800'), t('ai_tools.pg.yazi.field.uzunluk.opt.1500')]},
+                'ton': {'label': t('ai_tools.pg.yazi.field.ton.label'), 'options': [t('ai_tools.pg.yazi.field.ton.opt.resmi'), t('ai_tools.pg.yazi.field.ton.opt.samimi'), t('ai_tools.pg.yazi.field.ton.opt.akademik'), t('ai_tools.pg.yazi.field.ton.opt.ikna')]},
+                'hedefKitle': {'label': t('ai_tools.pg.yazi.field.hedefKitle.label'), 'default': t('ai_tools.pg.yazi.field.hedefKitle.default')}
+            }
+        },
+        'arastirma': {
+            'label': t('ai_tools.pg.arastirma.label'), 'note': t('ai_tools.pg.arastirma.note'), 'template': t('ai_tools.pg.arastirma.template'),
+            'fields': { 'konu': {'label': t('ai_tools.pg.arastirma.field.konu.label'), 'default': t('ai_tools.pg.arastirma.field.konu.default')} }
+        },
+        'gorsel': {
+            'label': t('ai_tools.pg.gorsel.label'), 'note': t('ai_tools.pg.gorsel.note'), 'template': t('ai_tools.pg.gorsel.template'),
+            'fields': {
+                'konu': {'label': t('ai_tools.pg.gorsel.field.konu.label'), 'default': t('ai_tools.pg.gorsel.field.konu.default')},
+                'stil': {'label': t('ai_tools.pg.gorsel.field.stil.label'), 'options': [t('ai_tools.pg.gorsel.field.stil.opt.sinematik'), t('ai_tools.pg.gorsel.field.stil.opt.suluboya'), t('ai_tools.pg.gorsel.field.stil.opt.3d'), t('ai_tools.pg.gorsel.field.stil.opt.anime'), t('ai_tools.pg.gorsel.field.stil.opt.fotogercekci')]},
+                'isik': {'label': t('ai_tools.pg.gorsel.field.isik.label'), 'default': t('ai_tools.pg.gorsel.field.isik.default')},
+                'aci': {'label': t('ai_tools.pg.gorsel.field.aci.label'), 'default': t('ai_tools.pg.gorsel.field.aci.default')},
+                'oran': {'label': t('ai_tools.pg.gorsel.field.oran.label')}
+            }
+        },
+        'ofis': {
+            'label': t('ai_tools.pg.ofis.label'), 'note': t('ai_tools.pg.ofis.note'), 'template': t('ai_tools.pg.ofis.template'),
+            'fields': {
+                'dosyaTipi': {'label': t('ai_tools.pg.ofis.field.dosyaTipi.label')},
+                'gorev': {'label': t('ai_tools.pg.ofis.field.gorev.label'), 'default': t('ai_tools.pg.ofis.field.gorev.default')},
+                'icerik': {'label': t('ai_tools.pg.ofis.field.icerik.label'), 'default': t('ai_tools.pg.ofis.field.icerik.default')}
+            }
+        },
+        'guncel': {
+            'label': t('ai_tools.pg.guncel.label'), 'note': t('ai_tools.pg.guncel.note'), 'template': t('ai_tools.pg.guncel.template'),
+            'fields': { 'konu': {'label': t('ai_tools.pg.guncel.field.konu.label'), 'default': t('ai_tools.pg.guncel.field.konu.default')} }
+        },
+        'muzik': {
+            'label': t('ai_tools.pg.muzik.label'), 'note': t('ai_tools.pg.muzik.note'), 'template': t('ai_tools.pg.muzik.template'),
+            'fields': {
+                'tur': {'label': t('ai_tools.pg.muzik.field.tur.label'), 'default': t('ai_tools.pg.muzik.field.tur.default')},
+                'tema': {'label': t('ai_tools.pg.muzik.field.tema.label'), 'default': t('ai_tools.pg.muzik.field.tema.default')},
+                'ruh': {'label': t('ai_tools.pg.muzik.field.ruh.label'), 'options': [t('ai_tools.pg.muzik.field.ruh.opt.enerjik'), t('ai_tools.pg.muzik.field.ruh.opt.melankolik'), t('ai_tools.pg.muzik.field.ruh.opt.romantik'), t('ai_tools.pg.muzik.field.ruh.opt.epik')]},
+                'vokal': {'label': t('ai_tools.pg.muzik.field.vokal.label'), 'options': [t('ai_tools.pg.muzik.field.vokal.opt.kadin'), t('ai_tools.pg.muzik.field.vokal.opt.erkek'), t('ai_tools.pg.muzik.field.vokal.opt.enstrumantal')]}
+            }
+        },
+        'ai-video': {
+            'label': t('ai_tools.pg.ai_video.label'), 'note': t('ai_tools.pg.ai_video.note'), 'template': t('ai_tools.pg.ai_video.template'),
+            'fields': {
+                'sahne': {'label': t('ai_tools.pg.ai_video.field.sahne.label'), 'default': t('ai_tools.pg.ai_video.field.sahne.default')},
+                'kamera': {'label': t('ai_tools.pg.ai_video.field.kamera.label'), 'default': t('ai_tools.pg.ai_video.field.kamera.default')},
+                'stil': {'label': t('ai_tools.pg.ai_video.field.stil.label'), 'options': [t('ai_tools.pg.ai_video.field.stil.opt.sinematik'), t('ai_tools.pg.ai_video.field.stil.opt.belgesel'), t('ai_tools.pg.ai_video.field.stil.opt.animasyon'), t('ai_tools.pg.ai_video.field.stil.opt.retro')]}
+            }
+        },
+        'seslendirme': {
+            'label': t('ai_tools.pg.seslendirme.label'), 'note': t('ai_tools.pg.seslendirme.note'), 'template': t('ai_tools.pg.seslendirme.template'),
+            'fields': {
+                'metin': {'label': t('ai_tools.pg.seslendirme.field.metin.label'), 'default': t('ai_tools.pg.seslendirme.field.metin.default')},
+                'ses': {'label': t('ai_tools.pg.seslendirme.field.ses.label'), 'options': [t('ai_tools.pg.seslendirme.field.ses.opt.sakin'), t('ai_tools.pg.seslendirme.field.ses.opt.enerjik'), t('ai_tools.pg.seslendirme.field.ses.opt.resmi')]},
+                'dil': {'label': t('ai_tools.pg.seslendirme.field.dil.label'), 'options': [t('ai_tools.pg.seslendirme.field.dil.opt.tr'), t('ai_tools.pg.seslendirme.field.dil.opt.en')]}
+            }
+        },
+        'tasarim': {
+            'label': t('ai_tools.pg.tasarim.label'), 'note': t('ai_tools.pg.tasarim.note'), 'template': t('ai_tools.pg.tasarim.template'),
+            'fields': {
+                'karakter': {'label': t('ai_tools.pg.tasarim.field.karakter.label'), 'default': t('ai_tools.pg.tasarim.field.karakter.default')},
+                'stil': {'label': t('ai_tools.pg.tasarim.field.stil.label'), 'options': [t('ai_tools.pg.tasarim.field.stil.opt.fantastik'), t('ai_tools.pg.tasarim.field.stil.opt.anime'), t('ai_tools.pg.tasarim.field.stil.opt.piksel'), t('ai_tools.pg.tasarim.field.stil.opt.fotogercekci')]},
+                'arkaplan': {'label': t('ai_tools.pg.tasarim.field.arkaplan.label'), 'options': [t('ai_tools.pg.tasarim.field.arkaplan.opt.seffaf'), t('ai_tools.pg.tasarim.field.arkaplan.opt.dolu')]}
+            }
+        },
+        'sohbet-karakter': {
+            'label': t('ai_tools.pg.sohbet_karakter.label'), 'note': t('ai_tools.pg.sohbet_karakter.note'), 'template': t('ai_tools.pg.sohbet_karakter.template'),
+            'fields': { 'karakter': {'label': t('ai_tools.pg.sohbet_karakter.field.karakter.label'), 'default': t('ai_tools.pg.sohbet_karakter.field.karakter.default')} }
+        },
+        'notSpecified': t('ai_tools.pg_not_specified'),
+        'copiedText': t('ai_tools.pg_copied_text')
+    } | tojson }};
 {% raw %}
     function aiSwitchTab(tab) {
         document.querySelectorAll('.ai-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
@@ -645,154 +744,154 @@
     const PG_TASKS = [
         {
             id: 'genel',
-            label: '💬 Genel Sohbet / Günlük Kullanım',
+            label: '💬 ' + PG_I18N.genel.label,
             reco: [{ name: 'ChatGPT', url: 'https://chatgpt.com' }],
-            note: 'Günlük sorular, planlama ve genel bilgi için hızlı ve dengeli bir seçimdir.',
-            template: 'Sen benim kişisel asistanımsın. Aşağıdaki konuda bana {{ton}} bir üslupla, adım adım ve anlaşılır şekilde yardımcı ol:\n\n{{konu}}',
+            note: PG_I18N.genel.note,
+            template: PG_I18N.genel.template,
             fields: [
-                { id: 'konu', label: 'Ne hakkında yardım istiyorsunuz?', type: 'textarea', default: 'Yeni bir hobiye başlamak istiyorum, nereden başlamalıyım?' },
-                { id: 'ton', label: 'Üslup', type: 'select', options: ['Sade', 'Samimi', 'Profesyonel', 'Esprili'], default: 'Sade' }
+                { id: 'konu', label: PG_I18N.genel.fields.konu.label, type: 'textarea', default: PG_I18N.genel.fields.konu.default },
+                { id: 'ton', label: PG_I18N.genel.fields.ton.label, type: 'select', options: PG_I18N.genel.fields.ton.options, default: PG_I18N.genel.fields.ton.options[0] }
             ]
         },
         {
             id: 'kod',
-            label: '💻 Kod Yazma / Hata Ayıklama',
+            label: '💻 ' + PG_I18N.kod.label,
             reco: [{ name: 'Claude', url: 'https://claude.ai' }, { name: 'DeepSeek', url: 'https://chat.deepseek.com' }],
-            note: 'Claude uzun kod tabanlarını analiz etmede, DeepSeek ise düşük maliyetle hızlı çözümlerde güçlüdür.',
-            template: 'Sen kıdemli bir yazılım mühendisisin. {{dil}} kullanarak aşağıdaki isteğimi gerçekleştir/incele; hatayı bul ve düzeltilmiş halini açıklamalarla birlikte ver:\n\nHedef: {{hedef}}\n\n```\n{{kod}}\n```',
+            note: PG_I18N.kod.note,
+            template: PG_I18N.kod.template,
             fields: [
-                { id: 'dil', label: 'Dil / Framework', type: 'text', default: 'Python' },
-                { id: 'hedef', label: 'Ne yapmak istiyorsunuz / hata nedir?', type: 'textarea', default: 'Bu fonksiyon beklenmedik şekilde None döndürüyor' },
-                { id: 'kod', label: 'Kodunuz (opsiyonel)', type: 'textarea', default: '' }
+                { id: 'dil', label: PG_I18N.kod.fields.dil.label, type: 'text', default: 'Python' },
+                { id: 'hedef', label: PG_I18N.kod.fields.hedef.label, type: 'textarea', default: PG_I18N.kod.fields.hedef.default },
+                { id: 'kod', label: PG_I18N.kod.fields.kod.label, type: 'textarea', default: '' }
             ]
         },
         {
             id: 'kod-editor',
-            label: '👨‍💻 Kod Editörü İçinde AI (IDE)',
+            label: '👨‍💻 ' + PG_I18N['kod-editor'].label,
             reco: [{ name: 'Cursor', url: 'https://cursor.com' }, { name: 'GitHub Copilot', url: 'https://github.com/features/copilot' }],
-            note: 'Cursor tüm proje bağlamını görebilen bir editördür; GitHub Copilot ise mevcut IDE\'nize (VS Code vb.) eklenti olarak kurulur.',
-            template: '// {{dil}} kullanarak, {{istek}}.\n// Mevcut proje yapısındaki isimlendirme kurallarına uy.',
+            note: PG_I18N['kod-editor'].note,
+            template: PG_I18N['kod-editor'].template,
             fields: [
-                { id: 'dil', label: 'Dil / Framework', type: 'text', default: 'TypeScript' },
-                { id: 'istek', label: 'İstediğiniz değişiklik', type: 'textarea', default: 'girdi doğrulama ve hata yönetimi ekleyerek yeniden yaz' }
+                { id: 'dil', label: PG_I18N['kod-editor'].fields.dil.label, type: 'text', default: 'TypeScript' },
+                { id: 'istek', label: PG_I18N['kod-editor'].fields.istek.label, type: 'textarea', default: PG_I18N['kod-editor'].fields.istek.default }
             ]
         },
         {
             id: 'yazi',
-            label: '📝 Uzun Metin / Rapor / Makale',
+            label: '📝 ' + PG_I18N.yazi.label,
             reco: [{ name: 'Claude', url: 'https://claude.ai' }],
-            note: 'Claude tutarlı üslup ve uzun bağlamı koruma konusunda öne çıkar.',
-            template: 'Sen profesyonel bir içerik editörüsün. Aşağıdaki konuda {{uzunluk}} uzunluğunda, {{ton}} bir üslupta bir metin yaz. Giriş, gelişme ve sonuç bölümleri olsun:\n\nKonu: {{konu}}\nHedef kitle: {{hedefKitle}}',
+            note: PG_I18N.yazi.note,
+            template: PG_I18N.yazi.template,
             fields: [
-                { id: 'konu', label: 'Konu', type: 'textarea', default: 'Uzaktan çalışmanın verimlilik üzerindeki etkileri' },
-                { id: 'uzunluk', label: 'Uzunluk', type: 'select', options: ['300 kelime', '800 kelime', '1500 kelime'], default: '800 kelime' },
-                { id: 'ton', label: 'Üslup', type: 'select', options: ['Resmi', 'Samimi', 'Akademik', 'İkna edici'], default: 'Resmi' },
-                { id: 'hedefKitle', label: 'Hedef kitle', type: 'text', default: 'Şirket yöneticileri' }
+                { id: 'konu', label: PG_I18N.yazi.fields.konu.label, type: 'textarea', default: PG_I18N.yazi.fields.konu.default },
+                { id: 'uzunluk', label: PG_I18N.yazi.fields.uzunluk.label, type: 'select', options: PG_I18N.yazi.fields.uzunluk.options, default: PG_I18N.yazi.fields.uzunluk.options[1] },
+                { id: 'ton', label: PG_I18N.yazi.fields.ton.label, type: 'select', options: PG_I18N.yazi.fields.ton.options, default: PG_I18N.yazi.fields.ton.options[0] },
+                { id: 'hedefKitle', label: PG_I18N.yazi.fields.hedefKitle.label, type: 'text', default: PG_I18N.yazi.fields.hedefKitle.default }
             ]
         },
         {
             id: 'arastirma',
-            label: '🔎 Araştırma / Kaynaklı Cevap',
+            label: '🔎 ' + PG_I18N.arastirma.label,
             reco: [{ name: 'Perplexity', url: 'https://perplexity.ai' }, { name: 'Gemini', url: 'https://gemini.google.com' }],
-            note: 'Perplexity her cevabında kaynak gösterir; Gemini Google arama verisiyle güncel sonuçlar sunar.',
-            template: 'Aşağıdaki konuyu güncel ve doğrulanabilir kaynaklarla araştır; cevabının sonunda kullandığın kaynakları listele:\n\nKonu: {{konu}}',
+            note: PG_I18N.arastirma.note,
+            template: PG_I18N.arastirma.template,
             fields: [
-                { id: 'konu', label: 'Araştırma konusu', type: 'textarea', default: '2026 yılında yapay zeka regülasyonlarındaki son gelişmeler' }
+                { id: 'konu', label: PG_I18N.arastirma.fields.konu.label, type: 'textarea', default: PG_I18N.arastirma.fields.konu.default }
             ]
         },
         {
             id: 'gorsel',
-            label: '🎨 Görsel / Resim Üretimi',
+            label: '🎨 ' + PG_I18N.gorsel.label,
             reco: [{ name: 'Midjourney', url: 'https://midjourney.com' }, { name: 'ChatGPT', url: 'https://chatgpt.com' }],
-            note: 'Midjourney en yüksek görsel kaliteyi verir; ChatGPT ise hızlı ve ücretsiz alternatiftir.',
-            template: '{{konu}}, {{stil}} tarzında, {{isik}}, {{aci}}, yüksek detay, 4K --ar {{oran}}',
+            note: PG_I18N.gorsel.note,
+            template: PG_I18N.gorsel.template,
             fields: [
-                { id: 'konu', label: 'Ana konu', type: 'text', default: 'dağların arasında yükselen bir deniz feneri' },
-                { id: 'stil', label: 'Sanat stili', type: 'select', options: ['Sinematik', 'Suluboya', '3D render', 'Anime', 'Fotogerçekçi'], default: 'Sinematik' },
-                { id: 'isik', label: 'Işıklandırma', type: 'text', default: 'gün batımı, altın saat ışığı' },
-                { id: 'aci', label: 'Kamera açısı', type: 'text', default: 'geniş açı, alçak kamera' },
-                { id: 'oran', label: 'En-boy oranı', type: 'select', options: ['16:9', '1:1', '9:16'], default: '16:9' }
+                { id: 'konu', label: PG_I18N.gorsel.fields.konu.label, type: 'text', default: PG_I18N.gorsel.fields.konu.default },
+                { id: 'stil', label: PG_I18N.gorsel.fields.stil.label, type: 'select', options: PG_I18N.gorsel.fields.stil.options, default: PG_I18N.gorsel.fields.stil.options[0] },
+                { id: 'isik', label: PG_I18N.gorsel.fields.isik.label, type: 'text', default: PG_I18N.gorsel.fields.isik.default },
+                { id: 'aci', label: PG_I18N.gorsel.fields.aci.label, type: 'text', default: PG_I18N.gorsel.fields.aci.default },
+                { id: 'oran', label: PG_I18N.gorsel.fields.oran.label, type: 'select', options: ['16:9', '1:1', '9:16'], default: '16:9' }
             ]
         },
         {
             id: 'ofis',
-            label: '📊 Ofis Dokümanı (Word/Excel/PPT)',
+            label: '📊 ' + PG_I18N.ofis.label,
             reco: [{ name: 'Copilot', url: 'https://copilot.microsoft.com' }],
-            note: 'Copilot, Microsoft 365 uygulamalarıyla doğrudan entegre çalışır.',
-            template: 'Elimdeki {{dosyaTipi}} dosyasını kullanarak {{gorev}} hazırla. Ton: profesyonel ve öz olsun.\n\nİçerik/Veri: {{icerik}}',
+            note: PG_I18N.ofis.note,
+            template: PG_I18N.ofis.template,
             fields: [
-                { id: 'dosyaTipi', label: 'Doküman türü', type: 'select', options: ['Word', 'Excel', 'PowerPoint'], default: 'PowerPoint' },
-                { id: 'gorev', label: 'İstediğiniz çıktı', type: 'text', default: '10 slaytlık yönetici sunumu' },
-                { id: 'icerik', label: 'İçerik / Veri', type: 'textarea', default: 'Son çeyrek satış rakamları ve büyüme hedefleri' }
+                { id: 'dosyaTipi', label: PG_I18N.ofis.fields.dosyaTipi.label, type: 'select', options: ['Word', 'Excel', 'PowerPoint'], default: 'PowerPoint' },
+                { id: 'gorev', label: PG_I18N.ofis.fields.gorev.label, type: 'text', default: PG_I18N.ofis.fields.gorev.default },
+                { id: 'icerik', label: PG_I18N.ofis.fields.icerik.label, type: 'textarea', default: PG_I18N.ofis.fields.icerik.default }
             ]
         },
         {
             id: 'guncel',
-            label: '📡 Güncel Olaylar / Sosyal Medya',
+            label: '📡 ' + PG_I18N.guncel.label,
             reco: [{ name: 'Grok', url: 'https://grok.com' }],
-            note: 'Grok, X platformuna gerçek zamanlı erişimi sayesinde en güncel bilgiyi sunar.',
-            template: 'X (Twitter) ve güncel haberlerden yararlanarak {{konu}} konusundaki en son gelişmeleri özetle; farklı bakış açılarını da belirt.',
+            note: PG_I18N.guncel.note,
+            template: PG_I18N.guncel.template,
             fields: [
-                { id: 'konu', label: 'Konu', type: 'text', default: 'yapay zeka çip pazarındaki rekabet' }
+                { id: 'konu', label: PG_I18N.guncel.fields.konu.label, type: 'text', default: PG_I18N.guncel.fields.konu.default }
             ]
         },
         {
             id: 'muzik',
-            label: '🎵 Müzik / Şarkı Üretimi',
+            label: '🎵 ' + PG_I18N.muzik.label,
             reco: [{ name: 'Suno', url: 'https://suno.com' }],
-            note: 'Suno, verdiğiniz tema ve türe göre söz + müziği birlikte üretir.',
-            template: '{{tur}}, {{tema}}, {{ruh}} bir ruh hali, {{vokal}}, 3 dakika civarı',
+            note: PG_I18N.muzik.note,
+            template: PG_I18N.muzik.template,
             fields: [
-                { id: 'tur', label: 'Tür / Janr', type: 'text', default: 'akustik pop' },
-                { id: 'tema', label: 'Tema / Konu', type: 'text', default: 'yaz tatili anıları' },
-                { id: 'ruh', label: 'Ruh hali', type: 'select', options: ['Enerjik', 'Melankolik', 'Romantik', 'Epik'], default: 'Enerjik' },
-                { id: 'vokal', label: 'Vokal', type: 'select', options: ['Kadın vokal', 'Erkek vokal', 'Enstrümantal'], default: 'Kadın vokal' }
+                { id: 'tur', label: PG_I18N.muzik.fields.tur.label, type: 'text', default: PG_I18N.muzik.fields.tur.default },
+                { id: 'tema', label: PG_I18N.muzik.fields.tema.label, type: 'text', default: PG_I18N.muzik.fields.tema.default },
+                { id: 'ruh', label: PG_I18N.muzik.fields.ruh.label, type: 'select', options: PG_I18N.muzik.fields.ruh.options, default: PG_I18N.muzik.fields.ruh.options[0] },
+                { id: 'vokal', label: PG_I18N.muzik.fields.vokal.label, type: 'select', options: PG_I18N.muzik.fields.vokal.options, default: PG_I18N.muzik.fields.vokal.options[0] }
             ]
         },
         {
             id: 'ai-video',
-            label: '🎬 AI ile Video Üretimi',
+            label: '🎬 ' + PG_I18N['ai-video'].label,
             reco: [{ name: 'Runway', url: 'https://runwayml.com' }],
-            note: 'Runway, metinden veya tek bir görselden kısa video klipleri üretebilir.',
-            template: '{{sahne}}, {{kamera}}, {{stil}} tarzında, 4 saniyelik klip',
+            note: PG_I18N['ai-video'].note,
+            template: PG_I18N['ai-video'].template,
             fields: [
-                { id: 'sahne', label: 'Sahne açıklaması', type: 'textarea', default: 'sisli bir ormanda yavaşça yürüyen bir geyik' },
-                { id: 'kamera', label: 'Kamera hareketi', type: 'text', default: 'yavaş yakınlaşma (dolly-in)' },
-                { id: 'stil', label: 'Görsel stil', type: 'select', options: ['Sinematik', 'Belgesel', 'Animasyon', 'Retro film'], default: 'Sinematik' }
+                { id: 'sahne', label: PG_I18N['ai-video'].fields.sahne.label, type: 'textarea', default: PG_I18N['ai-video'].fields.sahne.default },
+                { id: 'kamera', label: PG_I18N['ai-video'].fields.kamera.label, type: 'text', default: PG_I18N['ai-video'].fields.kamera.default },
+                { id: 'stil', label: PG_I18N['ai-video'].fields.stil.label, type: 'select', options: PG_I18N['ai-video'].fields.stil.options, default: PG_I18N['ai-video'].fields.stil.options[0] }
             ]
         },
         {
             id: 'seslendirme',
-            label: '🗣️ Seslendirme / Ses Klonlama',
+            label: '🗣️ ' + PG_I18N.seslendirme.label,
             reco: [{ name: 'ElevenLabs', url: 'https://elevenlabs.io' }],
-            note: 'ElevenLabs, doğal metin okumanın yanında kendi sesinizi klonlayarak da kullanabilmenizi sağlar.',
-            template: 'Aşağıdaki metni {{ses}} ile, {{dil}} dilinde seslendir:\n\n{{metin}}',
+            note: PG_I18N.seslendirme.note,
+            template: PG_I18N.seslendirme.template,
             fields: [
-                { id: 'metin', label: 'Seslendirilecek metin', type: 'textarea', default: 'Merhaba, bugün sizlere yeni ürünümüzü tanıtacağım.' },
-                { id: 'ses', label: 'Ses tonu', type: 'select', options: ['Sakin kadın sesi', 'Enerjik erkek sesi', 'Resmi anlatıcı sesi'], default: 'Sakin kadın sesi' },
-                { id: 'dil', label: 'Dil', type: 'select', options: ['Türkçe', 'İngilizce'], default: 'Türkçe' }
+                { id: 'metin', label: PG_I18N.seslendirme.fields.metin.label, type: 'textarea', default: PG_I18N.seslendirme.fields.metin.default },
+                { id: 'ses', label: PG_I18N.seslendirme.fields.ses.label, type: 'select', options: PG_I18N.seslendirme.fields.ses.options, default: PG_I18N.seslendirme.fields.ses.options[0] },
+                { id: 'dil', label: PG_I18N.seslendirme.fields.dil.label, type: 'select', options: PG_I18N.seslendirme.fields.dil.options, default: PG_I18N.seslendirme.fields.dil.options[0] }
             ]
         },
         {
             id: 'tasarim',
-            label: '🖌️ Karakter / Oyun Görseli Tasarımı',
+            label: '🖌️ ' + PG_I18N.tasarim.label,
             reco: [{ name: 'Leonardo.Ai', url: 'https://leonardo.ai' }, { name: 'Midjourney', url: 'https://midjourney.com' }],
-            note: 'Leonardo.Ai, oyun/karakter tasarımında tutarlı stil şablonları sunar.',
-            template: '{{karakter}}, {{stil}} stilinde, tutarlı karakter modeli, oyun asseti, {{arkaplan}} arka plan',
+            note: PG_I18N.tasarim.note,
+            template: PG_I18N.tasarim.template,
             fields: [
-                { id: 'karakter', label: 'Karakter / obje açıklaması', type: 'textarea', default: 'zırhlı, ateş kılıcı taşıyan bir savaşçı kadın' },
-                { id: 'stil', label: 'Stil', type: 'select', options: ['Fantastik', 'Anime', 'Piksel art', 'Fotogerçekçi'], default: 'Fantastik' },
-                { id: 'arkaplan', label: 'Arka plan', type: 'select', options: ['Şeffaf', 'Dolu (sahne içinde)'], default: 'Şeffaf' }
+                { id: 'karakter', label: PG_I18N.tasarim.fields.karakter.label, type: 'textarea', default: PG_I18N.tasarim.fields.karakter.default },
+                { id: 'stil', label: PG_I18N.tasarim.fields.stil.label, type: 'select', options: PG_I18N.tasarim.fields.stil.options, default: PG_I18N.tasarim.fields.stil.options[0] },
+                { id: 'arkaplan', label: PG_I18N.tasarim.fields.arkaplan.label, type: 'select', options: PG_I18N.tasarim.fields.arkaplan.options, default: PG_I18N.tasarim.fields.arkaplan.options[0] }
             ]
         },
         {
             id: 'sohbet-karakter',
-            label: '🎭 Rol Yapma / Yaratıcı Sohbet',
+            label: '🎭 ' + PG_I18N['sohbet-karakter'].label,
             reco: [{ name: 'Character.AI', url: 'https://character.ai' }],
-            note: 'Character.AI, hikaye anlatımı ve karakter canlandırma odaklı tasarlanmıştır.',
-            template: 'Sen {{karakter}} rolündesin. Bu karaktere uygun ton ve kişilikle benimle söyleşi şeklinde etkileşime gir. İlk repliğini sen başlat.',
+            note: PG_I18N['sohbet-karakter'].note,
+            template: PG_I18N['sohbet-karakter'].template,
             fields: [
-                { id: 'karakter', label: 'Karakter tipi', type: 'text', default: 'deneyimli bir dedektif' }
+                { id: 'karakter', label: PG_I18N['sohbet-karakter'].fields.karakter.label, type: 'text', default: PG_I18N['sohbet-karakter'].fields.karakter.default }
             ]
         }
     ];
@@ -856,7 +955,7 @@
         let text = task.template;
         task.fields.forEach(f => {
             const el = document.getElementById('pgf-' + f.id);
-            const val = (el && el.value ? el.value.trim() : '') || '[belirtilmedi]';
+            const val = (el && el.value ? el.value.trim() : '') || PG_I18N.notSpecified;
             text = text.split('{{' + f.id + '}}').join(val);
         });
         document.getElementById('pgPromptText').textContent = text;
@@ -891,7 +990,7 @@
         navigator.clipboard.writeText(text).then(() => {
             const btn = document.querySelector('.pg-copy-btn');
             const old = btn.textContent;
-            btn.textContent = 'Kopyalandı ✓';
+            btn.textContent = PG_I18N.copiedText;
             setTimeout(() => { btn.textContent = old; }, 1500);
         });
     }
