@@ -1,4 +1,5 @@
 import os
+import sys
 import zipfile
 import uuid
 import tarfile
@@ -6,6 +7,8 @@ import tempfile
 from flask import Flask, Response, render_template, request, send_file, jsonify
 from io import BytesIO
 from PyPDF2 import PdfMerger, PdfReader, PdfWriter
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from i18n import SUPPORTED_LANGS, init_i18n, t
 
