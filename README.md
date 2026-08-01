@@ -35,3 +35,4 @@ Bu web uygulamasını kendi bilgisayarınızda çalıştırmak için aşağıdak
 
 3.  **Tarayıcıda Açın**:
     Uygulama varsayılan olarak `http://127.0.0.1:5000` adresinde çalışacaktır. Bu adresi tarayıcınızda açarak araçları kullanmaya başlayabilirsiniz.
+
