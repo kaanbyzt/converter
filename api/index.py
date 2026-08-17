@@ -111,6 +111,13 @@ _TRACKED_PATHS = {path for path, _ in SITEMAP_ROUTES}
 _VISITOR_COOKIE = "vid"
 
 
+def _client_ip():
+    forwarded = request.headers.get("X-Forwarded-For", "")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.remote_addr or "unknown"
+
+
 @app.before_request
 def _track_pageview():
     if request.method != "GET" or request.path not in _TRACKED_PATHS:
@@ -119,7 +126,7 @@ def _track_pageview():
     if not vid:
         vid = uuid.uuid4().hex
         g.new_vid = vid
-    analytics.track_pageview(request.path, vid)
+    analytics.track_pageview(request.path, vid, _client_ip())
 
 
 @app.after_request
@@ -182,13 +189,6 @@ def _admin_required(view):
     return wrapped
 
 
-def _login_client_id():
-    forwarded = request.headers.get("X-Forwarded-For", "")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
-    return request.remote_addr or "unknown"
-
-
 @app.route("/admin/login", methods=["GET", "POST"])
 def admin_login():
     if session.get("is_admin"):
@@ -196,7 +196,7 @@ def admin_login():
 
     error = None
     if request.method == "POST":
-        client_id = _login_client_id()
+        client_id = _client_ip()
         lock_seconds = analytics.check_login_lock(client_id)
         if lock_seconds > 0:
             error = f"Çok fazla hatalı deneme. {lock_seconds} saniye sonra tekrar dene."

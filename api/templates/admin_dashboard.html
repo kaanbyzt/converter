@@ -1,5 +1,122 @@
 {% extends "base.html" %}
 {% block title %}Admin Panel | toolboxquick{% endblock %}
+{% block head %}
+<style>
+    .stat-tile {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 12px;
+        padding: 1.1rem 1.3rem;
+    }
+    .stat-tile .stat-label {
+        color: var(--text-secondary);
+        font-size: .8rem;
+    }
+    .stat-tile .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+
+    .chart-card {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 12px;
+        padding: 1.3rem;
+    }
+    .chart-card h2 {
+        font-size: .95rem;
+        font-weight: 700;
+        margin-bottom: 1.1rem;
+    }
+
+    /* Günlük sütun grafiği */
+    .daily-chart {
+        display: flex;
+        align-items: flex-end;
+        gap: 4px;
+        height: 140px;
+        border-bottom: 1px solid var(--btn-outline-border);
+        padding-bottom: 2px;
+    }
+    .daily-col {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-end;
+        height: 100%;
+        min-width: 0;
+    }
+    .daily-col .daily-value {
+        font-size: .68rem;
+        color: var(--text-secondary);
+        margin-bottom: 2px;
+        white-space: nowrap;
+    }
+    .daily-col .daily-bar {
+        width: 100%;
+        max-width: 22px;
+        background: #a855f7;
+        border-radius: 4px 4px 0 0;
+        min-height: 2px;
+        transition: opacity .1s;
+    }
+    .daily-col:hover .daily-bar {
+        opacity: .75;
+    }
+    .daily-col .daily-day {
+        font-size: .65rem;
+        color: var(--text-secondary);
+        margin-top: 6px;
+    }
+
+    /* Sayfa kullanım bar listesi */
+    .page-bar-row {
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+        margin-bottom: .6rem;
+    }
+    .page-bar-row:last-child {
+        margin-bottom: 0;
+    }
+    .page-bar-label {
+        width: 150px;
+        flex-shrink: 0;
+        font-size: .78rem;
+        color: var(--text-color);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .page-bar-track {
+        flex: 1;
+        background: var(--btn-outline-border);
+        border-radius: 999px;
+        height: 18px;
+        overflow: hidden;
+    }
+    .page-bar-fill {
+        height: 100%;
+        background: #a855f7;
+        border-radius: 999px;
+        min-width: 4px;
+        transition: opacity .1s;
+    }
+    .page-bar-row:hover .page-bar-fill {
+        opacity: .75;
+    }
+    .page-bar-value {
+        width: 42px;
+        flex-shrink: 0;
+        text-align: right;
+        font-size: .78rem;
+        color: var(--text-secondary);
+        font-variant-numeric: tabular-nums;
+    }
+</style>
+{% endblock %}
 {% block content %}
 <header class="mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
     <h1 class="h4 fw-bold mb-0">Site İstatistikleri</h1>
@@ -15,42 +132,60 @@
 
 <div class="row g-3 mb-4">
     <div class="col-6 col-md-3">
-        <div class="tool-card p-3 text-center">
-            <div class="text-secondary small">Toplam Görüntülenme</div>
-            <div class="h3 fw-bold mb-0">{{ stats.pageviews }}</div>
+        <div class="stat-tile">
+            <div class="stat-label">Toplam Görüntülenme</div>
+            <div class="stat-value">{{ stats.pageviews }}</div>
         </div>
     </div>
     <div class="col-6 col-md-3">
-        <div class="tool-card p-3 text-center">
-            <div class="text-secondary small">Benzersiz Ziyaretçi</div>
-            <div class="h3 fw-bold mb-0">{{ stats.visitors }}</div>
+        <div class="stat-tile">
+            <div class="stat-label">Benzersiz Ziyaretçi</div>
+            <div class="stat-value">{{ stats.visitors }}</div>
         </div>
     </div>
 </div>
 
-<div class="tool-card p-3">
-    <h2 class="h6 fw-bold mb-3">En Çok Kullanılan Sayfalar</h2>
-    <div class="table-responsive">
-        <table class="table table-sm align-middle mb-0">
-            <thead>
-                <tr>
-                    <th>Sayfa</th>
-                    <th class="text-end">Görüntülenme</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for path, count in stats.routes %}
-                <tr>
-                    <td><code>{{ path }}</code></td>
-                    <td class="text-end">{{ count }}</td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="2" class="text-secondary">Henüz veri yok.</td>
-                </tr>
+<div class="row g-3 mb-3">
+    <div class="col-12 col-lg-7">
+        <div class="chart-card h-100">
+            <h2>Son 14 Gün</h2>
+            {% if stats.daily %}
+            {% set max_val = (stats.daily | map(attribute=1) | max) or 1 %}
+            <div class="daily-chart">
+                {% for date, count in stats.daily %}
+                <div class="daily-col" title="{{ date }}: {{ count }} görüntülenme">
+                    {% if count == max_val and max_val > 0 %}
+                    <div class="daily-value">{{ count }}</div>
+                    {% endif %}
+                    <div class="daily-bar" style="height: {{ (count / max_val * 100) if max_val > 0 else 0 }}%;"></div>
+                    <div class="daily-day">{{ date[8:10] }}</div>
+                </div>
                 {% endfor %}
-            </tbody>
-        </table>
+            </div>
+            {% else %}
+            <p class="text-secondary small mb-0">Henüz veri yok.</p>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-12 col-lg-5">
+        <div class="chart-card h-100">
+            <h2>En Çok Kullanılan Sayfalar</h2>
+            {% if stats.routes %}
+            {% set top_routes = stats.routes[:8] %}
+            {% set page_max = top_routes[0][1] if top_routes else 1 %}
+            {% for path, count in top_routes %}
+            <div class="page-bar-row" title="{{ path }}: {{ count }} görüntülenme">
+                <span class="page-bar-label">{{ path }}</span>
+                <div class="page-bar-track">
+                    <div class="page-bar-fill" style="width: {{ (count / page_max * 100) if page_max > 0 else 0 }}%;"></div>
+                </div>
+                <span class="page-bar-value">{{ count }}</span>
+            </div>
+            {% endfor %}
+            {% else %}
+            <p class="text-secondary small mb-0">Henüz veri yok.</p>
+            {% endif %}
+        </div>
     </div>
 </div>
 {% endblock %}
