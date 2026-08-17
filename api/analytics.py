@@ -8,6 +8,7 @@ env ayarlanmadıysa) izleme sessizce devre dışı kalır; site bundan etkilenme
 
 import datetime
 import hashlib
+import json
 import os
 
 import requests
@@ -30,6 +31,10 @@ _DEDUP_PEPPER = os.environ.get("FLASK_SECRET_KEY", "")
 _LOGIN_FAIL_PREFIX = "loginfail:"
 _LOGIN_MAX_ATTEMPTS = 5
 _LOGIN_LOCK_SECONDS = 300
+
+_LOG_PREFIX = "log:"
+_LOG_TTL = 60 * 60 * 24 * 60  # 60 gün saklanır, sonra kendiliğinden silinir
+_LOG_MAX_PER_DAY = 500  # tek günde en fazla bu kadar satır tutulur (depolama sınırı)
 
 
 def _today_str():
@@ -86,6 +91,43 @@ def track_pageview(path, visitor_id, ip):
         ["INCR", daily_key],
         ["EXPIRE", daily_key, str(_DAILY_TTL)],
     ])
+    log_event(ip, path, "view", day=day)
+
+
+def log_event(ip, path, kind, action=None, day=None):
+    """Tek bir satırlık kayıt: kim (ip), ne zaman, hangi sayfa, ne yaptı.
+    Dosya/belge içeriği asla tutulmaz — yalnızca bu üstveri. Depo yoksa no-op."""
+    day = day or _today_str()
+    entry = {
+        "ts": datetime.datetime.utcnow().strftime("%H:%M:%S"),
+        "ip": ip,
+        "path": path,
+        "kind": kind,
+    }
+    if action:
+        entry["action"] = action
+    key = _LOG_PREFIX + day
+    _pipeline([
+        ["RPUSH", key, json.dumps(entry, ensure_ascii=False)],
+        ["LTRIM", key, str(-_LOG_MAX_PER_DAY), "-1"],
+        ["EXPIRE", key, str(_LOG_TTL)],
+    ])
+
+
+def get_log(day, limit=500):
+    """Belirli bir gün için kayıtları en yeniden en eskiye döner."""
+    result = _pipeline([["LRANGE", _LOG_PREFIX + day, "0", str(limit - 1)]])
+    if result is None:
+        return []
+    raw = (result[0] or {}).get("result") or []
+    events = []
+    for item in raw:
+        try:
+            events.append(json.loads(item))
+        except (ValueError, TypeError):
+            continue
+    events.reverse()
+    return events
 
 
 def get_daily_series(days=14):

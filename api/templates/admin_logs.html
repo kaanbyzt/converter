@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Aktivite Kaydı | toolboxquick{% endblock %}
+{% block content %}
+<header class="mb-4">
+    <a href="{{ url_for('admin_dashboard') }}" class="text-secondary small text-decoration-none">&larr; İstatistiklere dön</a>
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-1">
+        <h1 class="h4 fw-bold mb-0">Aktivite Kaydı</h1>
+        <a href="{{ url_for('admin_logout') }}" class="btn btn-sm btn-outline-secondary">Çıkış Yap</a>
+    </div>
+</header>
+
+<form method="get" class="d-flex align-items-center gap-2 mb-3">
+    <a href="?day={{ prev_day }}" class="btn btn-sm btn-outline-secondary">&larr;</a>
+    <input type="date" name="day" value="{{ day }}" class="form-control form-control-sm" style="max-width: 170px;">
+    <a href="?day={{ next_day }}" class="btn btn-sm btn-outline-secondary">&rarr;</a>
+    <button type="submit" class="btn btn-sm btn-outline-secondary">Göster</button>
+</form>
+
+{% if not analytics_available %}
+<div class="alert alert-warning">İstatistik deposu yapılandırılmamış.</div>
+{% elif not events %}
+<p class="text-secondary">{{ day }} tarihinde kayıt yok.</p>
+{% else %}
+<p class="text-secondary small mb-2">{{ day }} — {{ events|length }} kayıt (en yeni üstte)</p>
+<div class="tool-card p-0">
+    <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+            <thead>
+                <tr>
+                    <th class="ps-3">Saat</th>
+                    <th>IP</th>
+                    <th>Sayfa</th>
+                    <th class="pe-3">Tür</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for e in events %}
+                <tr>
+                    <td class="ps-3" style="font-variant-numeric: tabular-nums;">{{ e.ts }}</td>
+                    <td><code>{{ e.ip }}</code></td>
+                    <td><code>{{ e.path }}</code></td>
+                    <td class="pe-3">
+                        {% if e.kind == 'action' %}
+                        <span class="badge" style="background:#a855f7;">{{ e.action or 'işlem' }}</span>
+                        {% else %}
+                        <span class="text-secondary small">görüntüleme</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,3 +1,4 @@
+import datetime
 import hmac
 import os
 import sys
@@ -118,6 +119,12 @@ def _client_ip():
     return request.remote_addr or "unknown"
 
 
+def _log_action(action):
+    """Bir aracın gerçekten kullanıldığını kaydeder (dosya/belge içeriği değil,
+    yalnızca kim/ne zaman/hangi işlem)."""
+    analytics.log_event(_client_ip(), request.path, "action", action=action)
+
+
 @app.before_request
 def _track_pageview():
     if request.method != "GET" or request.path not in _TRACKED_PATHS:
@@ -222,6 +229,26 @@ def admin_logout():
 def admin_dashboard():
     stats = analytics.get_stats()
     return render_template("admin_dashboard.html", stats=stats)
+
+
+@app.route("/admin/logs")
+@_admin_required
+def admin_logs():
+    try:
+        day = datetime.datetime.strptime(request.args.get("day", ""), "%Y-%m-%d").date()
+    except ValueError:
+        day = datetime.datetime.utcnow().date()
+
+    day_str = day.strftime("%Y-%m-%d")
+    events = analytics.get_log(day_str)
+    return render_template(
+        "admin_logs.html",
+        day=day_str,
+        prev_day=(day - datetime.timedelta(days=1)).strftime("%Y-%m-%d"),
+        next_day=(day + datetime.timedelta(days=1)).strftime("%Y-%m-%d"),
+        events=events,
+        analytics_available=analytics.is_configured(),
+    )
 
 
 # ZIP bomb koruması sabitleri
@@ -419,6 +446,7 @@ def pdf_tools():
     merger.close()
     output.seek(0)
 
+    _log_action("pdf_merge")
     return send_file(
         output,
         mimetype="application/pdf",
@@ -472,6 +500,7 @@ def pdf_split():
         writer.write(output)
         output.seek(0)
 
+        _log_action("pdf_split")
         return send_file(
             output,
             mimetype="application/pdf",
@@ -534,6 +563,7 @@ def pdf_protect():
         writer.write(output)
         output.seek(0)
 
+        _log_action("pdf_protect")
         return send_file(
             output,
             mimetype="application/pdf",
@@ -576,6 +606,7 @@ def pdf_unlock():
         writer.write(output)
         output.seek(0)
 
+        _log_action("pdf_unlock")
         return send_file(
             output,
             mimetype="application/pdf",
@@ -649,6 +680,7 @@ def convert_extract():
                         "size": info.file_size
                     })
 
+        _log_action("zip_extract")
         return render_template(
             "convert_extract.html",
             files=files_list,
@@ -869,6 +901,7 @@ def convert_archive():
             mimetype = "application/gzip"
             
         out_buf.seek(0)
+        _log_action(f"archive_convert_to_{target_format}")
         return send_file(
             out_buf,
             mimetype=mimetype,
