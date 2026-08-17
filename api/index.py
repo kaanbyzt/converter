@@ -1,19 +1,31 @@
+import hmac
 import os
 import sys
 import zipfile
 import uuid
 import tarfile
 import tempfile
-from flask import Flask, Response, render_template, request, send_file, jsonify
+from functools import wraps
+from flask import Flask, Response, render_template, request, send_file, jsonify, session, redirect, url_for, g
 from io import BytesIO
 from PyPDF2 import PdfMerger, PdfReader, PdfWriter
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from i18n import SUPPORTED_LANGS, init_i18n, t
+import analytics
 
 app = Flask(__name__)
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-insecure-change-me-in-prod")
 init_i18n(app)
+
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD")
+
+# Vercel prod/preview/dev ortamlarında otomatik olarak set edilir; yerel
+# `flask run` sırasında tanımlı değildir. Cookie'lerin Secure bayrağını
+# yerel http testini bozmadan yalnızca gerçek (https) ortamda açmak için kullanılır.
+IS_VERCEL = bool(os.environ.get("VERCEL_ENV"))
+app.config["SESSION_COOKIE_SECURE"] = IS_VERCEL
 
 # Sitemap için site içindeki tüm statik/GET sayfa yolları
 SITEMAP_ROUTES = [
@@ -95,6 +107,35 @@ SITEMAP_ROUTES = [
     ("/convert/archive", 0.6),
 ]
 
+_TRACKED_PATHS = {path for path, _ in SITEMAP_ROUTES}
+_VISITOR_COOKIE = "vid"
+
+
+@app.before_request
+def _track_pageview():
+    if request.method != "GET" or request.path not in _TRACKED_PATHS:
+        return
+    vid = request.cookies.get(_VISITOR_COOKIE)
+    if not vid:
+        vid = uuid.uuid4().hex
+        g.new_vid = vid
+    analytics.track_pageview(request.path, vid)
+
+
+@app.after_request
+def _persist_visitor_cookie(response):
+    vid = getattr(g, "new_vid", None)
+    if vid:
+        response.set_cookie(
+            _VISITOR_COOKIE,
+            vid,
+            max_age=60 * 60 * 24 * 365 * 2,
+            samesite="Lax",
+            httponly=True,
+            secure=IS_VERCEL,
+        )
+    return response
+
 
 @app.route("/sitemap.xml")
 def sitemap():
@@ -125,9 +166,63 @@ def robots_txt():
     lines = [
         "User-agent: *",
         "Disallow: /convert/extract/download",
+        "Disallow: /admin",
         f"Sitemap: {root}/sitemap.xml",
     ]
     return Response("\n".join(lines), mimetype="text/plain")
+
+
+def _admin_required(view):
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        if not session.get("is_admin"):
+            return redirect(url_for("admin_login"))
+        return view(*args, **kwargs)
+
+    return wrapped
+
+
+def _login_client_id():
+    forwarded = request.headers.get("X-Forwarded-For", "")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.remote_addr or "unknown"
+
+
+@app.route("/admin/login", methods=["GET", "POST"])
+def admin_login():
+    if session.get("is_admin"):
+        return redirect(url_for("admin_dashboard"))
+
+    error = None
+    if request.method == "POST":
+        client_id = _login_client_id()
+        lock_seconds = analytics.check_login_lock(client_id)
+        if lock_seconds > 0:
+            error = f"Çok fazla hatalı deneme. {lock_seconds} saniye sonra tekrar dene."
+        else:
+            password = request.form.get("password", "")
+            if ADMIN_PASSWORD and hmac.compare_digest(password, ADMIN_PASSWORD):
+                analytics.clear_login_attempts(client_id)
+                session["is_admin"] = True
+                return redirect(url_for("admin_dashboard"))
+            analytics.record_failed_login(client_id)
+            error = "Şifre yanlış." if ADMIN_PASSWORD else "ADMIN_PASSWORD ortam değişkeni tanımlı değil."
+    return render_template("admin_login.html", error=error)
+
+
+@app.route("/admin/logout")
+def admin_logout():
+    session.pop("is_admin", None)
+    return redirect(url_for("admin_login"))
+
+
+@app.route("/admin")
+@_admin_required
+def admin_dashboard():
+    stats = analytics.get_stats()
+    return render_template("admin_dashboard.html", stats=stats)
+
 
 # ZIP bomb koruması sabitleri
 _ZIP_MAX_FILES = 30
@@ -680,7 +775,15 @@ def ppt_to_pdf():
 @app.route("/video-tools/add-audio")
 @app.route("/video-tools/resize")
 def video_editor_tool():
-    return render_template("video_editor.html")
+    path_to_tab = {
+        "video-volume": "volume",
+        "video-speed": "speed",
+        "add-text": "text",
+        "add-image": "image",
+    }
+    slug = request.path.rsplit("/", 1)[-1]
+    active_tool = path_to_tab.get(slug, slug)
+    return render_template("video_editor.html", active_tool=active_tool)
 
 @app.route("/video-tools/text-to-speech")
 def video_text_to_speech():

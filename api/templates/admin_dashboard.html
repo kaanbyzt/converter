@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Admin Panel | toolboxquick{% endblock %}
+{% block content %}
+<header class="mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <h1 class="h4 fw-bold mb-0">Site İstatistikleri</h1>
+    <a href="{{ url_for('admin_logout') }}" class="btn btn-sm btn-outline-secondary">Çıkış Yap</a>
+</header>
+
+{% if not stats.available %}
+<div class="alert alert-warning">
+    İstatistik deposu yapılandırılmamış. Vercel projesine bir KV/Upstash Redis eklentisi bağlayıp
+    <code>KV_REST_API_URL</code> ve <code>KV_REST_API_TOKEN</code> ortam değişkenlerini tanımlayın.
+</div>
+{% endif %}
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="tool-card p-3 text-center">
+            <div class="text-secondary small">Toplam Görüntülenme</div>
+            <div class="h3 fw-bold mb-0">{{ stats.pageviews }}</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="tool-card p-3 text-center">
+            <div class="text-secondary small">Benzersiz Ziyaretçi</div>
+            <div class="h3 fw-bold mb-0">{{ stats.visitors }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="tool-card p-3">
+    <h2 class="h6 fw-bold mb-3">En Çok Kullanılan Sayfalar</h2>
+    <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Sayfa</th>
+                    <th class="text-end">Görüntülenme</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for path, count in stats.routes %}
+                <tr>
+                    <td><code>{{ path }}</code></td>
+                    <td class="text-end">{{ count }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="2" class="text-secondary">Henüz veri yok.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -539,31 +539,30 @@ function startExport() {
 // Check URL search parameters to automatically show the requested tool tab
 window.onload = () => {
     const urlParams = new URLSearchParams(window.location.search);
-    const tool = urlParams.get('tool');
-    if (tool) {
-        const tabEl = document.getElementById('tab-' + tool);
-        if (tabEl) {
-            tabEl.classList.add('active');
-            
-            // Adjust title based on active parameter
-            const titlesMap = {
-                'volume': {{ t('video_editor.tool_title_volume')|tojson }},
-                'speed': {{ t('video_editor.tool_title_speed')|tojson }},
-                'text': {{ t('video_editor.tool_title_text')|tojson }},
-                'image': {{ t('video_editor.tool_title_image')|tojson }},
-                'loop': {{ t('video_editor.tool_title_loop')|tojson }},
-                'crop': {{ t('video_editor.tool_title_crop')|tojson }},
-                'remove-logo': {{ t('video_editor.tool_title_remove_logo')|tojson }},
-                'add-audio': {{ t('video_editor.tool_title_add_audio')|tojson }},
-                'resize': {{ t('video_editor.tool_title_resize')|tojson }},
-                'stabilize': {{ t('video_editor.tool_title_stabilize')|tojson }}
-            };
-            if (titlesMap[tool]) {
-                document.getElementById('studio-title').textContent = titlesMap[tool];
-            }
+    const tool = urlParams.get('tool') || {{ active_tool|default(none)|tojson }};
+    const tabEl = tool ? document.getElementById('tab-' + tool) : null;
+
+    if (tabEl) {
+        tabEl.classList.add('active');
+
+        // Adjust title based on active parameter
+        const titlesMap = {
+            'volume': {{ t('video_editor.tool_title_volume')|tojson }},
+            'speed': {{ t('video_editor.tool_title_speed')|tojson }},
+            'text': {{ t('video_editor.tool_title_text')|tojson }},
+            'image': {{ t('video_editor.tool_title_image')|tojson }},
+            'loop': {{ t('video_editor.tool_title_loop')|tojson }},
+            'crop': {{ t('video_editor.tool_title_crop')|tojson }},
+            'remove-logo': {{ t('video_editor.tool_title_remove_logo')|tojson }},
+            'add-audio': {{ t('video_editor.tool_title_add_audio')|tojson }},
+            'resize': {{ t('video_editor.tool_title_resize')|tojson }},
+            'stabilize': {{ t('video_editor.tool_title_stabilize')|tojson }}
+        };
+        if (titlesMap[tool]) {
+            document.getElementById('studio-title').textContent = titlesMap[tool];
         }
     } else {
-        // Fallback: show first tab
+        // Fallback: show first tab (also covers the generic /video-tools/editor page)
         document.getElementById('tab-volume').classList.add('active');
     }
 };
