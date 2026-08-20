@@ -111,6 +111,88 @@ SITEMAP_ROUTES = [
 _TRACKED_PATHS = {path for path, _ in SITEMAP_ROUTES}
 _VISITOR_COOKIE = "vid"
 
+# Ana sayfadaki "En Çok Kullanılan Araçlar" bölümü için path -> kart meta verisi.
+# Yalnızca _TRACKED_PATHS içindeki (ziyaret sayısı tutulan) yollar buradadır.
+TOOL_CARDS = {
+    "/ai-tools": ("ai", "🤖", "active", "home.ai.compare.title", "home.ai.compare.desc"),
+    "/pdf-tools": ("pdf", "📚", "active", "home.pdf.merge.title", "home.pdf.merge.desc"),
+    "/pdf-tools/split": ("pdf", "✂️", "active", "home.pdf.split.title", "home.pdf.split.desc"),
+    "/pdf-tools/protect": ("pdf", "🔒", "active", "home.pdf.protect.title", "home.pdf.protect.desc"),
+    "/pdf-tools/unlock": ("pdf", "🔓", "active", "home.pdf.unlock.title", "home.pdf.unlock.desc"),
+    "/pdf-tools/rotate": ("pdf", "🔄", "active", "home.pdf.rotate.title", "home.pdf.rotate.desc"),
+    "/pdf-tools/page-numbers": ("pdf", "🔢", "active", "home.pdf.page_numbers.title", "home.pdf.page_numbers.desc"),
+    "/pdf-tools/compress": ("pdf", "🗜️", "active", "home.pdf.compress.title", "home.pdf.compress.desc"),
+    "/pdf-tools/pdf-to-jpg": ("pdf", "🖼️", "active", "home.pdf.to_jpg.title", "home.pdf.to_jpg.desc"),
+    "/pdf-tools/pdf-to-png": ("pdf", "🖼️", "active", "home.pdf.to_png.title", "home.pdf.to_png.desc"),
+    "/pdf-tools/jpg-to-pdf": ("pdf", "📄", "active", "home.pdf.jpg_to_pdf.title", "home.pdf.jpg_to_pdf.desc"),
+    "/pdf-tools/png-to-pdf": ("pdf", "📄", "active", "home.pdf.png_to_pdf.title", "home.pdf.png_to_pdf.desc"),
+    "/pdf-tools/pdf-to-html": ("pdf", "🌐", "active", "home.pdf.to_html.title", "home.pdf.to_html.desc"),
+    "/pdf-tools/word-to-pdf": ("pdf", "📝", "active", "home.pdf.word_to_pdf.title", "home.pdf.word_to_pdf.desc"),
+    "/pdf-tools/pdf-to-word": ("pdf", "📝", "active", "home.pdf.to_word.title", "home.pdf.to_word.desc"),
+    "/pdf-tools/excel-to-pdf": ("pdf", "📊", "active", "home.pdf.excel_to_pdf.title", "home.pdf.excel_to_pdf.desc"),
+    "/pdf-tools/pdf-to-excel": ("pdf", "📊", "active", "home.pdf.to_excel.title", "home.pdf.to_excel.desc"),
+    "/pdf-tools/ppt-to-pdf": ("pdf", "📉", "active", "home.pdf.ppt_to_pdf.title", "home.pdf.ppt_to_pdf.desc"),
+    "/convert/image": ("converter", "🖼️", "active", "home.conv.image.title", "home.conv.image.desc"),
+    "/convert/audio": ("converter", "🎵", "active", "home.conv.audio.title", "home.conv.audio.desc"),
+    "/convert/video": ("converter", "🎬", "active", "home.conv.video.title", "home.conv.video.desc"),
+    "/convert/extract": ("converter", "🗄️", "active", "home.conv.extract.title", "home.conv.extract.desc"),
+    "/convert/document": ("converter", "📝", "active", "home.conv.document.title", "home.conv.document.desc"),
+    "/convert/ebook": ("converter", "📚", "active", "home.conv.ebook.title", "home.conv.ebook.desc"),
+    "/convert/font": ("converter", "🔤", "active", "home.conv.font.title", "home.conv.font.desc"),
+    "/convert/archive": ("converter", "🗄️", "active", "home.conv.archive.title", "home.conv.archive.desc"),
+    "/video-tools/screen-record": ("video", "🎥", "beta", "home.video.screen_record.title", "home.video.screen_record.desc"),
+    "/video-tools/trim": ("video", "✂️", "beta", "home.video.trim.title", "home.video.trim.desc"),
+    "/video-tools/merge": ("video", "🔀", "beta", "home.video.merge.title", "home.video.merge.desc"),
+    "/video-tools/rotate": ("video", "🔄", "beta", "home.video.rotate.title", "home.video.rotate.desc"),
+    "/video-tools/editor": ("video", "🎬", "beta", "home.video.editor.title", "home.video.editor.desc"),
+    "/video-tools/add-image": ("video", "🖼️", "beta", "home.video.add_image.title", "home.video.add_image.desc"),
+    "/video-tools/resize": ("video", "📐", "beta", "home.video.resize.title", "home.video.resize.desc"),
+    "/video-tools/add-text": ("video", "✍️", "beta", "home.video.add_text.title", "home.video.add_text.desc"),
+    "/video-tools/loop": ("video", "🔁", "beta", "home.video.loop.title", "home.video.loop.desc"),
+    "/video-tools/text-to-speech": ("video", "🗣️", "beta", "home.video.tts.title", "home.video.tts.desc"),
+    "/video-tools/remove-logo": ("video", "🚫", "beta", "home.video.remove_logo.title", "home.video.remove_logo.desc"),
+    "/video-tools/video-volume": ("video", "🔊", "beta", "home.video.volume.title", "home.video.volume.desc"),
+    "/video-tools/crop": ("video", "✂️", "beta", "home.video.crop.title", "home.video.crop.desc"),
+    "/video-tools/video-speed": ("video", "⚡", "beta", "home.video.speed.title", "home.video.speed.desc"),
+    "/video-tools/stabilize": ("video", "⚖️", "beta", "home.video.stabilize.title", "home.video.stabilize.desc"),
+    "/video-tools/add-audio": ("video", "🎵", "beta", "home.video.add_audio.title", "home.video.add_audio.desc"),
+    "/video-tools/record-camera": ("video", "📹", "beta", "home.video.record_camera.title", "home.video.record_camera.desc"),
+    "/audio-tools/trim": ("audio", "✂️", "beta", "home.audio.trim.title", "home.audio.trim.desc"),
+    "/audio-tools/record": ("audio", "🎙️", "beta", "home.audio.record.title", "home.audio.record.desc"),
+    "/audio-tools/volume": ("audio", "📢", "beta", "home.audio.volume.title", "home.audio.volume.desc"),
+    "/audio-tools/speed": ("audio", "⚡", "beta", "home.audio.speed.title", "home.audio.speed.desc"),
+    "/audio-tools/pitch": ("audio", "🎼", "beta", "home.audio.pitch.title", "home.audio.pitch.desc"),
+    "/audio-tools/equalizer": ("audio", "🎚️", "beta", "home.audio.equalizer.title", "home.audio.equalizer.desc"),
+    "/audio-tools/joiner": ("audio", "🔗", "beta", "home.audio.joiner.title", "home.audio.joiner.desc"),
+    "/audio-tools/reverse": ("audio", "🔄", "beta", "home.audio.reverse.title", "home.audio.reverse.desc"),
+}
+_POPULAR_TOOLS_LIMIT = 6
+
+
+def _popular_tools():
+    """En çok ziyaret edilen ve TOOL_CARDS'ta karşılığı olan araçları döner.
+    KV yapılandırılmamışsa (yerelde) boş liste döner, bölüm gizlenir."""
+    stats = analytics.get_stats()
+    if not stats.get("available"):
+        return []
+    popular = []
+    for path, _count in stats["routes"]:
+        card = TOOL_CARDS.get(path)
+        if not card:
+            continue
+        cat, icon, badge, title_key, desc_key = card
+        popular.append({
+            "path": path,
+            "cat": cat,
+            "icon": icon,
+            "badge": badge,
+            "title_key": title_key,
+            "desc_key": desc_key,
+        })
+        if len(popular) >= _POPULAR_TOOLS_LIMIT:
+            break
+    return popular
+
 
 def _client_ip():
     forwarded = request.headers.get("X-Forwarded-For", "")
@@ -294,7 +376,7 @@ def _check_zip_safety(zip_ref: zipfile.ZipFile):
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    return render_template("index.html", popular_tools=_popular_tools())
 
 
 @app.route("/mikrotik")

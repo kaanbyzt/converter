@@ -232,6 +232,29 @@
     </div>
 </section>
 
+{% if popular_tools %}
+<!-- POPULAR TOOLS -->
+<section class="category-section" id="cat-popular">
+    <div class="category-title">
+        <span class="category-title-inner">🔥 {{ t('home.popular.title') }}</span>
+    </div>
+    <div class="tools-grid">
+        {% for tool in popular_tools %}
+        <a href="{{ tool.path }}" class="tool-card card-{{ tool.cat }}">
+            <div class="tool-header">
+                <div class="tool-icon icon-{{ tool.cat }}">{{ tool.icon }}</div>
+                <span class="tool-badge badge-{{ tool.badge }}">{{ t('home.badge.' + tool.badge) }}</span>
+            </div>
+            <div>
+                <h3 class="tool-title">{{ t(tool.title_key) }}</h3>
+                <p class="tool-desc">{{ t(tool.desc_key) }}</p>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
 <!-- AI TOOLS -->
 <section class="category-section" id="cat-ai">
     <button class="category-toggle category-title cat-ai" onclick="toggleCat('cat-ai')" aria-expanded="false">

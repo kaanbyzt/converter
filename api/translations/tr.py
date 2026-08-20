@@ -61,6 +61,7 @@ TRANSLATIONS = {
     "home.badge.active": "Aktif",
     "home.badge.beta": "Beta",
     "home.beta_note": "Beta: bu araçlar çalışır durumda ancak tam verim alınamayabilir.",
+    "home.popular.title": "En Çok Kullanılan Araçlar",
 
     "home.cat.ai": "Yapay Zeka Araçları",
     "home.cat.pdf": "PDF Araçları",
