@@ -215,6 +215,91 @@
     .cat-ai { color: var(--text-color); }
     .card-ai:hover { border-color: #22d3ee !important; box-shadow: 0 4px 20px rgba(34, 211, 238, 0.08) !important; }
     .icon-ai { background-color: rgba(34, 211, 238, 0.1); color: #22d3ee; }
+
+    /* Araç Arama */
+    .tool-search-wrap {
+        position: relative;
+        max-width: 480px;
+        margin-bottom: 2.5rem;
+    }
+    .tool-search-input {
+        width: 100%;
+        padding: 0.7rem 1rem 0.7rem 2.4rem;
+        border-radius: 10px;
+        border: 1px solid var(--input-border);
+        background-color: var(--input-bg);
+        color: var(--input-text);
+        font-size: 0.9rem;
+    }
+    .tool-search-input:focus {
+        outline: none;
+        border-color: #3b82f6;
+    }
+    .tool-search-wrap::before {
+        content: "🔍";
+        position: absolute;
+        left: 0.8rem;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 0.9rem;
+        pointer-events: none;
+    }
+    .tool-search-results {
+        display: none;
+        position: absolute;
+        top: calc(100% + 6px);
+        left: 0;
+        right: 0;
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 10px;
+        box-shadow: var(--card-shadow);
+        max-height: 320px;
+        overflow-y: auto;
+        z-index: 50;
+    }
+    .tool-search-results.open {
+        display: block;
+    }
+    .tool-search-result {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        width: 100%;
+        padding: 0.6rem 0.9rem;
+        background: none;
+        border: none;
+        text-align: left;
+        cursor: pointer;
+        color: var(--text-color);
+        font-size: 0.85rem;
+    }
+    .tool-search-result:hover {
+        background-color: var(--btn-outline-hover-bg);
+    }
+    .tool-search-icon {
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+    .tool-search-cat {
+        margin-left: auto;
+        font-size: 0.68rem;
+        color: var(--text-secondary);
+        flex-shrink: 0;
+    }
+    .tool-search-empty {
+        padding: 0.75rem 0.9rem;
+        font-size: 0.82rem;
+        color: var(--text-secondary);
+    }
+    @keyframes tool-card-highlight-pulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+        30% { box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.35); }
+    }
+    .tool-card-highlight {
+        animation: tool-card-highlight-pulse 1.4s ease;
+        border-color: #3b82f6 !important;
+    }
 </style>
 {% endblock %}
 
@@ -228,6 +313,11 @@
             <p class="hero-subtitle mb-4">
                 {{ t('home.hero_subtitle') }}
             </p>
+            <div class="tool-search-wrap">
+                <input type="text" id="tool-search-input" class="tool-search-input"
+                    placeholder="{{ t('home.search.placeholder') }}" autocomplete="off">
+                <div class="tool-search-results" id="tool-search-results"></div>
+            </div>
         </div>
     </div>
 </section>
@@ -847,5 +937,106 @@ function toggleCat(id) {
     btn.classList.toggle('toggled', isOpen);
     btn.setAttribute('aria-expanded', String(isOpen));
 }
+
+const TOOL_CATEGORY_LABELS = {
+    ai: {{ t('home.cat.ai')|tojson }},
+    pdf: {{ t('home.cat.pdf')|tojson }},
+    converter: {{ t('home.cat.converter')|tojson }},
+    video: {{ t('home.cat.video')|tojson }},
+    audio: {{ t('home.cat.audio')|tojson }}
+};
+
+(function () {
+    const input = document.getElementById('tool-search-input');
+    const resultsBox = document.getElementById('tool-search-results');
+    if (!input || !resultsBox) return;
+
+    const searchIndex = Array.prototype.slice.call(document.querySelectorAll('.tool-card'))
+        .filter(function (card) { return !card.closest('#cat-popular'); })
+        .map(function (card, i) {
+            card.id = card.id || ('tool-card-' + i);
+            const titleEl = card.querySelector('.tool-title');
+            const descEl = card.querySelector('.tool-desc');
+            const iconEl = card.querySelector('.tool-icon');
+            const catMatch = card.className.match(/card-(\w+)/);
+            const cat = catMatch ? catMatch[1] : '';
+            return {
+                id: card.id,
+                title: titleEl ? titleEl.textContent.trim() : '',
+                desc: descEl ? descEl.textContent.trim() : '',
+                icon: iconEl ? iconEl.textContent.trim() : '',
+                cat: cat,
+                catLabel: TOOL_CATEGORY_LABELS[cat] || ''
+            };
+        });
+
+    function escapeHtml(str) {
+        return str.replace(/[&<>"']/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+    }
+
+    function closeResults() {
+        resultsBox.innerHTML = '';
+        resultsBox.classList.remove('open');
+    }
+
+    function renderResults(query) {
+        const q = query.trim().toLocaleLowerCase('tr');
+        if (!q) { closeResults(); return; }
+
+        const matches = searchIndex.filter(function (item) {
+            return item.title.toLocaleLowerCase('tr').indexOf(q) !== -1 ||
+                   item.desc.toLocaleLowerCase('tr').indexOf(q) !== -1;
+        }).slice(0, 8);
+
+        if (!matches.length) {
+            resultsBox.innerHTML = '<div class="tool-search-empty">{{ t("home.search.no_results") }}</div>';
+            resultsBox.classList.add('open');
+            return;
+        }
+
+        resultsBox.innerHTML = matches.map(function (item) {
+            return '<button type="button" class="tool-search-result" data-target="' + item.id + '">' +
+                '<span class="tool-search-icon">' + item.icon + '</span>' +
+                '<span class="tool-search-title">' + escapeHtml(item.title) + '</span>' +
+                '<span class="tool-search-cat">' + escapeHtml(item.catLabel) + '</span>' +
+                '</button>';
+        }).join('');
+        resultsBox.classList.add('open');
+    }
+
+    function goToCard(card) {
+        const section = card.closest('.category-section');
+        if (section) {
+            const body = document.getElementById(section.id + '-body');
+            if (body && !body.classList.contains('toggled')) {
+                toggleCat(section.id);
+            }
+        }
+        closeResults();
+        input.value = '';
+        setTimeout(function () {
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            card.classList.add('tool-card-highlight');
+            setTimeout(function () { card.classList.remove('tool-card-highlight'); }, 1500);
+        }, 60);
+    }
+
+    input.addEventListener('input', function () {
+        renderResults(input.value);
+    });
+
+    resultsBox.addEventListener('click', function (e) {
+        const btn = e.target.closest('.tool-search-result');
+        if (!btn) return;
+        const card = document.getElementById(btn.getAttribute('data-target'));
+        if (card) goToCard(card);
+    });
+
+    document.addEventListener('click', function (e) {
+        if (e.target !== input && !resultsBox.contains(e.target)) closeResults();
+    });
+})();
 </script>
 {% endblock %}
