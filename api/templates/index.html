@@ -49,7 +49,37 @@
         gap: 1.25rem;
     }
 
-    /* === Mobil Accordion === */
+    /* === Accordion (tüm ekran boyutları) === */
+    .category-title-inner {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .cat-chevron {
+        font-size: 0.75rem;
+        color: var(--text-color);
+        transition: transform 0.25s ease;
+        flex-shrink: 0;
+        margin-left: 0.4rem;
+    }
+    .category-body {
+        overflow: hidden;
+        transition: max-height 0.4s ease;
+    }
+    /* Masaüstünde varsayılan açık; "toggled" sınıfı kapatır */
+    @media (min-width: 768px) {
+        .category-body {
+            max-height: 9999px;
+        }
+        .category-body.toggled {
+            max-height: 0;
+        }
+        .category-toggle.toggled .cat-chevron {
+            transform: rotate(180deg);
+        }
+    }
+
+    /* === Mobil Accordion (varsayılan kapalı; "toggled" sınıfı açar) === */
     @media (max-width: 767px) {
         .category-section {
             margin-bottom: 2rem;
@@ -82,27 +112,14 @@
             margin-bottom: 0.25rem;
         }
         .category-toggle:active { opacity: 0.75; }
-        .category-title-inner {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        .cat-chevron {
-            font-size: 0.75rem;
-            color: var(--text-color);
-            transition: transform 0.25s ease;
-            flex-shrink: 0;
-        }
-        .category-toggle.open .cat-chevron { transform: rotate(180deg); }
-        /* Kartlar alanı */
+        /* Kartlar alanı: varsayılan kapalı, "toggled" sınıfı açar */
         .category-body {
-            overflow: hidden;
             max-height: 0;
-            transition: max-height 0.4s ease;
         }
-        .category-body.open {
+        .category-body.toggled {
             max-height: 9999px;
         }
+        .category-toggle.toggled .cat-chevron { transform: rotate(180deg); }
         .tools-grid {
             grid-template-columns: 1fr 1fr;
             gap: 0.75rem;
@@ -808,32 +825,35 @@
     </div>
     </div>
 </section>
+{% endblock %}
 
 {% block scripts %}
 <script>
-function toggleCat(id) {
+const CAT_SECTIONS = ['cat-video', 'cat-audio', 'cat-pdf', 'cat-converter', 'cat-ai'];
+
+// "toggled" sınıfı masaüstünde kapatır, mobilde açar (bkz. CSS).
+function isOpenState(body) {
     const isMobile = window.innerWidth <= 767;
-    if (!isMobile) return;
-    const btn  = document.querySelector('#' + id + ' .category-toggle');
-    const body = document.getElementById(id + '-body');
-    const isOpen = body.classList.contains('open');
-    body.classList.toggle('open', !isOpen);
-    btn.classList.toggle('open', !isOpen);
-    btn.setAttribute('aria-expanded', String(!isOpen));
+    const toggled = body.classList.contains('toggled');
+    return isMobile ? toggled : !toggled;
 }
 
-// On desktop: make sure all bodies are visible (remove closed state)
-function handleResize() {
-    const sections = ['cat-video','cat-audio','cat-pdf','cat-converter','cat-ai'];
-    if (window.innerWidth > 767) {
-        sections.forEach(id => {
-            const body = document.getElementById(id + '-body');
-            const btn  = document.querySelector('#' + id + ' .category-toggle');
-            if (body) body.style.maxHeight = '';
-        });
-    }
+function toggleCat(id) {
+    const btn  = document.querySelector('#' + id + ' .category-toggle');
+    const body = document.getElementById(id + '-body');
+    body.classList.toggle('toggled');
+    btn.classList.toggle('toggled');
+    btn.setAttribute('aria-expanded', String(isOpenState(body)));
 }
-window.addEventListener('resize', handleResize);
+
+function syncAriaExpanded() {
+    CAT_SECTIONS.forEach(id => {
+        const btn  = document.querySelector('#' + id + ' .category-toggle');
+        const body = document.getElementById(id + '-body');
+        if (btn && body) btn.setAttribute('aria-expanded', String(isOpenState(body)));
+    });
+}
+window.addEventListener('resize', syncAriaExpanded);
+syncAriaExpanded();
 </script>
-{% endblock %}
 {% endblock %}

@@ -700,6 +700,11 @@ def convert_extract_download():
     if not zip_id or not file_path:
         return t("err.invalid_request"), 400
 
+    try:
+        uuid.UUID(zip_id)
+    except ValueError:
+        return t("err.invalid_request"), 400
+
     zip_path = os.path.join(TEMP_DIR, f"{zip_id}.zip")
     if not os.path.exists(zip_path):
         return t("err.archive_not_found_or_expired"), 404
