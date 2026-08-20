@@ -114,7 +114,7 @@ TRANSLATIONS = {
     "home.conv.image.title": "Görüntü Dönüştürücü",
     "home.conv.image.desc": "Resimlerinizi JPG, PNG, WebP, BMP formatları arasında yerel dönüştürün.",
     "home.conv.audio.title": "Ses Dönüştürücü",
-    "home.conv.audio.desc": "MP3, WAV, M4A, OGG formatları arasında hızlı çevrim.",
+    "home.conv.audio.desc": "Ses dosyanızı MP3, WAV veya OGG formatına hızlıca dönüştürün.",
     "home.conv.video.title": "Video Dönüştürücü",
     "home.conv.video.desc": "MP4, WEBM, AVI formatları arasında çözünürlük ayarlı dönüştürme.",
     "home.conv.extract.title": "Arşiv Açıcı (Extractor)",

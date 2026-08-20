@@ -49,7 +49,9 @@
         <div class="mb-4" style="max-width: 300px; margin: 0 auto; text-align: left;">
             <label class="form-label fw-semibold mb-2">{{ t('convert_audio.target_format_label') }}</label>
             <select id="target-format" class="form-select" style="border-radius: 8px;">
+                <option value="mp3">{{ t('convert_audio.opt_mp3') }}</option>
                 <option value="wav">{{ t('convert_audio.opt_wav') }}</option>
+                <option value="opus">{{ t('convert_audio.opt_opus') }}</option>
             </select>
         </div>
 
@@ -67,6 +69,7 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='vendor/lame.min.js') }}"></script>
 <script>
 let audioCtx = null;
 let audioBuffer = null;
@@ -146,25 +149,97 @@ function bufferToWav(buffer) {
     return new Blob([view], { type: 'audio/wav' });
 }
 
-function convertAndDownload() {
+function floatTo16BitPCM(samples) {
+    const out = new Int16Array(samples.length);
+    for (let i = 0; i < samples.length; i++) {
+        const s = Math.max(-1, Math.min(1, samples[i]));
+        out[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+    }
+    return out;
+}
+
+function encodeToMp3(buffer) {
+    const channels = Math.min(buffer.numberOfChannels, 2);
+    const mp3encoder = new lamejs.Mp3Encoder(channels, buffer.sampleRate, 128);
+    const blockSize = 1152;
+
+    const left16 = floatTo16BitPCM(buffer.getChannelData(0));
+    const right16 = channels > 1 ? floatTo16BitPCM(buffer.getChannelData(1)) : null;
+
+    const mp3Chunks = [];
+    for (let i = 0; i < left16.length; i += blockSize) {
+        const leftChunk = left16.subarray(i, i + blockSize);
+        const rightChunk = right16 ? right16.subarray(i, i + blockSize) : undefined;
+        const buf = right16 ? mp3encoder.encodeBuffer(leftChunk, rightChunk) : mp3encoder.encodeBuffer(leftChunk);
+        if (buf.length > 0) mp3Chunks.push(buf);
+    }
+    const endBuf = mp3encoder.flush();
+    if (endBuf.length > 0) mp3Chunks.push(endBuf);
+
+    return new Blob(mp3Chunks, { type: 'audio/mpeg' });
+}
+
+async function encodeToOpus(buffer) {
+    const mimeCandidates = ['audio/ogg;codecs=opus', 'audio/webm;codecs=opus', 'audio/webm'];
+    const mimeType = mimeCandidates.find((t) => window.MediaRecorder && MediaRecorder.isTypeSupported(t));
+    if (!mimeType) throw new Error('opus_unsupported');
+
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (ctx.state === 'suspended') await ctx.resume();
+
+    return new Promise((resolve, reject) => {
+        const dest = ctx.createMediaStreamDestination();
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(dest);
+
+        const recorder = new MediaRecorder(dest.stream, { mimeType });
+        const chunks = [];
+        recorder.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+        recorder.onstop = () => {
+            ctx.close();
+            resolve({ blob: new Blob(chunks, { type: mimeType }), mimeType });
+        };
+        recorder.onerror = (e) => { ctx.close(); reject(e.error || new Error('recorder_error')); };
+
+        recorder.start();
+        source.start();
+        source.onended = () => setTimeout(() => recorder.stop(), 150);
+    });
+}
+
+function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+async function convertAndDownload() {
     if (!audioBuffer) return;
-    
+
+    const format = document.getElementById('target-format').value;
     document.getElementById('processing-msg').classList.remove('d-none');
     document.getElementById('download-btn').disabled = true;
 
-    setTimeout(() => {
-        const wavBlob = bufferToWav(audioBuffer);
-        const url = URL.createObjectURL(wavBlob);
-
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = originalFileName + '.wav';
-        a.click();
-        URL.revokeObjectURL(url);
-        
+    try {
+        await new Promise((resolve) => setTimeout(resolve, 30));
+        if (format === 'mp3') {
+            downloadBlob(encodeToMp3(audioBuffer), originalFileName + '.mp3');
+        } else if (format === 'opus') {
+            const { blob, mimeType } = await encodeToOpus(audioBuffer);
+            downloadBlob(blob, originalFileName + (mimeType.indexOf('ogg') !== -1 ? '.ogg' : '.webm'));
+        } else {
+            downloadBlob(bufferToWav(audioBuffer), originalFileName + '.wav');
+        }
+    } catch (err) {
+        alert({{ t('convert_audio.err_convert')|tojson }});
+    } finally {
         document.getElementById('processing-msg').classList.add('d-none');
         document.getElementById('download-btn').disabled = false;
-    }, 100);
+    }
 }
 </script>
 {% endblock %}
