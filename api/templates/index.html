@@ -62,24 +62,20 @@
         flex-shrink: 0;
         margin-left: 0.4rem;
     }
+    /* Varsayılan (tüm ekran boyutları): kapalı; "toggled" sınıfı açar */
     .category-body {
         overflow: hidden;
+        max-height: 0;
         transition: max-height 0.4s ease;
     }
-    /* Masaüstünde varsayılan açık; "toggled" sınıfı kapatır */
-    @media (min-width: 768px) {
-        .category-body {
-            max-height: 9999px;
-        }
-        .category-body.toggled {
-            max-height: 0;
-        }
-        .category-toggle.toggled .cat-chevron {
-            transform: rotate(180deg);
-        }
+    .category-body.toggled {
+        max-height: 9999px;
+    }
+    .category-toggle.toggled .cat-chevron {
+        transform: rotate(180deg);
     }
 
-    /* === Mobil Accordion (varsayılan kapalı; "toggled" sınıfı açar) === */
+    /* === Mobil düzen ayarları === */
     @media (max-width: 767px) {
         .category-section {
             margin-bottom: 2rem;
@@ -112,14 +108,6 @@
             margin-bottom: 0.25rem;
         }
         .category-toggle:active { opacity: 0.75; }
-        /* Kartlar alanı: varsayılan kapalı, "toggled" sınıfı açar */
-        .category-body {
-            max-height: 0;
-        }
-        .category-body.toggled {
-            max-height: 9999px;
-        }
-        .category-toggle.toggled .cat-chevron { transform: rotate(180deg); }
         .tools-grid {
             grid-template-columns: 1fr 1fr;
             gap: 0.75rem;
@@ -829,31 +817,12 @@
 
 {% block scripts %}
 <script>
-const CAT_SECTIONS = ['cat-video', 'cat-audio', 'cat-pdf', 'cat-converter', 'cat-ai'];
-
-// "toggled" sınıfı masaüstünde kapatır, mobilde açar (bkz. CSS).
-function isOpenState(body) {
-    const isMobile = window.innerWidth <= 767;
-    const toggled = body.classList.contains('toggled');
-    return isMobile ? toggled : !toggled;
-}
-
 function toggleCat(id) {
     const btn  = document.querySelector('#' + id + ' .category-toggle');
     const body = document.getElementById(id + '-body');
-    body.classList.toggle('toggled');
-    btn.classList.toggle('toggled');
-    btn.setAttribute('aria-expanded', String(isOpenState(body)));
+    const isOpen = body.classList.toggle('toggled');
+    btn.classList.toggle('toggled', isOpen);
+    btn.setAttribute('aria-expanded', String(isOpen));
 }
-
-function syncAriaExpanded() {
-    CAT_SECTIONS.forEach(id => {
-        const btn  = document.querySelector('#' + id + ' .category-toggle');
-        const body = document.getElementById(id + '-body');
-        if (btn && body) btn.setAttribute('aria-expanded', String(isOpenState(body)));
-    });
-}
-window.addEventListener('resize', syncAriaExpanded);
-syncAriaExpanded();
 </script>
 {% endblock %}
