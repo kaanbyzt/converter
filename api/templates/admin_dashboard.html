@@ -191,4 +191,32 @@
         </div>
     </div>
 </div>
+
+<div class="row g-3 mb-3">
+    <div class="col-12">
+        <div class="chart-card">
+            <h2>Araç Kullanımı (Görüntüleme Değil, Gerçek İşlem)</h2>
+            <p class="text-secondary small mb-3">
+                Bir aracın sadece açılması değil, gerçekten çalıştırılması (örn. dosya birleştirme, dönüştürme) sayılır.
+                Şu an yalnızca sunucu tarafında işlenen araçlar (PDF birleştir/böl/şifrele/kilit aç, ZIP çıkart, arşiv dönüştür) izleniyor;
+                tarayıcıda (video/ses araçları gibi) çalışan işlemler bu sayaca dahil değildir.
+            </p>
+            {% if stats.actions %}
+            {% set top_actions = stats.actions[:10] %}
+            {% set action_max = top_actions[0].count if top_actions else 1 %}
+            {% for a in top_actions %}
+            <div class="page-bar-row" title="{{ a.raw }}: {{ a.count }} kullanım">
+                <span class="page-bar-label">{{ a.label }}</span>
+                <div class="page-bar-track">
+                    <div class="page-bar-fill" style="width: {{ (a.count / action_max * 100) if action_max > 0 else 0 }}%;"></div>
+                </div>
+                <span class="page-bar-value">{{ a.count }}</span>
+            </div>
+            {% endfor %}
+            {% else %}
+            <p class="text-secondary small mb-0">Henüz veri yok.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
 {% endblock %}

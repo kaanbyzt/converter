@@ -20,6 +20,7 @@ _TIMEOUT = 1.5
 _PAGEVIEWS_KEY = "stats:pageviews"
 _VISITORS_KEY = "stats:visitors"
 _ROUTES_KEY = "stats:routes"
+_ACTIONS_KEY = "stats:actions"
 
 _DAILY_PREFIX = "stats:daily:"
 _DAILY_TTL = 60 * 60 * 24 * 40  # gösterilen 14 günden fazla, güvenlik payı
@@ -107,11 +108,14 @@ def log_event(ip, path, kind, action=None, day=None):
     if action:
         entry["action"] = action
     key = _LOG_PREFIX + day
-    _pipeline([
+    commands = [
         ["RPUSH", key, json.dumps(entry, ensure_ascii=False)],
         ["LTRIM", key, str(-_LOG_MAX_PER_DAY), "-1"],
         ["EXPIRE", key, str(_LOG_TTL)],
-    ])
+    ]
+    if kind == "action" and action:
+        commands.append(["HINCRBY", _ACTIONS_KEY, action, 1])
+    _pipeline(commands)
 
 
 def get_log(day, limit=500):
@@ -150,22 +154,28 @@ def get_stats():
         ["GET", _PAGEVIEWS_KEY],
         ["SCARD", _VISITORS_KEY],
         ["HGETALL", _ROUTES_KEY],
+        ["HGETALL", _ACTIONS_KEY],
     ])
     if result is None:
-        return {"available": False, "pageviews": 0, "visitors": 0, "routes": [], "daily": []}
+        return {"available": False, "pageviews": 0, "visitors": 0, "routes": [], "actions": [], "daily": []}
 
     pageviews = int((result[0] or {}).get("result") or 0)
     visitors = int((result[1] or {}).get("result") or 0)
-    flat = (result[2] or {}).get("result") or []
+    flat_routes = (result[2] or {}).get("result") or []
+    flat_actions = (result[3] or {}).get("result") or []
 
-    routes = [(flat[i], int(flat[i + 1])) for i in range(0, len(flat) - 1, 2)]
+    routes = [(flat_routes[i], int(flat_routes[i + 1])) for i in range(0, len(flat_routes) - 1, 2)]
     routes.sort(key=lambda item: item[1], reverse=True)
+
+    actions = [(flat_actions[i], int(flat_actions[i + 1])) for i in range(0, len(flat_actions) - 1, 2)]
+    actions.sort(key=lambda item: item[1], reverse=True)
 
     return {
         "available": True,
         "pageviews": pageviews,
         "visitors": visitors,
         "routes": routes,
+        "actions": actions,
         "daily": get_daily_series(14),
     }
 

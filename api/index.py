@@ -207,6 +207,23 @@ def _log_action(action):
     analytics.log_event(_client_ip(), request.path, "action", action=action)
 
 
+ACTION_LABELS = {
+    "pdf_merge": "PDF Birleştirme",
+    "pdf_split": "PDF Bölme",
+    "pdf_protect": "PDF Şifreleme",
+    "pdf_unlock": "PDF Kilit Açma",
+    "zip_extract": "ZIP Çıkartma",
+}
+
+
+def _action_label(action):
+    if action in ACTION_LABELS:
+        return ACTION_LABELS[action]
+    if action.startswith("archive_convert_to_"):
+        return f"Arşiv Dönüştürme (→ {action[len('archive_convert_to_'):].upper()})"
+    return action
+
+
 @app.before_request
 def _track_pageview():
     if request.method != "GET" or request.path not in _TRACKED_PATHS:
@@ -310,6 +327,10 @@ def admin_logout():
 @_admin_required
 def admin_dashboard():
     stats = analytics.get_stats()
+    stats["actions"] = [
+        {"label": _action_label(action), "raw": action, "count": count}
+        for action, count in stats.get("actions", [])
+    ]
     return render_template("admin_dashboard.html", stats=stats)
 
 
