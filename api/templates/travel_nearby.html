@@ -6,9 +6,14 @@
 <h1 class="h3 mb-2">📍 {{ t('travel.nearby.heading') }}</h1>
 <p class="text-secondary mb-3">{{ t('travel.nearby.description') }}</p>
 
-<div class="nearby-locate-row mb-3">
+<div class="nearby-locate-row mb-2">
     <button type="button" id="locateBtn" class="nearby-locate-btn" onclick="locate()">{{ t('travel.nearby.locate_btn') }}</button>
     <span id="locateStatus" class="nearby-status" data-kind="idle">{{ t('travel.nearby.status.idle') }}</span>
+</div>
+
+<div id="permissionHelp" class="nearby-permission-help d-none">
+    <p id="permissionHelpText" class="mb-2"></p>
+    <button type="button" class="nearby-locate-btn" onclick="locate()">{{ t('travel.nearby.permission_help_retry') }}</button>
 </div>
 
 <div id="coordsBox" class="nearby-coords-box d-none">
@@ -87,6 +92,21 @@
 
     .nearby-status[data-kind="success"] {
         color: #22c55e;
+    }
+
+    .nearby-permission-help {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-left: 3px solid #f43f5e;
+        border-radius: 10px;
+        padding: 0.85rem 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .nearby-permission-help p {
+        font-size: 0.85rem;
+        color: var(--text-color);
+        margin: 0 0 0.75rem;
     }
 
     .nearby-coords-box {
@@ -247,7 +267,32 @@
         return typeof value === 'number' && Number.isFinite(value);
     }
 
+    function detectPlatform() {
+        const ua = navigator.userAgent || '';
+        const isIOS = /iPhone|iPad|iPod/.test(ua) ||
+            (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        if (isIOS) return 'ios';
+        if (/Android/.test(ua)) return 'android';
+        return 'desktop';
+    }
+
+    function showPermissionHelp() {
+        const texts = {
+            ios: {{ t('travel.nearby.permission_help_ios')|tojson }},
+            android: {{ t('travel.nearby.permission_help_android')|tojson }},
+            desktop: {{ t('travel.nearby.permission_help_desktop')|tojson }},
+        };
+        document.getElementById('permissionHelpText').textContent = texts[detectPlatform()];
+        document.getElementById('permissionHelp').classList.remove('d-none');
+    }
+
+    function hidePermissionHelp() {
+        document.getElementById('permissionHelp').classList.add('d-none');
+    }
+
     function locate() {
+        hidePermissionHelp();
+
         if (!window.isSecureContext) {
             setStatus({{ t('travel.nearby.status.insecure')|tojson }}, 'error');
             return;
@@ -336,6 +381,7 @@
         switch (error.code) {
             case error.PERMISSION_DENIED:
                 message = {{ t('travel.nearby.status.permission_denied')|tojson }};
+                showPermissionHelp();
                 break;
             case error.POSITION_UNAVAILABLE:
                 message = {{ t('travel.nearby.status.unavailable')|tojson }};
