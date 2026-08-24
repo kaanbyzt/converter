@@ -224,7 +224,42 @@
             align-items: center;
             gap: 0.4rem;
             font-size: 0.85rem;
+            white-space: nowrap;
+            flex-shrink: 0;
             transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+        }
+
+        .navbar-brand {
+            flex-shrink: 0;
+        }
+
+        .navbar-actions {
+            min-width: 0;
+        }
+
+        @media (max-width: 900px) {
+            .navbar .container {
+                flex-wrap: nowrap;
+            }
+
+            .navbar-actions {
+                flex-wrap: nowrap;
+                justify-content: flex-start;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+                gap: 0.5rem !important;
+                padding-bottom: 2px;
+            }
+
+            .navbar-actions::-webkit-scrollbar {
+                display: none;
+            }
+
+            .theme-toggle-btn {
+                padding: 0.32rem 0.6rem;
+                font-size: 0.78rem;
+            }
         }
 
         .theme-toggle-btn:hover {
@@ -407,8 +442,8 @@
             <a class="navbar-brand d-inline-flex align-items-center gap-2" href="/">
                 <span aria-hidden="true">🧰</span> toolboxquick
             </a>
-            <div class="d-flex align-items-center gap-3">
-                <a class="theme-toggle-btn text-decoration-none" href="/"
+            <div class="navbar-actions d-flex align-items-center gap-3">
+                <a class="theme-toggle-btn text-decoration-none" href="/araclar"
                     style="border-color: rgba(16, 185, 129, 0.5); color: #10b981;">
                     <span>🛠️</span> <span>{{ t('nav.tools_panel') }}</span>
                 </a>

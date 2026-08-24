@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}{{ t('landing.title') }}{% endblock %}
+{% block meta_description %}{{ t('landing.meta_description') }}{% endblock %}
+{% block content %}
+<div class="landing-hero">
+    <h1 class="landing-heading">🧰 {{ t('landing.heading') }}</h1>
+    <p class="landing-tagline">{{ t('landing.tagline') }}</p>
+</div>
+
+<div class="landing-cards">
+    <a href="/araclar" class="tool-card landing-card">
+        <div class="landing-card-icon" style="background-color: rgba(16, 185, 129, 0.1); color: #10b981;">🛠️</div>
+        <h2 class="landing-card-title">{{ t('landing.card.tools.title') }}</h2>
+        <p class="landing-card-desc">{{ t('landing.card.tools.desc') }}</p>
+        <span class="landing-card-cta" style="color: #10b981;">{{ t('landing.card.enter') }} &rarr;</span>
+    </a>
+
+    <a href="/seyahat" class="tool-card landing-card">
+        <div class="landing-card-icon" style="background-color: rgba(244, 63, 94, 0.1); color: #f43f5e;">✈️</div>
+        <h2 class="landing-card-title">{{ t('landing.card.travel.title') }}</h2>
+        <p class="landing-card-desc">{{ t('landing.card.travel.desc') }}</p>
+        <span class="landing-card-cta" style="color: #f43f5e;">{{ t('landing.card.enter') }} &rarr;</span>
+    </a>
+
+    <a href="/mikrotik" class="tool-card landing-card">
+        <div class="landing-card-icon" style="background-color: rgba(59, 130, 246, 0.1); color: #3b82f6;">📶</div>
+        <h2 class="landing-card-title">{{ t('landing.card.mikrotik.title') }}</h2>
+        <p class="landing-card-desc">{{ t('landing.card.mikrotik.desc') }}</p>
+        <span class="landing-card-cta" style="color: #3b82f6;">{{ t('landing.card.enter') }} &rarr;</span>
+    </a>
+</div>
+
+<style>
+    .landing-hero {
+        text-align: center;
+        max-width: 640px;
+        margin: 1.5rem auto 2.5rem;
+    }
+
+    .landing-heading {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.6rem;
+    }
+
+    .landing-tagline {
+        color: var(--text-secondary);
+        font-size: 1.02rem;
+        margin: 0;
+    }
+
+    .landing-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1.25rem;
+        max-width: 960px;
+        margin: 0 auto 2rem;
+    }
+
+    .landing-card {
+        padding: 1.75rem 1.5rem;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.6rem;
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .landing-card:hover {
+        transform: translateY(-3px);
+    }
+
+    .landing-card-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.7rem;
+        margin-bottom: 0.3rem;
+    }
+
+    .landing-card-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin: 0;
+        color: var(--text-color);
+    }
+
+    .landing-card-desc {
+        font-size: 0.88rem;
+        color: var(--text-secondary);
+        margin: 0;
+        flex-grow: 1;
+    }
+
+    .landing-card-cta {
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}

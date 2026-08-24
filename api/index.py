@@ -34,6 +34,7 @@ app.config["SESSION_COOKIE_SECURE"] = IS_VERCEL
 # Sitemap için site içindeki tüm statik/GET sayfa yolları
 SITEMAP_ROUTES = [
     ("/", 1.0),
+    ("/araclar", 0.95),
     ("/mikrotik", 0.8),
     ("/mikrotik/nasil-kullanilir", 0.5),
     ("/mikrotik/subnet", 0.6),
@@ -402,7 +403,12 @@ def _check_zip_safety(zip_ref: zipfile.ZipFile):
 
 
 @app.route("/")
-def index():
+def landing():
+    return render_template("landing.html")
+
+
+@app.route("/araclar")
+def tools_home():
     return render_template("index.html", popular_tools=_popular_tools())
 
 
