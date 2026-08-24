@@ -37,6 +37,9 @@ _LOG_PREFIX = "log:"
 _LOG_TTL = 60 * 60 * 24 * 60  # 60 gün saklanır, sonra kendiliğinden silinir
 _LOG_MAX_PER_DAY = 500  # tek günde en fazla bu kadar satır tutulur (depolama sınırı)
 
+_GEOCODE_LOCK_KEY = "geocode:lock"
+_GEOCODE_LOCK_MS = 1100  # Nominatim kullanım politikası: saniyede en fazla 1 istek
+
 
 def _today_str():
     return datetime.datetime.utcnow().strftime("%Y-%m-%d")
@@ -206,3 +209,15 @@ def record_failed_login(client_id):
 
 def clear_login_attempts(client_id):
     _pipeline([["DEL", _LOGIN_FAIL_PREFIX + client_id]])
+
+
+def try_acquire_geocode_slot():
+    """Dış geocoding servisine (Nominatim) saniyede en fazla 1 istek gitmesini
+    sağlayan basit bir kilit. KV yoksa (yerelde env tanımlı değilse) her zaman
+    izin verir — bu durumda sınırlama devre dışı kalır ama site çökmez."""
+    if not is_configured():
+        return True
+    result = _pipeline([["SET", _GEOCODE_LOCK_KEY, "1", "NX", "PX", str(_GEOCODE_LOCK_MS)]])
+    if result is None:
+        return True
+    return (result[0] or {}).get("result") is not None

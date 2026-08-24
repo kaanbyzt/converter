@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="travel-shell">
+    <aside class="travel-sidebar">
+        <div class="travel-sidebar-title">✈️ {{ t('travel.dashboard.heading') }}</div>
+        <div class="travel-sidebar-group">
+            <span class="travel-sidebar-label">{{ t('travel.sidebar.section_general') }}</span>
+            <a href="/seyahat" class="travel-sidebar-link{{ ' active' if active_page == 'dashboard' else '' }}">📋 {{ t('travel.sidebar.dashboard') }}</a>
+        </div>
+        <div class="travel-sidebar-group">
+            <span class="travel-sidebar-label">{{ t('travel.sidebar.section_emergency') }}</span>
+            <a href="/seyahat/acil-ceviri" class="travel-sidebar-link{{ ' active' if active_page == 'acil-ceviri' else '' }}">🆘 {{ t('travel.sidebar.emergency_translate') }}</a>
+            <a href="/seyahat/yakin-yerler" class="travel-sidebar-link{{ ' active' if active_page == 'yakin-yerler' else '' }}">📍 {{ t('travel.sidebar.nearby') }}</a>
+        </div>
+        <p class="travel-sidebar-note">{{ t('travel.sidebar.more_soon') }}</p>
+    </aside>
+    <div class="travel-main">
+        {% block travel_content %}{% endblock %}
+    </div>
+</div>
+<style>
+    .travel-shell {
+        display: flex;
+        align-items: flex-start;
+        gap: 1.75rem;
+    }
+
+    .travel-sidebar {
+        width: 230px;
+        flex-shrink: 0;
+        position: sticky;
+        top: 84px;
+        display: flex;
+        flex-direction: column;
+        gap: 1.1rem;
+    }
+
+    .travel-sidebar-title {
+        font-weight: 700;
+        font-size: 1rem;
+        color: var(--text-color);
+    }
+
+    .travel-sidebar-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+    }
+
+    .travel-sidebar-label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--text-secondary);
+    }
+
+    .travel-sidebar-link {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 0.7rem;
+        border-radius: 10px;
+        color: var(--text-color);
+        text-decoration: none;
+        font-size: 0.88rem;
+        border: 1px solid transparent;
+        transition: background-color 0.15s, border-color 0.15s;
+    }
+
+    .travel-sidebar-link:hover {
+        background-color: var(--btn-outline-hover-bg);
+    }
+
+    .travel-sidebar-link.active {
+        background-color: rgba(244, 63, 94, 0.12);
+        border-color: rgba(244, 63, 94, 0.4);
+        color: #f43f5e;
+        font-weight: 600;
+    }
+
+    .travel-sidebar-note {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        border-top: 1px solid var(--card-border);
+        padding-top: 0.75rem;
+    }
+
+    .travel-main {
+        flex: 1;
+        min-width: 0;
+    }
+
+    @media (max-width: 860px) {
+        .travel-shell {
+            flex-direction: column;
+        }
+
+        .travel-sidebar {
+            width: 100%;
+            position: static;
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .travel-sidebar-title {
+            width: 100%;
+        }
+
+        .travel-sidebar-group {
+            flex-direction: row;
+            flex-wrap: wrap;
+        }
+
+        .travel-sidebar-note {
+            width: 100%;
+            border-top: none;
+            padding-top: 0;
+        }
+    }
+</style>
+{% endblock %}

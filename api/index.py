@@ -6,6 +6,7 @@ import zipfile
 import uuid
 import tarfile
 import tempfile
+import requests
 from functools import wraps
 from flask import Flask, Response, render_template, request, send_file, jsonify, session, redirect, url_for, g
 from io import BytesIO
@@ -15,6 +16,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from i18n import SUPPORTED_LANGS, init_i18n, t
 import analytics
+from travel_phrases import EMERGENCY_CATEGORIES
+from travel_places import NEARBY_CATEGORIES
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-insecure-change-me-in-prod")
@@ -106,6 +109,9 @@ SITEMAP_ROUTES = [
     ("/convert/ebook", 0.6),
     ("/convert/font", 0.6),
     ("/convert/archive", 0.6),
+    ("/seyahat", 0.7),
+    ("/seyahat/acil-ceviri", 0.7),
+    ("/seyahat/yakin-yerler", 0.7),
 ]
 
 _TRACKED_PATHS = {path for path, _ in SITEMAP_ROUTES}
@@ -503,6 +509,64 @@ def mikrotik_hardware():
 @app.route("/mikrotik/hotspot")
 def mikrotik_hotspot():
     return render_template("mikrotik_hotspot.html", active_page="hotspot")
+
+
+@app.route("/seyahat")
+def travel_dashboard():
+    return render_template("travel_dashboard.html", active_page="dashboard")
+
+
+@app.route("/seyahat/acil-ceviri")
+def travel_emergency_translate():
+    return render_template(
+        "travel_emergency.html",
+        active_page="acil-ceviri",
+        categories=EMERGENCY_CATEGORIES,
+    )
+
+
+@app.route("/seyahat/yakin-yerler")
+def travel_nearby():
+    return render_template(
+        "travel_nearby.html",
+        active_page="yakin-yerler",
+        categories=NEARBY_CATEGORIES,
+    )
+
+
+@app.route("/seyahat/reverse-geocode")
+def travel_reverse_geocode():
+    """Koordinatı okunabilir adrese çevirir (OpenStreetMap Nominatim).
+    Konum bu sunucu üzerinden tek seferlik geçer, hiçbir yerde saklanmaz."""
+    try:
+        lat = float(request.args.get("lat", ""))
+        lng = float(request.args.get("lng", ""))
+    except (TypeError, ValueError):
+        return jsonify({"error": "invalid_coords"}), 400
+
+    if not (-90 <= lat <= 90) or not (-180 <= lng <= 180):
+        return jsonify({"error": "invalid_coords"}), 400
+
+    if not analytics.try_acquire_geocode_slot():
+        return jsonify({"error": "rate_limited"}), 429
+
+    try:
+        resp = requests.get(
+            "https://nominatim.openstreetmap.org/reverse",
+            params={"lat": lat, "lon": lng, "format": "jsonv2", "zoom": 18, "addressdetails": 0},
+            headers={"User-Agent": "toolboxquick-travel-assistant/1.0 (contact: kaanbyzt07@gmail.com)"},
+            timeout=4,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+    except (requests.RequestException, ValueError):
+        return jsonify({"error": "geocode_failed"}), 502
+
+    address = data.get("display_name") if isinstance(data, dict) else None
+    if not address:
+        return jsonify({"error": "not_found"}), 404
+
+    return jsonify({"address": address})
 
 
 @app.route("/video-tools")

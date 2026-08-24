@@ -1,0 +1,117 @@
+{% extends "travel_base.html" %}
+{% block title %}{{ t('travel.dashboard.title') }} | toolboxquick{% endblock %}
+{% block meta_description %}{{ t('travel.dashboard.description') }}{% endblock %}
+{% block travel_content %}
+<h1 class="h3 mb-2">✈️ {{ t('travel.dashboard.heading') }}</h1>
+<p class="text-secondary mb-4">{{ t('travel.dashboard.description') }}</p>
+
+<div class="travel-cards">
+    <a href="/seyahat/acil-ceviri" class="tool-card travel-card">
+        <div class="travel-card-header">
+            <div class="travel-card-icon" style="background-color: rgba(244, 63, 94, 0.1); color: #f43f5e;">🆘</div>
+            <span class="travel-card-badge travel-card-badge-active">{{ t('home.badge.active') }}</span>
+        </div>
+        <div>
+            <h3 class="travel-card-title">{{ t('travel.dashboard.emergency.title') }}</h3>
+            <p class="travel-card-desc">{{ t('travel.dashboard.emergency.desc') }}</p>
+        </div>
+    </a>
+
+    <a href="/seyahat/yakin-yerler" class="tool-card travel-card">
+        <div class="travel-card-header">
+            <div class="travel-card-icon" style="background-color: rgba(244, 63, 94, 0.1); color: #f43f5e;">📍</div>
+            <span class="travel-card-badge travel-card-badge-active">{{ t('home.badge.active') }}</span>
+        </div>
+        <div>
+            <h3 class="travel-card-title">{{ t('travel.dashboard.nearby.title') }}</h3>
+            <p class="travel-card-desc">{{ t('travel.dashboard.nearby.desc') }}</p>
+        </div>
+    </a>
+
+    <div class="tool-card travel-card travel-card-soon">
+        <div class="travel-card-header">
+            <div class="travel-card-icon" style="background-color: rgba(148, 163, 184, 0.14); color: var(--text-secondary);">🧭</div>
+            <span class="travel-card-badge travel-card-badge-soon">{{ t('travel.badge.soon') }}</span>
+        </div>
+        <div>
+            <h3 class="travel-card-title">{{ t('travel.dashboard.soon.title') }}</h3>
+            <p class="travel-card-desc">{{ t('travel.dashboard.soon.desc') }}</p>
+        </div>
+    </div>
+</div>
+
+<style>
+    .travel-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 1rem;
+    }
+
+    .travel-card {
+        padding: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.9rem;
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .travel-card-soon {
+        opacity: 0.75;
+    }
+
+    .travel-card:hover:not(.travel-card-soon) {
+        border-color: #f43f5e !important;
+        box-shadow: 0 4px 20px rgba(244, 63, 94, 0.12) !important;
+        transform: translateY(-2px);
+    }
+
+    .travel-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+    }
+
+    .travel-card-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+    }
+
+    .travel-card-badge {
+        font-size: 0.68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        padding: 0.2rem 0.55rem;
+        border-radius: 999px;
+    }
+
+    .travel-card-badge-active {
+        background-color: rgba(34, 197, 94, 0.14);
+        color: #22c55e;
+    }
+
+    .travel-card-badge-soon {
+        background-color: rgba(148, 163, 184, 0.16);
+        color: var(--text-secondary);
+    }
+
+    .travel-card-title {
+        font-size: 1rem;
+        font-weight: 700;
+        margin-bottom: 0.35rem;
+        color: var(--text-color);
+    }
+
+    .travel-card-desc {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        margin: 0;
+    }
+</style>
+{% endblock %}

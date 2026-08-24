@@ -1,0 +1,402 @@
+{% extends "travel_base.html" %}
+{% block title %}{{ t('travel.nearby.title') }} | toolboxquick{% endblock %}
+{% block meta_description %}{{ t('travel.nearby.description') }}{% endblock %}
+{% block travel_content %}
+<a href="/seyahat" class="text-secondary small d-inline-block mb-3">&larr; {{ t('travel.nearby.back_link') }}</a>
+<h1 class="h3 mb-2">📍 {{ t('travel.nearby.heading') }}</h1>
+<p class="text-secondary mb-3">{{ t('travel.nearby.description') }}</p>
+
+<div class="nearby-locate-row mb-3">
+    <button type="button" id="locateBtn" class="nearby-locate-btn" onclick="locate()">{{ t('travel.nearby.locate_btn') }}</button>
+    <span id="locateStatus" class="nearby-status" data-kind="idle">{{ t('travel.nearby.status.idle') }}</span>
+</div>
+
+<div id="coordsBox" class="nearby-coords-box d-none">
+    <div class="nearby-coords-row">
+        <div>
+            <span class="nearby-coords-label">{{ t('travel.nearby.coords_label') }}</span>
+            <span id="coordsValue" class="nearby-coords-value"></span>
+        </div>
+        <div>
+            <span class="nearby-coords-label">{{ t('travel.nearby.accuracy_label') }}</span>
+            <span id="accuracyValue" class="nearby-coords-value"></span>
+        </div>
+    </div>
+    <div class="nearby-address-row">
+        <span class="nearby-coords-label">{{ t('travel.nearby.address_label') }}</span>
+        <span id="addressValue" class="nearby-coords-value nearby-address-value"></span>
+    </div>
+</div>
+
+<h2 class="nearby-section-title">{{ t('travel.nearby.categories_heading') }}</h2>
+<div class="nearby-cat-grid" id="catGrid">
+    {% for cat_key, icon, label_key, query_term in categories %}
+    <button type="button" class="nearby-cat-btn" disabled data-term="{{ query_term }}" onclick="openCategory(this)">
+        <span class="nearby-cat-icon">{{ icon }}</span>
+        <span>{{ t(label_key) }}</span>
+    </button>
+    {% endfor %}
+</div>
+
+<h2 class="nearby-section-title">{{ t('travel.nearby.share_heading') }}</h2>
+<p class="text-secondary small mb-2">{{ t('travel.nearby.share_desc') }}</p>
+<div class="nearby-share-row">
+    <input type="text" id="shareLinkInput" class="form-control" readonly placeholder="—">
+    <button type="button" id="shareBtn" class="nearby-share-btn" disabled onclick="shareLocation()">{{ t('travel.nearby.share_btn') }}</button>
+    <button type="button" id="copyBtn" class="nearby-copy-btn" disabled onclick="copyShareLink()">{{ t('travel.nearby.copy_btn') }}</button>
+</div>
+
+<div class="nearby-privacy-note">{{ t('travel.nearby.privacy_note') }}</div>
+
+<style>
+    .nearby-locate-row {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .nearby-locate-btn {
+        border: none;
+        border-radius: 10px;
+        padding: 0.65rem 1.4rem;
+        background: #f43f5e;
+        color: #ffffff;
+        font-size: 0.92rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .nearby-locate-btn:hover {
+        background: #e11d48;
+    }
+
+    .nearby-locate-btn:focus-visible {
+        outline: 2px solid #f43f5e;
+        outline-offset: 2px;
+    }
+
+    .nearby-status {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+    }
+
+    .nearby-status[data-kind="error"] {
+        color: #ef4444;
+    }
+
+    .nearby-status[data-kind="success"] {
+        color: #22c55e;
+    }
+
+    .nearby-coords-box {
+        display: flex;
+        flex-direction: column;
+        gap: 0.85rem;
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 12px;
+        padding: 0.9rem 1.1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .nearby-coords-row {
+        display: flex;
+        gap: 2rem;
+        flex-wrap: wrap;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .nearby-address-row {
+        border-top: 1px solid var(--card-border);
+        padding-top: 0.75rem;
+    }
+
+    .nearby-address-value {
+        display: block;
+        margin-top: 0.1rem;
+    }
+
+    .nearby-address-value[data-state="loading"],
+    .nearby-address-value[data-state="unavailable"] {
+        font-weight: 400;
+        color: var(--text-secondary);
+        font-style: italic;
+    }
+
+    .nearby-coords-label {
+        display: block;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-secondary);
+        margin-bottom: 0.15rem;
+    }
+
+    .nearby-coords-value {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text-color);
+    }
+
+    .nearby-section-title {
+        font-size: 1rem;
+        font-weight: 700;
+        margin: 1.5rem 0 0.85rem;
+        color: var(--text-color);
+    }
+
+    .nearby-cat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 0.75rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .nearby-cat-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.4rem;
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 12px;
+        padding: 1rem 0.5rem;
+        font-size: 0.85rem;
+        color: var(--text-color);
+        cursor: pointer;
+        transition: border-color 0.15s, transform 0.15s, opacity 0.15s;
+    }
+
+    .nearby-cat-btn:not(:disabled):hover {
+        border-color: #f43f5e;
+        transform: translateY(-2px);
+    }
+
+    .nearby-cat-btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+    }
+
+    .nearby-cat-btn:focus-visible {
+        outline: 2px solid #f43f5e;
+        outline-offset: 2px;
+    }
+
+    .nearby-cat-icon {
+        font-size: 1.5rem;
+    }
+
+    .nearby-share-row {
+        display: flex;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+        margin-bottom: 1.5rem;
+    }
+
+    .nearby-share-row .form-control {
+        flex: 1;
+        min-width: 220px;
+    }
+
+    .nearby-share-btn,
+    .nearby-copy-btn {
+        border: 1px solid var(--btn-outline-border);
+        background: none;
+        color: var(--btn-outline-color);
+        border-radius: 10px;
+        padding: 0.5rem 1.1rem;
+        font-size: 0.85rem;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    .nearby-share-btn:not(:disabled):hover,
+    .nearby-copy-btn:not(:disabled):hover {
+        background-color: var(--btn-outline-hover-bg);
+    }
+
+    .nearby-share-btn:disabled,
+    .nearby-copy-btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+    }
+
+    .nearby-privacy-note {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        border: 1px solid var(--card-border);
+        border-radius: 12px;
+        padding: 0.85rem 1rem;
+        background: var(--card-bg);
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentCoords = null;
+
+    function setStatus(text, kind) {
+        const el = document.getElementById('locateStatus');
+        el.textContent = text;
+        el.dataset.kind = kind;
+    }
+
+    function isValidCoord(value) {
+        return typeof value === 'number' && Number.isFinite(value);
+    }
+
+    function locate() {
+        if (!window.isSecureContext) {
+            setStatus({{ t('travel.nearby.status.insecure')|tojson }}, 'error');
+            return;
+        }
+        if (!('geolocation' in navigator)) {
+            setStatus({{ t('travel.nearby.status.unsupported')|tojson }}, 'error');
+            return;
+        }
+
+        document.getElementById('locateBtn').disabled = true;
+        setStatus({{ t('travel.nearby.status.locating')|tojson }}, 'loading');
+
+        navigator.geolocation.getCurrentPosition(onLocateSuccess, onLocateError, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0,
+        });
+    }
+
+    function onLocateSuccess(position) {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        const accuracy = position.coords.accuracy;
+
+        document.getElementById('locateBtn').disabled = false;
+        document.getElementById('locateBtn').textContent = {{ t('travel.nearby.locate_again_btn')|tojson }};
+
+        if (!isValidCoord(lat) || !isValidCoord(lng)) {
+            setStatus({{ t('travel.nearby.status.error')|tojson }}, 'error');
+            return;
+        }
+
+        currentCoords = { lat, lng, address: null };
+
+        document.getElementById('coordsBox').classList.remove('d-none');
+        document.getElementById('coordsValue').textContent = lat.toFixed(5) + ', ' + lng.toFixed(5);
+        document.getElementById('accuracyValue').textContent =
+            (isValidCoord(accuracy) ? Math.round(accuracy) : '—') + ' ' + {{ t('travel.nearby.accuracy_unit')|tojson }};
+        fetchAddress(lat, lng);
+
+        document.querySelectorAll('.nearby-cat-btn').forEach((btn) => btn.disabled = false);
+
+        const shareUrl = 'https://www.google.com/maps?q=' + encodeURIComponent(lat + ',' + lng);
+        document.getElementById('shareLinkInput').value = shareUrl;
+        document.getElementById('shareBtn').disabled = false;
+        document.getElementById('copyBtn').disabled = false;
+
+        setStatus({{ t('travel.nearby.status.success')|tojson }}, 'success');
+    }
+
+    function fetchAddress(lat, lng, isRetry) {
+        const el = document.getElementById('addressValue');
+        el.dataset.state = 'loading';
+        el.textContent = {{ t('travel.nearby.address_loading')|tojson }};
+
+        fetch('/seyahat/reverse-geocode?lat=' + encodeURIComponent(lat) + '&lng=' + encodeURIComponent(lng))
+            .then((res) => {
+                if (res.status === 429 && !isRetry) {
+                    setTimeout(() => fetchAddress(lat, lng, true), 1200);
+                    return null;
+                }
+                if (!res.ok) throw new Error('geocode_failed');
+                return res.json();
+            })
+            .then((data) => {
+                if (!data) return;
+                if (data.address && currentCoords && currentCoords.lat === lat && currentCoords.lng === lng) {
+                    currentCoords.address = data.address;
+                    el.dataset.state = 'ready';
+                    el.textContent = data.address;
+                } else {
+                    el.dataset.state = 'unavailable';
+                    el.textContent = {{ t('travel.nearby.address_unavailable')|tojson }};
+                }
+            })
+            .catch(() => {
+                el.dataset.state = 'unavailable';
+                el.textContent = {{ t('travel.nearby.address_unavailable')|tojson }};
+            });
+    }
+
+    function onLocateError(error) {
+        document.getElementById('locateBtn').disabled = false;
+
+        let message;
+        switch (error.code) {
+            case error.PERMISSION_DENIED:
+                message = {{ t('travel.nearby.status.permission_denied')|tojson }};
+                break;
+            case error.POSITION_UNAVAILABLE:
+                message = {{ t('travel.nearby.status.unavailable')|tojson }};
+                break;
+            case error.TIMEOUT:
+                message = {{ t('travel.nearby.status.timeout')|tojson }};
+                break;
+            default:
+                message = {{ t('travel.nearby.status.error')|tojson }};
+        }
+        setStatus(message, 'error');
+    }
+
+    function openCategory(btn) {
+        if (!currentCoords || !isValidCoord(currentCoords.lat) || !isValidCoord(currentCoords.lng)) return;
+        const term = btn.dataset.term;
+        const url = 'https://www.google.com/maps/search/' + encodeURIComponent(term) +
+            '/@' + currentCoords.lat + ',' + currentCoords.lng + ',15z';
+        window.open(url, '_blank', 'noopener,noreferrer');
+    }
+
+    function copyShareLink() {
+        const input = document.getElementById('shareLinkInput');
+        if (!input.value) return;
+        const copyBtn = document.getElementById('copyBtn');
+        const originalLabel = copyBtn.textContent;
+
+        const done = () => {
+            copyBtn.textContent = {{ t('travel.nearby.copied')|tojson }};
+            setTimeout(() => copyBtn.textContent = originalLabel, 1600);
+        };
+
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(input.value).then(done).catch(() => {
+                input.select();
+                document.execCommand('copy');
+                done();
+            });
+        } else {
+            input.select();
+            document.execCommand('copy');
+            done();
+        }
+    }
+
+    function shareLocation() {
+        const url = document.getElementById('shareLinkInput').value;
+        if (!url) return;
+
+        const baseText = {{ t('travel.nearby.share_text')|tojson }};
+        const shareText = (currentCoords && currentCoords.address) ? baseText + ' ' + currentCoords.address : baseText;
+
+        if (navigator.share) {
+            navigator.share({
+                title: {{ t('travel.nearby.share_title')|tojson }},
+                text: shareText,
+                url: url,
+            }).catch(() => {});
+        } else {
+            copyShareLink();
+        }
+    }
+</script>
+{% endblock %}
