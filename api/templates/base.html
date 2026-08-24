@@ -237,28 +237,66 @@
             min-width: 0;
         }
 
+        .nav-menu-toggle {
+            display: none;
+            background: none;
+            border: 1px solid var(--btn-outline-border);
+            color: var(--btn-outline-color);
+            border-radius: 8px;
+            padding: 0.35rem 0.65rem;
+            font-size: 1.05rem;
+            line-height: 1;
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .nav-menu-toggle:hover {
+            background-color: var(--btn-outline-hover-bg);
+        }
+
+        .nav-menu-toggle:focus-visible {
+            outline: 2px solid #3b82f6;
+            outline-offset: 2px;
+        }
+
         @media (max-width: 900px) {
             .navbar .container {
+                position: relative;
                 flex-wrap: nowrap;
+            }
+
+            .nav-menu-toggle {
+                display: inline-flex;
             }
 
             .navbar-actions {
-                flex-wrap: nowrap;
-                justify-content: flex-start;
-                overflow-x: auto;
-                -webkit-overflow-scrolling: touch;
-                scrollbar-width: none;
-                gap: 0.5rem !important;
-                padding-bottom: 2px;
-            }
-
-            .navbar-actions::-webkit-scrollbar {
                 display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.6rem !important;
+                background: var(--navbar-bg);
+                border-bottom: 1px solid var(--navbar-border);
+                box-shadow: var(--card-shadow);
+                padding: 0.85rem 1.25rem 1.15rem;
+                z-index: 90;
             }
 
-            .theme-toggle-btn {
-                padding: 0.32rem 0.6rem;
-                font-size: 0.78rem;
+            .navbar-actions.nav-open {
+                display: flex;
+            }
+
+            .navbar-actions .theme-toggle-btn {
+                justify-content: flex-start;
+                width: 100%;
+            }
+
+            .navbar-actions .lang-switcher {
+                width: 100%;
             }
         }
 
@@ -442,7 +480,11 @@
             <a class="navbar-brand d-inline-flex align-items-center gap-2" href="/">
                 <span aria-hidden="true">🧰</span> toolboxquick
             </a>
-            <div class="navbar-actions d-flex align-items-center gap-3">
+            <button type="button" id="navMenuToggle" class="nav-menu-toggle" aria-label="{{ t('nav.menu_aria') }}"
+                aria-expanded="false" aria-controls="navbarActions">
+                <span aria-hidden="true">☰</span>
+            </button>
+            <div class="navbar-actions d-flex align-items-center gap-3" id="navbarActions">
                 <a class="theme-toggle-btn text-decoration-none" href="/araclar"
                     style="border-color: rgba(16, 185, 129, 0.5); color: #10b981;">
                     <span>🛠️</span> <span>{{ t('nav.tools_panel') }}</span>
@@ -574,6 +616,34 @@
             } else {
                 collapseTimer = setTimeout(collapse, AUTO_COLLAPSE_MS);
             }
+        })();
+    </script>
+
+    <script>
+        (function () {
+            const menuBtn = document.getElementById('navMenuToggle');
+            const menu = document.getElementById('navbarActions');
+            if (!menuBtn || !menu) return;
+
+            menuBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                const isOpen = menu.classList.toggle('nav-open');
+                menuBtn.setAttribute('aria-expanded', String(isOpen));
+            });
+
+            document.addEventListener('click', function (e) {
+                if (!menu.contains(e.target) && !menuBtn.contains(e.target)) {
+                    menu.classList.remove('nav-open');
+                    menuBtn.setAttribute('aria-expanded', 'false');
+                }
+            });
+
+            menu.querySelectorAll('a').forEach(function (link) {
+                link.addEventListener('click', function () {
+                    menu.classList.remove('nav-open');
+                    menuBtn.setAttribute('aria-expanded', 'false');
+                });
+            });
         })();
     </script>
 

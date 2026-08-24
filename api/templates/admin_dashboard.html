@@ -219,4 +219,58 @@
         </div>
     </div>
 </div>
+
+<div class="row g-3 mb-3">
+    <div class="col-12">
+        <div class="chart-card">
+            <h2>Konum Sorguları (Seyahat Asistanı)</h2>
+            <p class="text-secondary small mb-3">
+                "Yakın Yerler" aracında sunucudan dış servislere (adres çözümleme: OpenStreetMap Nominatim,
+                yakın yer arama: Overpass API) gerçekten gönderilen sorgu sayısı — koordinat burada tutulmaz, sadece sayaç.
+            </p>
+            {% if location_stats.totals %}
+            <div class="row g-3 mb-3">
+                <div class="col-6 col-md-4">
+                    <div class="stat-tile">
+                        <div class="stat-label">Toplam Adres Sorgusu</div>
+                        <div class="stat-value">{{ location_stats.totals.get('reverse_geocode', 0) }}</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4">
+                    <div class="stat-tile">
+                        <div class="stat-label">Toplam Yakın Yer Sorgusu</div>
+                        <div class="stat-value">{{ location_stats.totals.get('nearby_places', 0) }}</div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% if location_stats.daily %}
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Tarih</th>
+                            <th class="text-end">Adres Sorgusu</th>
+                            <th class="text-end">Yakın Yer Sorgusu</th>
+                            <th class="text-end">Toplam</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in location_stats.daily | reverse %}
+                        <tr>
+                            <td>{{ row.date }}</td>
+                            <td class="text-end">{{ row.reverse_geocode }}</td>
+                            <td class="text-end">{{ row.nearby_places }}</td>
+                            <td class="text-end fw-semibold">{{ row.reverse_geocode + row.nearby_places }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-secondary small mb-0">Henüz veri yok.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
 {% endblock %}

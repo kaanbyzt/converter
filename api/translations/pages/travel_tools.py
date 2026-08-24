@@ -65,6 +65,11 @@ PAGES = {
         "travel.nearby.share_text": "İşte şu anki konumum:",
         "travel.nearby.privacy_note": "🔒 Güvenlik ve gizlilik: Konum bilginiz hiçbir zaman sunucularımıza gönderilmez veya kaydedilmez; yalnızca tarayıcınızda tutulur. Bir kategori butonuna bastığınızda doğrudan Google Haritalar'a yönlendirilirsiniz, aradaki bağlantıda başka hiçbir sunucu araya girmez.",
         "travel.nearby.back_link": "Seyahat Asistanı'na dön",
+        "travel.nearby.close": "Kapat",
+        "travel.nearby.list_loading": "Yakındaki yerler aranıyor...",
+        "travel.nearby.list_error": "Sonuçlar alınamadı. Lütfen tekrar deneyin.",
+        "travel.nearby.list_empty": "Yakında sonuç bulunamadı.",
+        "travel.nearby.get_directions": "🧭 Yol Tarifi",
 
         "travel.emergency.title": "Acil Çeviri",
         "travel.emergency.heading": "Acil Çeviri",
@@ -146,6 +151,11 @@ PAGES = {
         "travel.nearby.share_text": "Here is my current location:",
         "travel.nearby.privacy_note": "🔒 Security & privacy: Your location is never sent to or stored on our servers — it stays in your browser only. Tapping a category button takes you straight to Google Maps, with no other server in between.",
         "travel.nearby.back_link": "Back to Travel Assistant",
+        "travel.nearby.close": "Close",
+        "travel.nearby.list_loading": "Searching nearby places...",
+        "travel.nearby.list_error": "Couldn't fetch results. Please try again.",
+        "travel.nearby.list_empty": "No results found nearby.",
+        "travel.nearby.get_directions": "🧭 Directions",
 
         "travel.emergency.title": "Emergency Translator",
         "travel.emergency.heading": "Emergency Translator",

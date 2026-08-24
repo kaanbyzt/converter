@@ -1,5 +1,6 @@
 TRANSLATIONS = {
     "nav.tools_panel": "Tools",
+    "nav.menu_aria": "Toggle menu",
     "nav.mikrotik_panel": "MikroTik Panel",
     "nav.theme_dark": "Dark",
     "nav.theme_light": "Light",
@@ -19,6 +20,7 @@ TRANSLATIONS = {
     "mk.topbar.home": "Home",
     "mk.topbar.menu_aria": "Open menu",
     "mk.sidebar.title": "MikroTik Tools",
+    "mk.sidebar.group.site": "Site",
     "mk.sidebar.group.general": "General",
     "mk.sidebar.dashboard": "Tools Dashboard",
     "mk.sidebar.guide": "How to Use?",

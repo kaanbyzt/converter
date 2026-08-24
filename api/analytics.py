@@ -33,12 +33,22 @@ _LOGIN_FAIL_PREFIX = "loginfail:"
 _LOGIN_MAX_ATTEMPTS = 5
 _LOGIN_LOCK_SECONDS = 300
 
+_LOCATION_DAILY_PREFIX = "stats:locdaily:"
+_LOCATION_TOTALS_KEY = "stats:loctotals"
+_LOCATION_DAILY_TTL = 60 * 60 * 24 * 40  # gösterilen 14 günden fazla, güvenlik payı
+
 _LOG_PREFIX = "log:"
 _LOG_TTL = 60 * 60 * 24 * 60  # 60 gün saklanır, sonra kendiliğinden silinir
 _LOG_MAX_PER_DAY = 500  # tek günde en fazla bu kadar satır tutulur (depolama sınırı)
 
 _GEOCODE_LOCK_KEY = "geocode:lock"
 _GEOCODE_LOCK_MS = 1100  # Nominatim kullanım politikası: saniyede en fazla 1 istek
+
+_OVERPASS_LOCK_KEY = "overpass:lock"
+_OVERPASS_LOCK_MS = 1100  # Overpass API'ye karşı nazik olmak için aynı basit kilit
+
+_IP_RATE_PREFIX = "iprate:"
+_IP_RATE_PEPPER = os.environ.get("FLASK_SECRET_KEY", "")
 
 
 def _today_str():
@@ -211,13 +221,78 @@ def clear_login_attempts(client_id):
     _pipeline([["DEL", _LOGIN_FAIL_PREFIX + client_id]])
 
 
+def _try_acquire_lock(key, ms):
+    if not is_configured():
+        return True
+    result = _pipeline([["SET", key, "1", "NX", "PX", str(ms)]])
+    if result is None:
+        return True
+    return (result[0] or {}).get("result") is not None
+
+
 def try_acquire_geocode_slot():
     """Dış geocoding servisine (Nominatim) saniyede en fazla 1 istek gitmesini
     sağlayan basit bir kilit. KV yoksa (yerelde env tanımlı değilse) her zaman
     izin verir — bu durumda sınırlama devre dışı kalır ama site çökmez."""
+    return _try_acquire_lock(_GEOCODE_LOCK_KEY, _GEOCODE_LOCK_MS)
+
+
+def try_acquire_overpass_slot():
+    """Dış POI arama servisine (Overpass API) saniyede en fazla 1 istek
+    gitmesini sağlayan basit bir kilit. KV yoksa her zaman izin verir."""
+    return _try_acquire_lock(_OVERPASS_LOCK_KEY, _OVERPASS_LOCK_MS)
+
+
+def log_location_query(kind):
+    """Konum tabanlı dış servis sorgularını (reverse_geocode, nearby_places)
+    günlük ve toplam olarak sayar. Konum/koordinat burada asla tutulmaz,
+    yalnızca bir sayaç artırılır. KV yoksa no-op."""
+    day = _today_str()
+    key = _LOCATION_DAILY_PREFIX + day
+    _pipeline([
+        ["HINCRBY", key, kind, 1],
+        ["EXPIRE", key, str(_LOCATION_DAILY_TTL)],
+        ["HINCRBY", _LOCATION_TOTALS_KEY, kind, 1],
+    ])
+
+
+def get_location_stats(days=14):
+    """Son `days` gün için reverse-geocode/yakın-yer sorgu sayılarını ve
+    toplam sayaçları döner."""
     if not is_configured():
-        return True
-    result = _pipeline([["SET", _GEOCODE_LOCK_KEY, "1", "NX", "PX", str(_GEOCODE_LOCK_MS)]])
+        return {"daily": [], "totals": {}}
+
+    today = datetime.datetime.utcnow().date()
+    date_strs = [
+        (today - datetime.timedelta(days=i)).strftime("%Y-%m-%d")
+        for i in range(days - 1, -1, -1)
+    ]
+    commands = [["HGETALL", _LOCATION_DAILY_PREFIX + d] for d in date_strs]
+    commands.append(["HGETALL", _LOCATION_TOTALS_KEY])
+    result = _pipeline(commands)
     if result is None:
-        return True
-    return (result[0] or {}).get("result") is not None
+        return {"daily": [], "totals": {}}
+
+    daily = []
+    for d, r in zip(date_strs, result[:-1]):
+        flat = (r or {}).get("result") or []
+        counts = {flat[i]: int(flat[i + 1]) for i in range(0, len(flat) - 1, 2)}
+        daily.append({
+            "date": d,
+            "reverse_geocode": counts.get("reverse_geocode", 0),
+            "nearby_places": counts.get("nearby_places", 0),
+        })
+
+    totals_flat = (result[-1] or {}).get("result") or []
+    totals = {totals_flat[i]: int(totals_flat[i + 1]) for i in range(0, len(totals_flat) - 1, 2)}
+
+    return {"daily": daily, "totals": totals}
+
+
+def try_acquire_ip_slot(ip, scope, seconds):
+    """Aynı IP'nin belirli bir konum uç noktasını (`scope`) `seconds`
+    saniyede yalnızca bir kez çağırabilmesini sağlar — bot/otomatik istek
+    koruması. IP ham olarak saklanmaz, tuzlanıp hash'lenir. KV yoksa her
+    zaman izin verir."""
+    digest = hashlib.sha256(f"{_IP_RATE_PEPPER}:{scope}:{ip}".encode()).hexdigest()[:24]
+    return _try_acquire_lock(_IP_RATE_PREFIX + digest, seconds * 1000)

@@ -1,6 +1,7 @@
 TRANSLATIONS = {
     # --- Ortak / Navbar / Footer / Uyarı Paneli ---
     "nav.tools_panel": "Araçlar",
+    "nav.menu_aria": "Menüyü aç/kapat",
     "nav.mikrotik_panel": "MikroTik Panel",
     "nav.theme_dark": "Dark",
     "nav.theme_light": "Light",
@@ -22,6 +23,7 @@ TRANSLATIONS = {
     "mk.topbar.home": "Ana Sayfa",
     "mk.topbar.menu_aria": "Menü Aç",
     "mk.sidebar.title": "MikroTik Araçları",
+    "mk.sidebar.group.site": "Site",
     "mk.sidebar.group.general": "Genel",
     "mk.sidebar.dashboard": "Araçlar Paneli",
     "mk.sidebar.guide": "Nasıl Kullanılır?",

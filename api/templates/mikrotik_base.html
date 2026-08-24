@@ -103,8 +103,30 @@
         }
         .top-bar-sep { color: #4b5563; font-size: 1.1rem; }
         .top-bar-section { font-size: 0.875rem; color: #9ca3af; }
-        .top-bar-home { font-size: 0.8rem; color: #6b7280; margin-left: auto; }
+        .top-bar-home { font-size: 0.8rem; color: #6b7280; }
         .top-bar-home:hover { color: #9ca3af; }
+        .top-bar-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-left: auto;
+        }
+        .top-bar-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            border-radius: 8px;
+            padding: 0.28rem 0.65rem;
+            font-size: 0.78rem;
+            text-decoration: none;
+            white-space: nowrap;
+            flex-shrink: 0;
+            transition: background-color 0.15s;
+        }
+        .top-bar-pill:hover { background-color: rgba(148, 163, 184, 0.1); }
+        .top-bar-pill-tools { border-color: rgba(16, 185, 129, 0.5); color: #10b981; }
+        .top-bar-pill-travel { border-color: rgba(244, 63, 94, 0.5); color: #f43f5e; }
         /* Hamburger button (hidden on desktop) */
         .hamburger-btn {
             display: none;
@@ -186,6 +208,7 @@
             body { height: 100dvh; }
             .hamburger-btn { display: flex; align-items: center; justify-content: center; }
             .top-bar-sep, .top-bar-section { display: none; }
+            .top-bar-pill { display: none; }
             .sidebar {
                 position: fixed;
                 top: 48px;
@@ -544,18 +567,26 @@
             <a href="/" class="top-bar-brand">toolboxquick</a>
             <span class="top-bar-sep">/</span>
             <span class="top-bar-section">{{ t('mk.topbar.section') }}</span>
-            <a href="/" class="top-bar-home">&larr; {{ t('mk.topbar.home') }}</a>
-            <div class="lang-switcher">
-                <button id="lang-toggle" class="lang-toggle-btn" aria-label="{{ t('nav.lang_aria') }}"
-                    aria-haspopup="true" aria-expanded="false">
-                    <span>{{ LANG_META[CURRENT_LANG].flag }}</span> <span>{{ CURRENT_LANG|upper }}</span>
-                </button>
-                <div class="lang-dropdown" id="lang-dropdown">
-                    {% for code in SUPPORTED_LANGS %}
-                    <a class="lang-option{{ ' active' if code == CURRENT_LANG else '' }}" href="{{ LANG_URLS[code] }}">
-                        <span>{{ LANG_META[code].flag }}</span> <span>{{ LANG_META[code].name }}</span>
-                    </a>
-                    {% endfor %}
+            <div class="top-bar-actions">
+                <a href="/araclar" class="top-bar-pill top-bar-pill-tools">
+                    <span>🛠️</span> <span>{{ t('nav.tools_panel') }}</span>
+                </a>
+                <a href="/seyahat" class="top-bar-pill top-bar-pill-travel">
+                    <span>✈️</span> <span>{{ t('nav.travel_panel') }}</span>
+                </a>
+                <a href="/" class="top-bar-home">&larr; {{ t('mk.topbar.home') }}</a>
+                <div class="lang-switcher">
+                    <button id="lang-toggle" class="lang-toggle-btn" aria-label="{{ t('nav.lang_aria') }}"
+                        aria-haspopup="true" aria-expanded="false">
+                        <span>{{ LANG_META[CURRENT_LANG].flag }}</span> <span>{{ CURRENT_LANG|upper }}</span>
+                    </button>
+                    <div class="lang-dropdown" id="lang-dropdown">
+                        {% for code in SUPPORTED_LANGS %}
+                        <a class="lang-option{{ ' active' if code == CURRENT_LANG else '' }}" href="{{ LANG_URLS[code] }}">
+                            <span>{{ LANG_META[code].flag }}</span> <span>{{ LANG_META[code].name }}</span>
+                        </a>
+                        {% endfor %}
+                    </div>
                 </div>
             </div>
         </div>
@@ -566,6 +597,11 @@
         <aside class="sidebar">
             <div class="sidebar-title">{{ t('mk.sidebar.title') }}</div>
             <nav>
+                <div class="sidebar-group">{{ t('mk.sidebar.group.site') }}</div>
+                <ul>
+                    <li><a href="/araclar">🛠️ {{ t('nav.tools_panel') }}</a></li>
+                    <li><a href="/seyahat">✈️ {{ t('nav.travel_panel') }}</a></li>
+                </ul>
                 <div class="sidebar-group">{{ t('mk.sidebar.group.general') }}</div>
                 <ul>
                     <li><a href="/mikrotik" class="{{ 'active' if active_page == 'dashboard' else '' }}">{{ t('mk.sidebar.dashboard') }}</a></li>

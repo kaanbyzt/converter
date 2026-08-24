@@ -1,5 +1,6 @@
 import datetime
 import hmac
+import math
 import os
 import sys
 import zipfile
@@ -18,6 +19,22 @@ from i18n import SUPPORTED_LANGS, init_i18n, t
 import analytics
 from travel_phrases import EMERGENCY_CATEGORIES
 from travel_places import NEARBY_CATEGORIES
+
+# Overpass (OpenStreetMap) "amenity" etiketine göre desteklenen kategoriler.
+# Yalnızca burada olan kategoriler için "Yakında Ara" bir liste gösterir;
+# diğerleri doğrudan Google Haritalar aramasına yönlendirmeye devam eder.
+OVERPASS_CATEGORY_TAGS = {
+    "hospital": "hospital",
+}
+
+
+def _haversine_m(lat1, lng1, lat2, lng2):
+    r = 6371000
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    d_phi = math.radians(lat2 - lat1)
+    d_lambda = math.radians(lng2 - lng1)
+    a = math.sin(d_phi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(d_lambda / 2) ** 2
+    return 2 * r * math.asin(math.sqrt(a))
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-insecure-change-me-in-prod")
@@ -338,7 +355,8 @@ def admin_dashboard():
         {"label": _action_label(action), "raw": action, "count": count}
         for action, count in stats.get("actions", [])
     ]
-    return render_template("admin_dashboard.html", stats=stats)
+    location_stats = analytics.get_location_stats()
+    return render_template("admin_dashboard.html", stats=stats, location_stats=location_stats)
 
 
 @app.route("/admin/logs")
@@ -553,8 +571,13 @@ def travel_reverse_geocode():
     if not (-90 <= lat <= 90) or not (-180 <= lng <= 180):
         return jsonify({"error": "invalid_coords"}), 400
 
+    if not analytics.try_acquire_ip_slot(_client_ip(), "reverse-geocode", 15):
+        return jsonify({"error": "rate_limited"}), 429
+
     if not analytics.try_acquire_geocode_slot():
         return jsonify({"error": "rate_limited"}), 429
+
+    analytics.log_location_query("reverse_geocode")
 
     try:
         resp = requests.get(
@@ -573,6 +596,85 @@ def travel_reverse_geocode():
         return jsonify({"error": "not_found"}), 404
 
     return jsonify({"address": address})
+
+
+@app.route("/seyahat/nearby-places")
+def travel_nearby_places():
+    """Bir kategori için yakındaki gerçek yerleri (OpenStreetMap/Overpass API)
+    isim, mesafe ve adres bilgisiyle listeler. Konum bu sunucu üzerinden tek
+    seferlik geçer, hiçbir yerde saklanmaz."""
+    amenity = OVERPASS_CATEGORY_TAGS.get(request.args.get("category", ""))
+    if not amenity:
+        return jsonify({"error": "unsupported_category"}), 400
+
+    try:
+        lat = float(request.args.get("lat", ""))
+        lng = float(request.args.get("lng", ""))
+    except (TypeError, ValueError):
+        return jsonify({"error": "invalid_coords"}), 400
+
+    if not (-90 <= lat <= 90) or not (-180 <= lng <= 180):
+        return jsonify({"error": "invalid_coords"}), 400
+
+    if not analytics.try_acquire_ip_slot(_client_ip(), "nearby-places", 15):
+        return jsonify({"error": "rate_limited"}), 429
+
+    if not analytics.try_acquire_overpass_slot():
+        return jsonify({"error": "rate_limited"}), 429
+
+    analytics.log_location_query("nearby_places")
+
+    radius_m = 6000
+    query = (
+        "[out:json][timeout:12];"
+        f'(node["amenity"="{amenity}"](around:{radius_m},{lat},{lng});'
+        f'way["amenity"="{amenity}"](around:{radius_m},{lat},{lng}););'
+        "out center 20;"
+    )
+
+    try:
+        resp = requests.post(
+            "https://overpass-api.de/api/interpreter",
+            data={"data": query},
+            headers={"User-Agent": "toolboxquick-travel-assistant/1.0 (contact: kaanbyzt07@gmail.com)"},
+            timeout=13,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+    except (requests.RequestException, ValueError):
+        return jsonify({"error": "lookup_failed"}), 502
+
+    results = []
+    for el in data.get("elements", []) if isinstance(data, dict) else []:
+        tags = el.get("tags") or {}
+        name = tags.get("name")
+        if not name:
+            continue
+
+        if el.get("type") == "node":
+            p_lat, p_lng = el.get("lat"), el.get("lon")
+        else:
+            center = el.get("center") or {}
+            p_lat, p_lng = center.get("lat"), center.get("lon")
+
+        if not isinstance(p_lat, (int, float)) or not isinstance(p_lng, (int, float)):
+            continue
+
+        street = " ".join(p for p in [tags.get("addr:street"), tags.get("addr:housenumber")] if p)
+        city = tags.get("addr:city") or tags.get("addr:suburb") or tags.get("addr:district")
+        address = ", ".join(p for p in [street, city] if p) or None
+
+        results.append({
+            "name": name,
+            "lat": p_lat,
+            "lng": p_lng,
+            "distance_m": round(_haversine_m(lat, lng, p_lat, p_lng)),
+            "address": address,
+            "phone": tags.get("phone") or tags.get("contact:phone"),
+        })
+
+    results.sort(key=lambda r: r["distance_m"])
+    return jsonify({"results": results[:15]})
 
 
 @app.route("/video-tools")

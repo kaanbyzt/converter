@@ -36,11 +36,20 @@
 <h2 class="nearby-section-title">{{ t('travel.nearby.categories_heading') }}</h2>
 <div class="nearby-cat-grid" id="catGrid">
     {% for cat_key, icon, label_key, query_term in categories %}
-    <button type="button" class="nearby-cat-btn" disabled data-term="{{ query_term }}" onclick="openCategory(this)">
+    <button type="button" class="nearby-cat-btn" disabled data-term="{{ query_term }}" data-cat="{{ cat_key }}" onclick="handleCategoryClick(this)">
         <span class="nearby-cat-icon">{{ icon }}</span>
         <span>{{ t(label_key) }}</span>
     </button>
     {% endfor %}
+</div>
+
+<div id="nearbyResultsPanel" class="nearby-results-panel d-none">
+    <div class="nearby-results-header">
+        <h3 id="nearbyResultsTitle" class="nearby-results-title"></h3>
+        <button type="button" class="nearby-results-close" onclick="closeNearbyResults()" aria-label="{{ t('travel.nearby.close') }}">✕</button>
+    </div>
+    <p id="nearbyResultsStatus" class="nearby-results-status d-none"></p>
+    <div id="nearbyResultsList" class="nearby-results-list"></div>
 </div>
 
 <h2 class="nearby-section-title">{{ t('travel.nearby.share_heading') }}</h2>
@@ -207,6 +216,130 @@
         font-size: 1.5rem;
     }
 
+    .nearby-results-panel {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 12px;
+        padding: 1rem 1.1rem 1.2rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .nearby-results-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+    }
+
+    .nearby-results-title {
+        font-size: 0.98rem;
+        font-weight: 700;
+        margin: 0;
+        color: var(--text-color);
+    }
+
+    .nearby-results-close {
+        background: none;
+        border: none;
+        color: var(--text-secondary);
+        font-size: 1rem;
+        cursor: pointer;
+        padding: 0.2rem 0.4rem;
+    }
+
+    .nearby-results-close:hover {
+        color: var(--text-color);
+    }
+
+    .nearby-results-close:focus-visible {
+        outline: 2px solid #f43f5e;
+        outline-offset: 2px;
+    }
+
+    .nearby-results-status {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+    }
+
+    .nearby-results-status[data-kind="error"] {
+        color: #ef4444;
+    }
+
+    .nearby-results-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+    }
+
+    .nearby-result-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.85rem;
+        background: var(--input-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 10px;
+        padding: 0.75rem 0.9rem;
+    }
+
+    .nearby-result-info {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .nearby-result-name {
+        font-weight: 600;
+        font-size: 0.92rem;
+        color: var(--text-color);
+        overflow-wrap: break-word;
+    }
+
+    .nearby-result-meta {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        margin-top: 0.15rem;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .nearby-result-phone {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        margin-top: 0.1rem;
+    }
+
+    .nearby-result-dir-btn {
+        flex-shrink: 0;
+        border: 1px solid #f43f5e;
+        background: none;
+        color: #f43f5e;
+        border-radius: 8px;
+        padding: 0.45rem 0.8rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    .nearby-result-dir-btn:hover {
+        background: rgba(244, 63, 94, 0.1);
+    }
+
+    .nearby-result-dir-btn:focus-visible {
+        outline: 2px solid #f43f5e;
+        outline-offset: 2px;
+    }
+
+    @media (max-width: 480px) {
+        .nearby-result-item {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .nearby-result-dir-btn {
+            width: 100%;
+        }
+    }
+
     .nearby-share-row {
         display: flex;
         gap: 0.6rem;
@@ -256,6 +389,38 @@
 {% block scripts %}
 <script>
     let currentCoords = null;
+    let locateCooldownTimer = null;
+    let locateBaseLabel = null;
+
+    function updateLocateButtonLabel(label) {
+        locateBaseLabel = label;
+        if (!locateCooldownTimer) {
+            document.getElementById('locateBtn').textContent = label;
+        }
+    }
+
+    function startLocateCooldown(seconds) {
+        const btn = document.getElementById('locateBtn');
+        if (locateBaseLabel === null) locateBaseLabel = btn.textContent;
+
+        btn.disabled = true;
+        let remaining = seconds;
+        const render = () => { btn.textContent = locateBaseLabel + ' (' + remaining + 's)'; };
+        render();
+
+        clearInterval(locateCooldownTimer);
+        locateCooldownTimer = setInterval(() => {
+            remaining -= 1;
+            if (remaining <= 0) {
+                clearInterval(locateCooldownTimer);
+                locateCooldownTimer = null;
+                btn.disabled = false;
+                btn.textContent = locateBaseLabel;
+            } else {
+                render();
+            }
+        }, 1000);
+    }
 
     function setStatus(text, kind) {
         const el = document.getElementById('locateStatus');
@@ -302,7 +467,7 @@
             return;
         }
 
-        document.getElementById('locateBtn').disabled = true;
+        startLocateCooldown(15);
         setStatus({{ t('travel.nearby.status.locating')|tojson }}, 'loading');
 
         navigator.geolocation.getCurrentPosition(onLocateSuccess, onLocateError, {
@@ -317,8 +482,7 @@
         const lng = position.coords.longitude;
         const accuracy = position.coords.accuracy;
 
-        document.getElementById('locateBtn').disabled = false;
-        document.getElementById('locateBtn').textContent = {{ t('travel.nearby.locate_again_btn')|tojson }};
+        updateLocateButtonLabel({{ t('travel.nearby.locate_again_btn')|tojson }});
 
         if (!isValidCoord(lat) || !isValidCoord(lng)) {
             setStatus({{ t('travel.nearby.status.error')|tojson }}, 'error');
@@ -375,8 +539,6 @@
     }
 
     function onLocateError(error) {
-        document.getElementById('locateBtn').disabled = false;
-
         let message;
         switch (error.code) {
             case error.PERMISSION_DENIED:
@@ -395,12 +557,129 @@
         setStatus(message, 'error');
     }
 
+    const LIST_MODE_CATEGORIES = ['hospital'];
+
+    function handleCategoryClick(btn) {
+        if (LIST_MODE_CATEGORIES.includes(btn.dataset.cat)) {
+            openNearbyList(btn);
+        } else {
+            openCategory(btn);
+        }
+    }
+
     function openCategory(btn) {
         if (!currentCoords || !isValidCoord(currentCoords.lat) || !isValidCoord(currentCoords.lng)) return;
         const term = btn.dataset.term;
         const url = 'https://www.google.com/maps/search/' + encodeURIComponent(term) +
             '/@' + currentCoords.lat + ',' + currentCoords.lng + ',15z';
         window.open(url, '_blank', 'noopener,noreferrer');
+    }
+
+    function closeNearbyResults() {
+        document.getElementById('nearbyResultsPanel').classList.add('d-none');
+    }
+
+    function setListStatus(text, kind) {
+        const el = document.getElementById('nearbyResultsStatus');
+        if (kind === 'done') {
+            el.classList.add('d-none');
+            return;
+        }
+        el.textContent = text;
+        el.dataset.kind = kind;
+        el.classList.remove('d-none');
+    }
+
+    function formatDistance(meters) {
+        if (meters < 1000) return Math.round(meters) + ' m';
+        return (meters / 1000).toFixed(1).replace('.', ',') + ' km';
+    }
+
+    function openNearbyList(btn) {
+        if (!currentCoords || !isValidCoord(currentCoords.lat) || !isValidCoord(currentCoords.lng)) return;
+
+        const panel = document.getElementById('nearbyResultsPanel');
+        const title = document.getElementById('nearbyResultsTitle');
+        const labelSpan = btn.querySelector('span:last-child');
+
+        title.textContent = labelSpan ? labelSpan.textContent : '';
+        document.getElementById('nearbyResultsList').innerHTML = '';
+        panel.classList.remove('d-none');
+        panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        setListStatus({{ t('travel.nearby.list_loading')|tojson }}, 'loading');
+
+        fetchNearbyList(btn.dataset.cat, currentCoords.lat, currentCoords.lng, false);
+    }
+
+    function fetchNearbyList(category, lat, lng, isRetry) {
+        fetch('/seyahat/nearby-places?category=' + encodeURIComponent(category) +
+            '&lat=' + encodeURIComponent(lat) + '&lng=' + encodeURIComponent(lng))
+            .then((res) => {
+                if (res.status === 429 && !isRetry) {
+                    setTimeout(() => fetchNearbyList(category, lat, lng, true), 1200);
+                    return null;
+                }
+                if (!res.ok) throw new Error('lookup_failed');
+                return res.json();
+            })
+            .then((data) => {
+                if (!data) return;
+                renderNearbyResults(data.results || []);
+            })
+            .catch(() => setListStatus({{ t('travel.nearby.list_error')|tojson }}, 'error'));
+    }
+
+    function renderNearbyResults(results) {
+        const list = document.getElementById('nearbyResultsList');
+        list.innerHTML = '';
+
+        if (!results.length) {
+            setListStatus({{ t('travel.nearby.list_empty')|tojson }}, 'empty');
+            return;
+        }
+        setListStatus('', 'done');
+
+        results.forEach((place) => {
+            if (!isValidCoord(place.lat) || !isValidCoord(place.lng)) return;
+
+            const item = document.createElement('div');
+            item.className = 'nearby-result-item';
+
+            const info = document.createElement('div');
+            info.className = 'nearby-result-info';
+
+            const nameEl = document.createElement('div');
+            nameEl.className = 'nearby-result-name';
+            nameEl.textContent = String(place.name || '');
+            info.appendChild(nameEl);
+
+            const metaEl = document.createElement('div');
+            metaEl.className = 'nearby-result-meta';
+            metaEl.textContent = formatDistance(place.distance_m) + (place.address ? ' · ' + place.address : '');
+            info.appendChild(metaEl);
+
+            if (place.phone) {
+                const phoneEl = document.createElement('div');
+                phoneEl.className = 'nearby-result-phone';
+                phoneEl.textContent = '📞 ' + place.phone;
+                info.appendChild(phoneEl);
+            }
+
+            item.appendChild(info);
+
+            const dirBtn = document.createElement('button');
+            dirBtn.type = 'button';
+            dirBtn.className = 'nearby-result-dir-btn';
+            dirBtn.textContent = {{ t('travel.nearby.get_directions')|tojson }};
+            dirBtn.addEventListener('click', () => {
+                const url = 'https://www.google.com/maps/dir/?api=1&origin=' + currentCoords.lat + ',' + currentCoords.lng +
+                    '&destination=' + place.lat + ',' + place.lng;
+                window.open(url, '_blank', 'noopener,noreferrer');
+            });
+            item.appendChild(dirBtn);
+
+            list.appendChild(item);
+        });
     }
 
     function copyShareLink() {
