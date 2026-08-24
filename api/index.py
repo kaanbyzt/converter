@@ -20,12 +20,27 @@ import analytics
 from travel_phrases import EMERGENCY_CATEGORIES
 from travel_places import NEARBY_CATEGORIES
 
-# Overpass (OpenStreetMap) "amenity" etiketine göre desteklenen kategoriler.
-# Yalnızca burada olan kategoriler için "Yakında Ara" bir liste gösterir;
-# diğerleri doğrudan Google Haritalar aramasına yönlendirmeye devam eder.
-OVERPASS_CATEGORY_TAGS = {
-    "hospital": "hospital",
+# Overpass (OpenStreetMap) etiket filtrelerine göre desteklenen kategoriler.
+# Yalnızca burada olan kategoriler için "Yakında Ara" gerçek bir liste gösterir;
+# "consulate" gibi OSM'de tutarlı/ülkeye özel etiketlenmeyen kategoriler
+# doğrudan Google Haritalar aramasına yönlendirmeye devam eder.
+OVERPASS_CATEGORY_FILTERS = {
+    "hospital": ['["amenity"="hospital"]'],
+    "pharmacy": ['["amenity"="pharmacy"]'],
+    "police": ['["amenity"="police"]'],
+    "restaurant": ['["amenity"="restaurant"]'],
+    "atm": ['["amenity"="atm"]'],
+    "gas": ['["amenity"="fuel"]'],
+    "transit": [
+        '["highway"="bus_stop"]',
+        '["amenity"="bus_station"]',
+        '["railway"="station"]',
+        '["railway"="tram_stop"]',
+    ],
 }
+
+# category -> çeviri anahtarı (isimsiz OSM sonuçlarında yedek isim göstermek için)
+_CATEGORY_LABEL_KEYS = {key: label_key for key, _icon, label_key, _term in NEARBY_CATEGORIES}
 
 
 def _haversine_m(lat1, lng1, lat2, lng2):
@@ -603,8 +618,9 @@ def travel_nearby_places():
     """Bir kategori için yakındaki gerçek yerleri (OpenStreetMap/Overpass API)
     isim, mesafe ve adres bilgisiyle listeler. Konum bu sunucu üzerinden tek
     seferlik geçer, hiçbir yerde saklanmaz."""
-    amenity = OVERPASS_CATEGORY_TAGS.get(request.args.get("category", ""))
-    if not amenity:
+    category = request.args.get("category", "")
+    filters = OVERPASS_CATEGORY_FILTERS.get(category)
+    if not filters:
         return jsonify({"error": "unsupported_category"}), 400
 
     try:
@@ -625,29 +641,29 @@ def travel_nearby_places():
     analytics.log_location_query("nearby_places")
 
     radius_m = 6000
-    query = (
-        "[out:json][timeout:12];"
-        f'(node["amenity"="{amenity}"](around:{radius_m},{lat},{lng});'
-        f'way["amenity"="{amenity}"](around:{radius_m},{lat},{lng}););'
-        "out center 20;"
+    clauses = "".join(
+        f'node{f}(around:{radius_m},{lat},{lng});way{f}(around:{radius_m},{lat},{lng});'
+        for f in filters
     )
+    query = f"[out:json][timeout:15];({clauses});out center 30;"
 
     try:
         resp = requests.post(
             "https://overpass-api.de/api/interpreter",
             data={"data": query},
             headers={"User-Agent": "toolboxquick-travel-assistant/1.0 (contact: kaanbyzt07@gmail.com)"},
-            timeout=13,
+            timeout=16,
         )
         resp.raise_for_status()
         data = resp.json()
     except (requests.RequestException, ValueError):
         return jsonify({"error": "lookup_failed"}), 502
 
+    fallback_name = t(_CATEGORY_LABEL_KEYS.get(category, ""))
     results = []
     for el in data.get("elements", []) if isinstance(data, dict) else []:
         tags = el.get("tags") or {}
-        name = tags.get("name")
+        name = tags.get("name") or tags.get("operator") or fallback_name
         if not name:
             continue
 
