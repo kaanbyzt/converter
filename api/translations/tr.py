@@ -1,5 +1,6 @@
 TRANSLATIONS = {
     # --- Ortak / Navbar / Footer / Uyarı Paneli ---
+    "nav.tools_panel": "Araçlar",
     "nav.mikrotik_panel": "MikroTik Panel",
     "nav.theme_dark": "Dark",
     "nav.theme_light": "Light",

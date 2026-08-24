@@ -1,4 +1,5 @@
 TRANSLATIONS = {
+    "nav.tools_panel": "Tools",
     "nav.mikrotik_panel": "MikroTik Panel",
     "nav.theme_dark": "Dark",
     "nav.theme_light": "Light",
