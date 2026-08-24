@@ -45,7 +45,7 @@ _GEOCODE_LOCK_KEY = "geocode:lock"
 _GEOCODE_LOCK_MS = 1100  # Nominatim kullanım politikası: saniyede en fazla 1 istek
 
 _OVERPASS_LOCK_KEY = "overpass:lock"
-_OVERPASS_LOCK_MS = 1100  # Overpass API'ye karşı nazik olmak için aynı basit kilit
+_OVERPASS_LOCK_MS = 2500  # ücretsiz Overpass sunucusu yoğun altında hızlı tükeniyor; daha temkinli aralık
 
 _IP_RATE_PREFIX = "iprate:"
 _IP_RATE_PEPPER = os.environ.get("FLASK_SECRET_KEY", "")

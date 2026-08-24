@@ -68,6 +68,8 @@ PAGES = {
         "travel.nearby.close": "Kapat",
         "travel.nearby.list_loading": "Yakındaki yerler aranıyor...",
         "travel.nearby.list_error": "Sonuçlar alınamadı. Lütfen tekrar deneyin.",
+        "travel.nearby.list_retrying": "Sunucu şu an yoğun, birkaç saniye içinde otomatik olarak tekrar denenecek...",
+        "travel.nearby.category_cooldown": "Botlara karşı koruma nedeniyle yeni bir arama için {seconds} saniye bekleyin.",
         "travel.nearby.list_empty": "Yakında sonuç bulunamadı.",
         "travel.nearby.get_directions": "🧭 Yol Tarifi",
 
@@ -154,6 +156,8 @@ PAGES = {
         "travel.nearby.close": "Close",
         "travel.nearby.list_loading": "Searching nearby places...",
         "travel.nearby.list_error": "Couldn't fetch results. Please try again.",
+        "travel.nearby.list_retrying": "Server is busy right now, retrying automatically in a few seconds...",
+        "travel.nearby.category_cooldown": "For bot protection, please wait {seconds}s before searching again.",
         "travel.nearby.list_empty": "No results found nearby.",
         "travel.nearby.get_directions": "🧭 Directions",
 

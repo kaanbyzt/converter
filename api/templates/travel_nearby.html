@@ -34,6 +34,7 @@
 </div>
 
 <h2 class="nearby-section-title">{{ t('travel.nearby.categories_heading') }}</h2>
+<p id="categoryCooldownNote" class="nearby-cooldown-note d-none"></p>
 <div class="nearby-cat-grid" id="catGrid">
     {% for cat_key, icon, label_key, query_term in categories %}
     <button type="button" class="nearby-cat-btn" disabled data-term="{{ query_term }}" data-cat="{{ cat_key }}" onclick="handleCategoryClick(this)">
@@ -173,6 +174,13 @@
         font-weight: 700;
         margin: 1.5rem 0 0.85rem;
         color: var(--text-color);
+    }
+
+    .nearby-cooldown-note {
+        font-size: 0.8rem;
+        color: #f59e0b;
+        margin: -0.4rem 0 0.85rem;
+        font-variant-numeric: tabular-nums;
     }
 
     .nearby-cat-grid {
@@ -391,6 +399,40 @@
     let currentCoords = null;
     let locateCooldownTimer = null;
     let locateBaseLabel = null;
+    let hasLocation = false;
+    let categoryCooldownRemaining = 0;
+    let categoryCooldownTimer = null;
+
+    function applyCategoryButtonStates() {
+        document.querySelectorAll('.nearby-cat-btn').forEach((btn) => {
+            const isListMode = LIST_MODE_CATEGORIES.includes(btn.dataset.cat);
+            btn.disabled = !hasLocation || (isListMode && categoryCooldownRemaining > 0);
+        });
+
+        const note = document.getElementById('categoryCooldownNote');
+        if (categoryCooldownRemaining > 0) {
+            note.textContent = {{ t('travel.nearby.category_cooldown')|tojson }}.replace('{seconds}', categoryCooldownRemaining);
+            note.classList.remove('d-none');
+        } else {
+            note.classList.add('d-none');
+        }
+    }
+
+    function startCategoryCooldown(seconds) {
+        categoryCooldownRemaining = seconds;
+        applyCategoryButtonStates();
+
+        clearInterval(categoryCooldownTimer);
+        categoryCooldownTimer = setInterval(() => {
+            categoryCooldownRemaining -= 1;
+            if (categoryCooldownRemaining <= 0) {
+                categoryCooldownRemaining = 0;
+                clearInterval(categoryCooldownTimer);
+                categoryCooldownTimer = null;
+            }
+            applyCategoryButtonStates();
+        }, 1000);
+    }
 
     function updateLocateButtonLabel(label) {
         locateBaseLabel = label;
@@ -497,7 +539,8 @@
             (isValidCoord(accuracy) ? Math.round(accuracy) : '—') + ' ' + {{ t('travel.nearby.accuracy_unit')|tojson }};
         fetchAddress(lat, lng);
 
-        document.querySelectorAll('.nearby-cat-btn').forEach((btn) => btn.disabled = false);
+        hasLocation = true;
+        applyCategoryButtonStates();
 
         const shareUrl = 'https://www.google.com/maps?q=' + encodeURIComponent(lat + ',' + lng);
         document.getElementById('shareLinkInput').value = shareUrl;
@@ -595,8 +638,11 @@
         return (meters / 1000).toFixed(1).replace('.', ',') + ' km';
     }
 
+    const NEARBY_RETRY_DELAYS_MS = [2500, 4500]; // sunucu/Overpass meşgulse art arda 2 kez otomatik dener
+
     function openNearbyList(btn) {
         if (!currentCoords || !isValidCoord(currentCoords.lat) || !isValidCoord(currentCoords.lng)) return;
+        if (categoryCooldownRemaining > 0) return;
 
         const panel = document.getElementById('nearbyResultsPanel');
         const title = document.getElementById('nearbyResultsTitle');
@@ -608,25 +654,26 @@
         panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         setListStatus({{ t('travel.nearby.list_loading')|tojson }}, 'loading');
 
-        fetchNearbyList(btn.dataset.cat, currentCoords.lat, currentCoords.lng, false);
+        startCategoryCooldown(15);
+        fetchNearbyList(btn.dataset.cat, currentCoords.lat, currentCoords.lng, 0);
     }
 
-    function fetchNearbyList(category, lat, lng, isRetry) {
+    function fetchNearbyList(category, lat, lng, attempt) {
         fetch('/seyahat/nearby-places?category=' + encodeURIComponent(category) +
             '&lat=' + encodeURIComponent(lat) + '&lng=' + encodeURIComponent(lng))
             .then((res) => {
-                if (res.status === 429 && !isRetry) {
-                    setTimeout(() => fetchNearbyList(category, lat, lng, true), 1200);
-                    return null;
-                }
                 if (!res.ok) throw new Error('lookup_failed');
                 return res.json();
             })
-            .then((data) => {
-                if (!data) return;
-                renderNearbyResults(data.results || []);
-            })
-            .catch(() => setListStatus({{ t('travel.nearby.list_error')|tojson }}, 'error'));
+            .then((data) => renderNearbyResults(data.results || []))
+            .catch(() => {
+                if (attempt < NEARBY_RETRY_DELAYS_MS.length) {
+                    setListStatus({{ t('travel.nearby.list_retrying')|tojson }}, 'loading');
+                    setTimeout(() => fetchNearbyList(category, lat, lng, attempt + 1), NEARBY_RETRY_DELAYS_MS[attempt]);
+                } else {
+                    setListStatus({{ t('travel.nearby.list_error')|tojson }}, 'error');
+                }
+            });
     }
 
     function renderNearbyResults(results) {
