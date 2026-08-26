@@ -216,6 +216,10 @@
     .card-ai:hover { border-color: #22d3ee !important; box-shadow: 0 4px 20px rgba(34, 211, 238, 0.08) !important; }
     .icon-ai { background-color: rgba(34, 211, 238, 0.1); color: #22d3ee; }
 
+    .cat-utility { color: var(--text-color); }
+    .card-utility:hover { border-color: #06b6d4 !important; box-shadow: 0 4px 20px rgba(6, 182, 212, 0.08) !important; }
+    .icon-utility { background-color: rgba(6, 182, 212, 0.1); color: #06b6d4; }
+
     /* Araç Arama */
     .tool-search-wrap {
         position: relative;
@@ -577,6 +581,16 @@
                 <p class="tool-desc">{{ t('home.conv.image.desc') }}</p>
             </div>
         </a>
+        <a href="/convert/image-compress" class="tool-card card-converter">
+            <div class="tool-header">
+                <div class="tool-icon icon-converter">🗜️</div>
+                <span class="tool-badge badge-active">{{ t('home.badge.active') }}</span>
+            </div>
+            <div>
+                <h3 class="tool-title">{{ t('home.conv.image_compress.title') }}</h3>
+                <p class="tool-desc">{{ t('home.conv.image_compress.desc') }}</p>
+            </div>
+        </a>
         <a href="/convert/audio" class="tool-card card-converter">
             <div class="tool-header">
                 <div class="tool-icon icon-converter">🎵</div>
@@ -830,6 +844,16 @@
                 <p class="tool-desc">{{ t('home.video.record_camera.desc') }}</p>
             </div>
         </a>
+        <a href="/video-tools/gif" class="tool-card card-video">
+            <div class="tool-header">
+                <div class="tool-icon icon-video">🎞️</div>
+                <span class="tool-badge badge-beta">{{ t('home.badge.beta') }}</span>
+            </div>
+            <div>
+                <h3 class="tool-title">{{ t('home.video.gif.title') }}</h3>
+                <p class="tool-desc">{{ t('home.video.gif.desc') }}</p>
+            </div>
+        </a>
     </div>
     </div>
 </section>
@@ -926,6 +950,28 @@
     </div>
     </div>
 </section>
+
+<!-- UTILITY TOOLS -->
+<section class="category-section" id="cat-utility">
+    <button class="category-toggle category-title cat-utility" onclick="toggleCat('cat-utility')" aria-expanded="false">
+        <span class="category-title-inner">🧩 {{ t('home.cat.utility') }}</span>
+        <span class="cat-chevron">▼</span>
+    </button>
+    <div class="category-body" id="cat-utility-body">
+    <div class="tools-grid">
+        <a href="/qr-kod" class="tool-card card-utility">
+            <div class="tool-header">
+                <div class="tool-icon icon-utility">📱</div>
+                <span class="tool-badge badge-active">{{ t('home.badge.active') }}</span>
+            </div>
+            <div>
+                <h3 class="tool-title">{{ t('home.utility.qr.title') }}</h3>
+                <p class="tool-desc">{{ t('home.utility.qr.desc') }}</p>
+            </div>
+        </a>
+    </div>
+    </div>
+</section>
 {% endblock %}
 
 {% block scripts %}
@@ -943,7 +989,8 @@ const TOOL_CATEGORY_LABELS = {
     pdf: {{ t('home.cat.pdf')|tojson }},
     converter: {{ t('home.cat.converter')|tojson }},
     video: {{ t('home.cat.video')|tojson }},
-    audio: {{ t('home.cat.audio')|tojson }}
+    audio: {{ t('home.cat.audio')|tojson }},
+    utility: {{ t('home.cat.utility')|tojson }}
 };
 
 (function () {

@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from i18n import SUPPORTED_LANGS, init_i18n, t
 import analytics
-from travel_phrases import EMERGENCY_CATEGORIES
+from travel_phrases import EMERGENCY_CATEGORIES, PHRASEBOOK_CATEGORIES
 from travel_places import NEARBY_CATEGORIES
 
 # Overpass (OpenStreetMap) etiket filtrelerine göre desteklenen kategoriler.
@@ -134,7 +134,10 @@ SITEMAP_ROUTES = [
     ("/video-tools/resize", 0.5),
     ("/video-tools/text-to-speech", 0.5),
     ("/video-tools/record-camera", 0.5),
+    ("/video-tools/gif", 0.5),
+    ("/qr-kod", 0.6),
     ("/convert/image", 0.6),
+    ("/convert/image-compress", 0.6),
     ("/convert/audio", 0.6),
     ("/convert/video", 0.6),
     ("/convert/extract", 0.6),
@@ -145,6 +148,7 @@ SITEMAP_ROUTES = [
     ("/seyahat", 0.7),
     ("/seyahat/acil-ceviri", 0.7),
     ("/seyahat/yakin-yerler", 0.7),
+    ("/seyahat/konusma-kilavuzu", 0.7),
 ]
 
 _TRACKED_PATHS = {path for path, _ in SITEMAP_ROUTES}
@@ -172,6 +176,7 @@ TOOL_CARDS = {
     "/pdf-tools/pdf-to-excel": ("pdf", "📊", "active", "home.pdf.to_excel.title", "home.pdf.to_excel.desc"),
     "/pdf-tools/ppt-to-pdf": ("pdf", "📉", "active", "home.pdf.ppt_to_pdf.title", "home.pdf.ppt_to_pdf.desc"),
     "/convert/image": ("converter", "🖼️", "active", "home.conv.image.title", "home.conv.image.desc"),
+    "/convert/image-compress": ("converter", "🗜️", "active", "home.conv.image_compress.title", "home.conv.image_compress.desc"),
     "/convert/audio": ("converter", "🎵", "active", "home.conv.audio.title", "home.conv.audio.desc"),
     "/convert/video": ("converter", "🎬", "active", "home.conv.video.title", "home.conv.video.desc"),
     "/convert/extract": ("converter", "🗄️", "active", "home.conv.extract.title", "home.conv.extract.desc"),
@@ -196,6 +201,7 @@ TOOL_CARDS = {
     "/video-tools/stabilize": ("video", "⚖️", "beta", "home.video.stabilize.title", "home.video.stabilize.desc"),
     "/video-tools/add-audio": ("video", "🎵", "beta", "home.video.add_audio.title", "home.video.add_audio.desc"),
     "/video-tools/record-camera": ("video", "📹", "beta", "home.video.record_camera.title", "home.video.record_camera.desc"),
+    "/video-tools/gif": ("video", "🎞️", "beta", "home.video.gif.title", "home.video.gif.desc"),
     "/audio-tools/trim": ("audio", "✂️", "beta", "home.audio.trim.title", "home.audio.trim.desc"),
     "/audio-tools/record": ("audio", "🎙️", "beta", "home.audio.record.title", "home.audio.record.desc"),
     "/audio-tools/volume": ("audio", "📢", "beta", "home.audio.volume.title", "home.audio.volume.desc"),
@@ -204,6 +210,7 @@ TOOL_CARDS = {
     "/audio-tools/equalizer": ("audio", "🎚️", "beta", "home.audio.equalizer.title", "home.audio.equalizer.desc"),
     "/audio-tools/joiner": ("audio", "🔗", "beta", "home.audio.joiner.title", "home.audio.joiner.desc"),
     "/audio-tools/reverse": ("audio", "🔄", "beta", "home.audio.reverse.title", "home.audio.reverse.desc"),
+    "/qr-kod": ("utility", "📱", "active", "home.utility.qr.title", "home.utility.qr.desc"),
 }
 _POPULAR_TOOLS_LIMIT = 6
 
@@ -573,6 +580,15 @@ def travel_nearby():
     )
 
 
+@app.route("/seyahat/konusma-kilavuzu")
+def travel_phrasebook():
+    return render_template(
+        "travel_phrasebook.html",
+        active_page="konusma-kilavuzu",
+        categories=PHRASEBOOK_CATEGORIES,
+    )
+
+
 @app.route("/seyahat/reverse-geocode")
 def travel_reverse_geocode():
     """Koordinatı okunabilir adrese çevirir (OpenStreetMap Nominatim).
@@ -820,6 +836,11 @@ def video_screen_record():
 @app.route("/convert/image")
 def convert_image():
     return render_template("convert_image.html")
+
+
+@app.route("/convert/image-compress")
+def convert_image_compress():
+    return render_template("image_compress.html")
 
 
 # Temporary directory setup for ZIP extractor
@@ -1120,6 +1141,16 @@ def video_text_to_speech():
 @app.route("/video-tools/record-camera")
 def video_record_camera():
     return render_template("video_record_camera.html")
+
+@app.route("/video-tools/gif")
+def video_gif():
+    return render_template("video_gif.html")
+
+
+# --- UTILITY TOOLS ---
+@app.route("/qr-kod")
+def qr_generator():
+    return render_template("qr_generator.html")
 
 
 # --- CONVERTERS ---

@@ -66,6 +66,7 @@ TRANSLATIONS = {
     "home.cat.converter": "Converters",
     "home.cat.video": "Video Tools",
     "home.cat.audio": "Audio Tools",
+    "home.cat.utility": "Other Tools",
 
     "home.ai.compare.title": "AI Comparison",
     "home.ai.compare.desc": "Compare ChatGPT, Claude, Gemini and more by use case, price and performance, then jump straight to the one you click.",
@@ -123,6 +124,8 @@ TRANSLATIONS = {
     "home.conv.font.desc": "Convert between TTF, OTF and WOFF font formats.",
     "home.conv.archive.title": "Archive Converter",
     "home.conv.archive.desc": "Convert between ZIP, TAR and GZ archive package formats.",
+    "home.conv.image_compress.title": "Image Compressor",
+    "home.conv.image_compress.desc": "Shrink image file size with quality and width controls.",
 
     "home.video.screen_record.title": "Screen Recorder",
     "home.video.screen_record.desc": "Record your screen or specific windows locally, right from your browser.",
@@ -158,6 +161,8 @@ TRANSLATIONS = {
     "home.video.add_audio.desc": "Add background music to your videos.",
     "home.video.record_camera.title": "Camera Recorder",
     "home.video.record_camera.desc": "Record video using your webcam and microphone.",
+    "home.video.gif.title": "Video to GIF",
+    "home.video.gif.desc": "Turn a clip from your video into an animated GIF.",
 
     "home.audio.trim.title": "Audio Trimmer",
     "home.audio.trim.desc": "Cut your music or audio files using a visual waveform and download.",
@@ -175,6 +180,9 @@ TRANSLATIONS = {
     "home.audio.joiner.desc": "Combine multiple audio files into one, in order.",
     "home.audio.reverse.title": "Reverse Audio",
     "home.audio.reverse.desc": "Flip an audio track so it plays backwards.",
+
+    "home.utility.qr.title": "QR Code Generator",
+    "home.utility.qr.desc": "Turn text or a link into a QR code and download it as PNG.",
 
     "err.min_two_pdfs": "Please upload at least two PDF files.",
     "err.invalid_pdf": "Please select a valid PDF file.",

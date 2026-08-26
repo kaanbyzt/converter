@@ -1,0 +1,277 @@
+{% extends "travel_base.html" %}
+{% block title %}{{ t('travel.phrasebook.title') }} | toolboxquick{% endblock %}
+{% block meta_description %}{{ t('travel.phrasebook.description') }}{% endblock %}
+{% block travel_content %}
+<a href="/seyahat" class="text-secondary small d-inline-block mb-3">&larr; {{ t('travel.phrasebook.back_link') }}</a>
+<h1 class="h3 mb-2">📖 {{ t('travel.phrasebook.heading') }}</h1>
+<p class="text-secondary mb-3">{{ t('travel.phrasebook.description') }}</p>
+
+<div class="travel-search-wrap mb-2">
+    <input type="text" id="phraseSearch" class="form-control" placeholder="{{ t('travel.phrasebook.search_placeholder') }}" autocomplete="off">
+</div>
+<p id="ttsWarning" class="alert alert-warning small d-none">{{ t('travel.phrasebook.tts_unsupported') }}</p>
+
+{% for cat_key, cat_label_key, phrases in categories %}
+<section class="phrase-category" data-cat="{{ cat_key }}">
+    <h2 class="phrase-cat-title">{{ t(cat_label_key) }}</h2>
+    <div class="phrase-grid">
+        {% for tr_text, en_text in phrases %}
+        <div class="phrase-card" role="button" tabindex="0" data-tr="{{ tr_text }}" data-en="{{ en_text }}"
+             onclick="openPhrase(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openPhrase(this)}">
+            <span class="phrase-tr">{{ tr_text }}</span>
+            <span class="phrase-en">{{ en_text }}</span>
+            <button type="button" class="phrase-speak-btn" data-en="{{ en_text }}"
+                    onclick="event.stopPropagation(); speakText(this.dataset.en)"
+                    aria-label="{{ t('travel.phrasebook.speak') }}">🔊</button>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endfor %}
+
+<p id="noResults" class="text-secondary small d-none">{{ t('travel.phrasebook.no_results') }}</p>
+
+<div id="phraseModal" class="phrase-modal" onclick="closePhraseModal()">
+    <button type="button" class="phrase-modal-close" onclick="event.stopPropagation(); closePhraseModal()" aria-label="{{ t('travel.phrasebook.close') }}">✕</button>
+    <div class="phrase-modal-en" id="phraseModalEn"></div>
+    <div class="phrase-modal-tr" id="phraseModalTr"></div>
+    <button type="button" class="phrase-modal-speak" onclick="event.stopPropagation(); speakText(document.getElementById('phraseModalEn').textContent)">
+        🔊 {{ t('travel.phrasebook.speak') }}
+    </button>
+</div>
+
+<style>
+    .travel-search-wrap {
+        max-width: 420px;
+    }
+
+    .phrase-category {
+        margin-bottom: 1.75rem;
+    }
+
+    .phrase-cat-title {
+        font-size: 1rem;
+        font-weight: 700;
+        margin-bottom: 0.75rem;
+        color: var(--text-color);
+    }
+
+    .phrase-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 0.75rem;
+    }
+
+    .phrase-card {
+        position: relative;
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 12px;
+        padding: 0.9rem 2.7rem 0.9rem 1rem;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+        transition: border-color 0.15s, transform 0.15s;
+    }
+
+    .phrase-card:hover {
+        border-color: #f43f5e;
+        transform: translateY(-1px);
+    }
+
+    .phrase-card:focus-visible {
+        outline: 2px solid #f43f5e;
+        outline-offset: 2px;
+    }
+
+    .phrase-tr {
+        font-size: 0.82rem;
+        color: var(--text-secondary);
+    }
+
+    .phrase-en {
+        font-size: 0.98rem;
+        font-weight: 600;
+        color: var(--text-color);
+    }
+
+    .phrase-speak-btn {
+        position: absolute;
+        top: 0.55rem;
+        right: 0.55rem;
+        width: 2rem;
+        height: 2rem;
+        border-radius: 50%;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(244, 63, 94, 0.12);
+        color: #f43f5e;
+        font-size: 0.95rem;
+        cursor: pointer;
+    }
+
+    .phrase-speak-btn:hover {
+        background: rgba(244, 63, 94, 0.22);
+    }
+
+    .phrase-speak-btn:focus-visible {
+        outline: 2px solid #f43f5e;
+        outline-offset: 2px;
+    }
+
+    .phrase-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        background: rgba(2, 6, 15, 0.94);
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 2rem;
+        gap: 1.25rem;
+    }
+
+    [data-theme="light"] .phrase-modal {
+        background: rgba(15, 23, 42, 0.94);
+    }
+
+    .phrase-modal.open {
+        display: flex;
+    }
+
+    .phrase-modal-en {
+        font-size: clamp(1.8rem, 6vw, 3.2rem);
+        font-weight: 700;
+        color: #ffffff;
+        line-height: 1.25;
+        max-width: 900px;
+    }
+
+    .phrase-modal-tr {
+        font-size: clamp(1rem, 2.4vw, 1.3rem);
+        color: #94a3b8;
+        max-width: 700px;
+    }
+
+    .phrase-modal-speak {
+        border: none;
+        border-radius: 999px;
+        padding: 0.75rem 1.75rem;
+        background: #f43f5e;
+        color: #ffffff;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .phrase-modal-speak:focus-visible,
+    .phrase-modal-close:focus-visible {
+        outline: 2px solid #f43f5e;
+        outline-offset: 2px;
+    }
+
+    .phrase-modal-close {
+        position: absolute;
+        top: 1.25rem;
+        right: 1.5rem;
+        background: none;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: #ffffff;
+        border-radius: 8px;
+        width: 2.25rem;
+        height: 2.25rem;
+        font-size: 1.1rem;
+        cursor: pointer;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .phrase-card {
+            transition: none;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let cachedVoices = [];
+
+    function refreshVoices() {
+        cachedVoices = window.speechSynthesis.getVoices();
+    }
+
+    function pickEnglishVoice() {
+        if (!cachedVoices.length) refreshVoices();
+        return cachedVoices.find((v) => v.lang === 'en-US')
+            || cachedVoices.find((v) => v.lang && v.lang.toLowerCase().startsWith('en'))
+            || null;
+    }
+
+    function speakText(text) {
+        if (!('speechSynthesis' in window) || !text) return;
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'en-US';
+        utterance.rate = 0.92;
+        const voice = pickEnglishVoice();
+        if (voice) utterance.voice = voice;
+        window.speechSynthesis.speak(utterance);
+    }
+
+    function openPhrase(card) {
+        const en = card.dataset.en;
+        const tr = card.dataset.tr;
+        document.getElementById('phraseModalEn').textContent = en;
+        document.getElementById('phraseModalTr').textContent = tr;
+        document.getElementById('phraseModal').classList.add('open');
+        speakText(en);
+    }
+
+    function closePhraseModal() {
+        document.getElementById('phraseModal').classList.remove('open');
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closePhraseModal();
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (!('speechSynthesis' in window)) {
+            document.getElementById('ttsWarning').classList.remove('d-none');
+            document.querySelectorAll('.phrase-speak-btn').forEach((btn) => btn.style.display = 'none');
+        } else {
+            refreshVoices();
+            window.speechSynthesis.addEventListener('voiceschanged', refreshVoices);
+        }
+
+        const search = document.getElementById('phraseSearch');
+        const noResults = document.getElementById('noResults');
+
+        search.addEventListener('input', () => {
+            const q = search.value.trim().toLocaleLowerCase('tr');
+            let anyVisible = false;
+
+            document.querySelectorAll('.phrase-category').forEach((section) => {
+                let catHasVisible = false;
+                section.querySelectorAll('.phrase-card').forEach((card) => {
+                    const tr = card.dataset.tr.toLocaleLowerCase('tr');
+                    const en = card.dataset.en.toLocaleLowerCase('tr');
+                    const match = !q || tr.includes(q) || en.includes(q);
+                    card.style.display = match ? '' : 'none';
+                    if (match) catHasVisible = true;
+                });
+                section.style.display = catHasVisible ? '' : 'none';
+                if (catHasVisible) anyVisible = true;
+            });
+
+            noResults.classList.toggle('d-none', anyVisible);
+        });
+    });
+</script>
+{% endblock %}

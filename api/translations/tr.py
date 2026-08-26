@@ -73,6 +73,7 @@ TRANSLATIONS = {
     "home.cat.converter": "Dönüştürücüler (Converters)",
     "home.cat.video": "Video Araçları",
     "home.cat.audio": "Ses Araçları",
+    "home.cat.utility": "Diğer Araçlar",
 
     "home.ai.compare.title": "AI Karşılaştırma",
     "home.ai.compare.desc": "ChatGPT, Claude, Gemini ve daha fazlasını kullanım alanı, fiyat ve performansına göre karşılaştırın; tıkladığınız araca doğrudan yönlenin.",
@@ -130,6 +131,8 @@ TRANSLATIONS = {
     "home.conv.font.desc": "TTF, OTF, WOFF yazı tipleri arasında dönüştürme.",
     "home.conv.archive.title": "Arşiv Dönüştürücü",
     "home.conv.archive.desc": "ZIP, TAR, GZ arşiv paket formatları arasında dönüştürme.",
+    "home.conv.image_compress.title": "Resim Sıkıştırma",
+    "home.conv.image_compress.desc": "Kalite ve genişlik ayarıyla resim dosya boyutunu küçültün.",
 
     "home.video.screen_record.title": "Ekran Kaydedici",
     "home.video.screen_record.desc": "Tarayıcı üzerinden ekranınızı veya belirli pencereleri yerel olarak kaydedin.",
@@ -165,6 +168,8 @@ TRANSLATIONS = {
     "home.video.add_audio.desc": "Videolarınıza arka plan müzikleri ekleyin.",
     "home.video.record_camera.title": "Kamera Kaydedici",
     "home.video.record_camera.desc": "Web kameranızı ve mikrofonunuzu kullanarak video kaydedin.",
+    "home.video.gif.title": "Video → GIF",
+    "home.video.gif.desc": "Videonuzun bir bölümünü animasyonlu GIF'e çevirin.",
 
     "home.audio.trim.title": "Ses Kesici",
     "home.audio.trim.desc": "Müzik veya ses dosyalarınızı görsel dalga boyutu üzerinden kesip indirin.",
@@ -182,6 +187,9 @@ TRANSLATIONS = {
     "home.audio.joiner.desc": "Birden fazla ses dosyasını sırayla tek dosyada birleştirin.",
     "home.audio.reverse.title": "Sesi Ters Çevir",
     "home.audio.reverse.desc": "Ses parçasını geriye doğru (tersten) çalacak şekilde çevirin.",
+
+    "home.utility.qr.title": "QR Kod Üretici",
+    "home.utility.qr.desc": "Metin veya bağlantıyı QR koda çevirin, PNG olarak indirin.",
 
     # --- Sunucu tarafı hata mesajları (index.py) ---
     "err.min_two_pdfs": "Lütfen en az iki PDF dosyası yükleyin.",

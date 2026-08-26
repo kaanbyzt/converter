@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}{{ t('qr_generator.title') }} | toolboxquick{% endblock %}
+{% block head %}
+<style>
+    .qr-canvas-box {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 1.5rem;
+    }
+    #qr-canvas {
+        max-width: 100%;
+        height: auto;
+        border-radius: 10px;
+        background: #ffffff;
+        padding: 12px;
+        box-shadow: var(--card-shadow);
+    }
+    .qr-form {
+        max-width: 420px;
+        margin: 0 auto;
+        text-align: left;
+    }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+{% endblock %}
+
+{% block content %}
+<header class="mb-4">
+    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #06b6d4 !important;">{{ t('qr_generator.kicker') }}</p>
+    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">{{ t('qr_generator.heading') }}</h1>
+    <p class="text-secondary mb-0">
+        {{ t('qr_generator.subtitle') }}
+    </p>
+</header>
+
+<section class="tool-card p-4 mb-4">
+    <div class="qr-form mb-3">
+        <label class="form-label fw-semibold mb-2">{{ t('qr_generator.input_label') }}</label>
+        <textarea id="qr-input" class="form-control" rows="3" placeholder="{{ t('qr_generator.input_placeholder') }}" oninput="onInputChange()"></textarea>
+    </div>
+
+    <div class="qr-form mb-3">
+        <label class="form-label fw-semibold mb-2">{{ t('qr_generator.ec_label') }}</label>
+        <select id="qr-ec" class="form-select" style="border-radius: 8px;" onchange="onInputChange()">
+            <option value="L">{{ t('qr_generator.ec_l') }}</option>
+            <option value="M" selected>{{ t('qr_generator.ec_m') }}</option>
+            <option value="Q">{{ t('qr_generator.ec_q') }}</option>
+            <option value="H">{{ t('qr_generator.ec_h') }}</option>
+        </select>
+    </div>
+
+    <div class="qr-form mb-4">
+        <label class="form-label fw-semibold mb-2">{{ t('qr_generator.size_label') }}</label>
+        <select id="qr-cell-size" class="form-select" style="border-radius: 8px;" onchange="onInputChange()">
+            <option value="4">{{ t('qr_generator.opt_small') }}</option>
+            <option value="7" selected>{{ t('qr_generator.opt_medium') }}</option>
+            <option value="11">{{ t('qr_generator.opt_large') }}</option>
+        </select>
+    </div>
+
+    <div id="qr-canvas-wrap" class="qr-canvas-box d-none">
+        <canvas id="qr-canvas"></canvas>
+    </div>
+
+    <div class="text-center d-flex justify-content-center gap-2 flex-wrap">
+        <button class="btn btn-info text-white px-5 py-2" style="border-radius: 8px; font-weight: 600; background-color: #06b6d4; border-color: #06b6d4;" onclick="generateQR()">
+            {{ t('qr_generator.generate_btn') }}
+        </button>
+        <button id="qr-download-btn" class="btn btn-outline-secondary px-5 py-2" style="border-radius: 8px; font-weight: 600;" onclick="downloadQR()" disabled>
+            {{ t('qr_generator.download_btn') }}
+        </button>
+    </div>
+</section>
+
+<section class="mt-4">
+    <a href="/araclar" class="text-secondary small text-decoration-none">&larr; {{ t('qr_generator.back_home') }}</a>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let qrGenerated = false;
+
+function onInputChange() {
+    qrGenerated = false;
+    document.getElementById('qr-download-btn').disabled = true;
+}
+
+function generateQR() {
+    const text = document.getElementById('qr-input').value.trim();
+    if (!text) {
+        alert({{ t('qr_generator.empty_error')|tojson }});
+        return;
+    }
+
+    const ec = document.getElementById('qr-ec').value;
+    let qr;
+    try {
+        qr = qrcode(0, ec);
+        qr.addData(text);
+        qr.make();
+    } catch (e) {
+        alert({{ t('qr_generator.too_long_error')|tojson }});
+        return;
+    }
+
+    const moduleCount = qr.getModuleCount();
+    const cell = parseInt(document.getElementById('qr-cell-size').value, 10);
+    const margin = 4;
+    const size = (moduleCount + margin * 2) * cell;
+
+    const canvas = document.getElementById('qr-canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, size, size);
+    ctx.fillStyle = '#000000';
+
+    for (let row = 0; row < moduleCount; row++) {
+        for (let col = 0; col < moduleCount; col++) {
+            if (qr.isDark(row, col)) {
+                ctx.fillRect((col + margin) * cell, (row + margin) * cell, cell, cell);
+            }
+        }
+    }
+
+    document.getElementById('qr-canvas-wrap').classList.remove('d-none');
+    document.getElementById('qr-download-btn').disabled = false;
+    qrGenerated = true;
+}
+
+function downloadQR() {
+    if (!qrGenerated) return;
+    const canvas = document.getElementById('qr-canvas');
+    const url = canvas.toDataURL('image/png');
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'toolboxquick-qr.png';
+    a.click();
+}
+</script>
+{% endblock %}
