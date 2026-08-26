@@ -10,19 +10,13 @@ from urllib.parse import urlencode
 
 from flask import g, request
 
-SUPPORTED_LANGS = ["tr", "en", "de", "fr", "es", "ru", "ar", "zh"]
+SUPPORTED_LANGS = ["tr", "en"]
 DEFAULT_LANG = "tr"
-RTL_LANGS = {"ar"}
+RTL_LANGS = set()
 
 LANG_META = {
     "tr": {"name": "Türkçe", "flag": "🇹🇷"},
     "en": {"name": "English", "flag": "🇬🇧"},
-    "de": {"name": "Deutsch", "flag": "🇩🇪"},
-    "fr": {"name": "Français", "flag": "🇫🇷"},
-    "es": {"name": "Español", "flag": "🇪🇸"},
-    "ru": {"name": "Русский", "flag": "🇷🇺"},
-    "ar": {"name": "العربية", "flag": "🇸🇦"},
-    "zh": {"name": "中文", "flag": "🇨🇳"},
 }
 
 _COOKIE_NAME = "lang"

@@ -19,6 +19,7 @@ from i18n import SUPPORTED_LANGS, init_i18n, t
 import analytics
 from travel_phrases import EMERGENCY_CATEGORIES, PHRASEBOOK_CATEGORIES
 from travel_places import NEARBY_CATEGORIES
+from travel_currencies import CURRENCIES, QUICK_REFERENCE_CODES
 
 # Overpass (OpenStreetMap) etiket filtrelerine göre desteklenen kategoriler.
 # Yalnızca burada olan kategoriler için "Yakında Ara" gerçek bir liste gösterir;
@@ -149,6 +150,7 @@ SITEMAP_ROUTES = [
     ("/seyahat/acil-ceviri", 0.7),
     ("/seyahat/yakin-yerler", 0.7),
     ("/seyahat/konusma-kilavuzu", 0.7),
+    ("/seyahat/doviz", 0.7),
 ]
 
 _TRACKED_PATHS = {path for path, _ in SITEMAP_ROUTES}
@@ -586,6 +588,16 @@ def travel_phrasebook():
         "travel_phrasebook.html",
         active_page="konusma-kilavuzu",
         categories=PHRASEBOOK_CATEGORIES,
+    )
+
+
+@app.route("/seyahat/doviz")
+def travel_currency():
+    return render_template(
+        "travel_currency.html",
+        active_page="doviz",
+        currencies=CURRENCIES,
+        quick_codes=QUICK_REFERENCE_CODES,
     )
 
 

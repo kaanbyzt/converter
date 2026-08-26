@@ -1,15 +1,9 @@
-from . import tr, en, de, fr, es, ru, ar, zh
+from . import tr, en
 from .pages import PAGE_TRANSLATIONS
 
 ALL_TRANSLATIONS = {
     "tr": tr.TRANSLATIONS,
     "en": en.TRANSLATIONS,
-    "de": de.TRANSLATIONS,
-    "fr": fr.TRANSLATIONS,
-    "es": es.TRANSLATIONS,
-    "ru": ru.TRANSLATIONS,
-    "ar": ar.TRANSLATIONS,
-    "zh": zh.TRANSLATIONS,
 }
 
 for _lang, _entries in PAGE_TRANSLATIONS.items():

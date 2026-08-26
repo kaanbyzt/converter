@@ -1,0 +1,476 @@
+{% extends "travel_base.html" %}
+{% block title %}{{ t('travel.currency.title') }} | toolboxquick{% endblock %}
+{% block meta_description %}{{ t('travel.currency.description') }}{% endblock %}
+{% block travel_content %}
+<a href="/seyahat" class="text-secondary small d-inline-block mb-3">&larr; {{ t('travel.currency.back_link') }}</a>
+<h1 class="h3 mb-2">💱 {{ t('travel.currency.heading') }}</h1>
+<p class="text-secondary mb-3">{{ t('travel.currency.description') }}</p>
+
+<p id="curStatus" class="cur-status" data-kind="loading">{{ t('travel.currency.status.loading') }}</p>
+
+<div id="curConverter" class="cur-card d-none">
+    <div class="cur-row">
+        <div class="cur-field cur-field-amount">
+            <label class="cur-label" for="curAmount">{{ t('travel.currency.amount_label') }}</label>
+            <input type="text" inputmode="decimal" id="curAmount" class="form-control cur-amount-input" value="100">
+        </div>
+        <div class="cur-field">
+            <label class="cur-label" for="curFrom">{{ t('travel.currency.from_label') }}</label>
+            <select id="curFrom" class="form-select cur-select">
+                {% for code, flag, name_key in currencies %}
+                <option value="{{ code }}" {{ 'selected' if code == 'USD' else '' }}>{{ flag }} {{ code }} — {{ t(name_key) }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="button" id="curSwapBtn" class="cur-swap-btn" aria-label="{{ t('travel.currency.swap_btn') }}">{{ t('travel.currency.swap_btn') }}</button>
+        <div class="cur-field">
+            <label class="cur-label" for="curTo">{{ t('travel.currency.to_label') }}</label>
+            <select id="curTo" class="form-select cur-select">
+                {% for code, flag, name_key in currencies %}
+                <option value="{{ code }}" {{ 'selected' if code == 'TRY' else '' }}>{{ flag }} {{ code }} — {{ t(name_key) }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <div class="cur-result-box">
+        <span class="cur-result-label">{{ t('travel.currency.result_prefix') }}</span>
+        <span id="curResultValue" class="cur-result-value">—</span>
+    </div>
+    <div id="curRateLine" class="cur-rate-line"></div>
+
+    <div class="cur-meta-row">
+        <span id="curUpdatedNote" class="cur-updated-note"></span>
+        <button type="button" id="curRefreshBtn" class="cur-refresh-btn">{{ t('travel.currency.refresh_btn') }}</button>
+    </div>
+</div>
+
+<div id="curErrorBox" class="cur-error-box d-none">
+    <p id="curErrorText">{{ t('travel.currency.status.error') }}</p>
+    <button type="button" id="curRetryBtn" class="cur-refresh-btn">{{ t('travel.currency.retry_btn') }}</button>
+</div>
+
+<div id="curQuickPanel" class="cur-quick-panel d-none">
+    <h2 id="curQuickHeading" class="cur-section-title"></h2>
+    <p class="cur-quick-note">{{ t('travel.currency.quick_note') }}</p>
+    <div id="curQuickGrid" class="cur-quick-grid"></div>
+</div>
+
+<p class="cur-source-note">{{ t('travel.currency.source_note') }}</p>
+
+<style>
+    .cur-status {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        margin-bottom: 1rem;
+    }
+
+    .cur-status[data-kind="error"] {
+        color: #ef4444;
+    }
+
+    .cur-card {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 14px;
+        padding: 1.25rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .cur-row {
+        display: flex;
+        align-items: flex-end;
+        gap: 0.85rem;
+        flex-wrap: wrap;
+    }
+
+    .cur-field {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+        flex: 1;
+        min-width: 180px;
+    }
+
+    .cur-field-amount {
+        min-width: 140px;
+        max-width: 200px;
+    }
+
+    .cur-label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-secondary);
+    }
+
+    .cur-amount-input {
+        font-variant-numeric: tabular-nums;
+        font-weight: 600;
+    }
+
+    .cur-select {
+        min-width: 0;
+    }
+
+    .cur-swap-btn {
+        flex-shrink: 0;
+        border: 1px solid var(--btn-outline-border);
+        background: none;
+        color: var(--btn-outline-color);
+        border-radius: 10px;
+        padding: 0.5rem 0.85rem;
+        font-size: 0.85rem;
+        cursor: pointer;
+        white-space: nowrap;
+        margin-bottom: 1px;
+    }
+
+    .cur-swap-btn:hover {
+        background-color: var(--btn-outline-hover-bg);
+    }
+
+    .cur-swap-btn:focus-visible {
+        outline: 2px solid #f43f5e;
+        outline-offset: 2px;
+    }
+
+    .cur-result-box {
+        margin-top: 1.4rem;
+        padding-top: 1.1rem;
+        border-top: 1px solid var(--card-border);
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .cur-result-label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-secondary);
+    }
+
+    .cur-result-value {
+        font-size: clamp(1.5rem, 5vw, 2.1rem);
+        font-weight: 700;
+        color: #f43f5e;
+        font-variant-numeric: tabular-nums;
+        overflow-wrap: break-word;
+    }
+
+    .cur-rate-line {
+        font-size: 0.82rem;
+        color: var(--text-secondary);
+        font-variant-numeric: tabular-nums;
+        margin-top: 0.35rem;
+    }
+
+    .cur-meta-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.75rem;
+        margin-top: 1.1rem;
+        flex-wrap: wrap;
+    }
+
+    .cur-updated-note {
+        font-size: 0.78rem;
+        color: var(--text-secondary);
+    }
+
+    .cur-refresh-btn {
+        border: 1px solid var(--btn-outline-border);
+        background: none;
+        color: var(--btn-outline-color);
+        border-radius: 10px;
+        padding: 0.45rem 0.9rem;
+        font-size: 0.8rem;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    .cur-refresh-btn:hover {
+        background-color: var(--btn-outline-hover-bg);
+    }
+
+    .cur-refresh-btn:focus-visible {
+        outline: 2px solid #f43f5e;
+        outline-offset: 2px;
+    }
+
+    .cur-error-box {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-left: 3px solid #ef4444;
+        border-radius: 12px;
+        padding: 1rem 1.1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .cur-error-box p {
+        font-size: 0.88rem;
+        color: var(--text-color);
+        margin: 0 0 0.75rem;
+    }
+
+    .cur-section-title {
+        font-size: 1rem;
+        font-weight: 700;
+        margin: 0 0 0.25rem;
+        color: var(--text-color);
+    }
+
+    .cur-quick-note {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        margin-bottom: 0.9rem;
+    }
+
+    .cur-quick-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 0.65rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .cur-quick-item {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 10px;
+        padding: 0.75rem 0.85rem;
+    }
+
+    .cur-quick-code {
+        font-size: 0.78rem;
+        color: var(--text-secondary);
+    }
+
+    .cur-quick-value {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text-color);
+        font-variant-numeric: tabular-nums;
+        margin-top: 0.2rem;
+    }
+
+    .cur-source-note {
+        font-size: 0.78rem;
+        color: var(--text-secondary);
+        border: 1px solid var(--card-border);
+        border-radius: 12px;
+        padding: 0.85rem 1rem;
+        background: var(--card-bg);
+    }
+
+    @media (max-width: 560px) {
+        .cur-row {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .cur-field-amount {
+            max-width: none;
+        }
+
+        .cur-swap-btn {
+            align-self: center;
+            margin-bottom: 0;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const CUR_RATES_URL = 'https://open.er-api.com/v6/latest/USD';
+    const CUR_CACHE_KEY = 'tbq_currency_rates_v1';
+    const CUR_CACHE_MAX_AGE_MS = 30 * 60 * 1000; // 30 dakika
+    const CUR_QUICK_CODES = {{ quick_codes|tojson }};
+    const CUR_NAME_BY_CODE = {
+        {% for code, flag, name_key in currencies %}"{{ code }}": {{ (flag ~ ' ' ~ code)|tojson }}{{ ',' if not loop.last else '' }}
+        {% endfor %}
+    };
+
+    let curRates = null; // { base: 'USD', rates: {...}, updatedAt: <ms> }
+
+    function curReadCache() {
+        try {
+            const raw = sessionStorage.getItem(CUR_CACHE_KEY);
+            if (!raw) return null;
+            const data = JSON.parse(raw);
+            if (!data || !data.rates || (Date.now() - data.updatedAt) > CUR_CACHE_MAX_AGE_MS) return null;
+            return data;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function curWriteCache(data) {
+        try {
+            sessionStorage.setItem(CUR_CACHE_KEY, JSON.stringify(data));
+        } catch (e) { /* ignore */ }
+    }
+
+    function setStatus(text, kind) {
+        const el = document.getElementById('curStatus');
+        if (!text) {
+            el.classList.add('d-none');
+            return;
+        }
+        el.classList.remove('d-none');
+        el.textContent = text;
+        el.dataset.kind = kind;
+    }
+
+    function showError(show) {
+        document.getElementById('curErrorBox').classList.toggle('d-none', !show);
+        document.getElementById('curConverter').classList.toggle('d-none', show);
+        document.getElementById('curQuickPanel').classList.toggle('d-none', show);
+    }
+
+    function loadRates(forceRefresh) {
+        setStatus({{ t('travel.currency.status.loading')|tojson }}, 'loading');
+        showError(false);
+        document.getElementById('curConverter').classList.add('d-none');
+        document.getElementById('curQuickPanel').classList.add('d-none');
+
+        const cached = !forceRefresh ? curReadCache() : null;
+        if (cached) {
+            curRates = cached;
+            onRatesReady();
+            return;
+        }
+
+        fetch(CUR_RATES_URL)
+            .then((res) => {
+                if (!res.ok) throw new Error('rates_failed');
+                return res.json();
+            })
+            .then((data) => {
+                if (!data || data.result !== 'success' || !data.rates) throw new Error('rates_invalid');
+                curRates = {
+                    base: data.base_code || 'USD',
+                    rates: data.rates,
+                    updatedAt: Date.now(),
+                    sourceUpdatedUtc: data.time_last_update_utc || '',
+                };
+                curWriteCache(curRates);
+                onRatesReady();
+            })
+            .catch(() => {
+                setStatus('', 'error');
+                showError(true);
+            });
+    }
+
+    function onRatesReady() {
+        setStatus('', 'loading');
+        document.getElementById('curConverter').classList.remove('d-none');
+        document.getElementById('curQuickPanel').classList.remove('d-none');
+
+        const updatedNote = document.getElementById('curUpdatedNote');
+        const label = {{ t('travel.currency.updated_label')|tojson }};
+        const stamp = curRates.sourceUpdatedUtc || new Date(curRates.updatedAt).toLocaleString();
+        updatedNote.textContent = label + ': ' + stamp;
+
+        computeAndRender();
+        renderQuickGrid();
+    }
+
+    function formatNumber(value) {
+        if (!Number.isFinite(value)) return '—';
+        const digits = Math.abs(value) >= 100 ? 2 : (Math.abs(value) >= 1 ? 4 : 6);
+        return value.toLocaleString(undefined, { maximumFractionDigits: digits, minimumFractionDigits: 2 });
+    }
+
+    function convert(amount, from, to) {
+        if (!curRates || !curRates.rates[from] || !curRates.rates[to]) return null;
+        const inUsd = amount / curRates.rates[from];
+        return inUsd * curRates.rates[to];
+    }
+
+    function computeAndRender() {
+        if (!curRates) return;
+        const from = document.getElementById('curFrom').value;
+        const to = document.getElementById('curTo').value;
+        const rawAmount = document.getElementById('curAmount').value.replace(',', '.');
+        const amount = parseFloat(rawAmount);
+
+        const resultEl = document.getElementById('curResultValue');
+        const rateLineEl = document.getElementById('curRateLine');
+
+        if (!Number.isFinite(amount)) {
+            resultEl.textContent = '—';
+            rateLineEl.textContent = '';
+            return;
+        }
+
+        const result = convert(amount, from, to);
+        resultEl.textContent = (result === null ? '—' : formatNumber(result) + ' ' + to);
+
+        const unitRate = convert(1, from, to);
+        if (unitRate !== null) {
+            rateLineEl.textContent = {{ t('travel.currency.rate_line')|tojson }}
+                .replace('{from}', from)
+                .replace('{to}', to)
+                .replace('{rate}', formatNumber(unitRate));
+        } else {
+            rateLineEl.textContent = '';
+        }
+    }
+
+    function renderQuickGrid() {
+        if (!curRates) return;
+        const from = document.getElementById('curFrom').value;
+        const grid = document.getElementById('curQuickGrid');
+        grid.innerHTML = '';
+
+        document.getElementById('curQuickHeading').textContent =
+            {{ t('travel.currency.quick_heading')|tojson }}.replace('{code}', from);
+
+        CUR_QUICK_CODES.forEach((code) => {
+            if (code === from) return;
+            const value = convert(1, from, code);
+            if (value === null) return;
+
+            const item = document.createElement('div');
+            item.className = 'cur-quick-item';
+
+            const codeEl = document.createElement('div');
+            codeEl.className = 'cur-quick-code';
+            codeEl.textContent = CUR_NAME_BY_CODE[code] || code;
+            item.appendChild(codeEl);
+
+            const valueEl = document.createElement('div');
+            valueEl.className = 'cur-quick-value';
+            valueEl.textContent = formatNumber(value) + ' ' + code;
+            item.appendChild(valueEl);
+
+            grid.appendChild(item);
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('curAmount').addEventListener('input', computeAndRender);
+        document.getElementById('curFrom').addEventListener('change', () => { computeAndRender(); renderQuickGrid(); });
+        document.getElementById('curTo').addEventListener('change', computeAndRender);
+
+        document.getElementById('curSwapBtn').addEventListener('click', () => {
+            const fromEl = document.getElementById('curFrom');
+            const toEl = document.getElementById('curTo');
+            const tmp = fromEl.value;
+            fromEl.value = toEl.value;
+            toEl.value = tmp;
+            computeAndRender();
+            renderQuickGrid();
+        });
+
+        document.getElementById('curRefreshBtn').addEventListener('click', () => loadRates(true));
+        document.getElementById('curRetryBtn').addEventListener('click', () => loadRates(true));
+
+        loadRates(false);
+    });
+</script>
+{% endblock %}
