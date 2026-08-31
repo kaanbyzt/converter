@@ -15,6 +15,7 @@ from PyPDF2 import PdfMerger, PdfReader, PdfWriter
 from pdf2docx import Converter as PdfToDocxConverter
 from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE
+from pptx.oxml.ns import qn
 from reportlab.pdfgen import canvas as pdf_canvas
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase import pdfmetrics
@@ -290,6 +291,65 @@ def _emu_to_pt(emu):
     return (emu or 0) / EMU_PER_POINT
 
 
+def _autofit_font_scale(text_frame):
+    """PowerPoint'in 'Sığdırmak için metni küçült' (normAutofit) ayarını okur.
+    PowerPoint bu ayar varsa yazıyı ekranda gösterirken küçültür; biz bunu
+    uygulamazsak metin olduğundan büyük çizilip şekil sınırlarını taşar."""
+    try:
+        body_pr = text_frame._txBody.bodyPr
+        norm_autofit = body_pr.find(qn("a:normAutofit"))
+        if norm_autofit is not None:
+            scale_attr = norm_autofit.get("fontScale")
+            if scale_attr:
+                return int(scale_attr) / 100000.0
+    except Exception:
+        pass
+    return 1.0
+
+
+def _shrink_scale_to_fit(paragraph_sizes, font_name, max_width, max_height, min_scale=0.35):
+    """PowerPoint'in normAutofit'i XML'e yazmadığı (ör. programatik/dönüştürülmüş
+    dosyalar) durumlarda bile metnin şekil sınırlarını taşmasını önlemek için
+    kendi 'sığdırmak üzere küçült' hesabımızı yapar: toplam satır yüksekliği
+    şeklin yüksekliğini aşıyorsa font oranı kademeli olarak küçültülür."""
+    if max_height <= 0:
+        return 1.0
+    scale = 1.0
+    while scale > min_scale:
+        total_height = 0.0
+        for text, base_size in paragraph_sizes:
+            size = base_size * scale
+            if text.strip():
+                total_height += len(_wrap_text_lines(text, font_name, size, max_width)) * size * 1.2
+            else:
+                total_height += size * 1.2
+        if total_height <= max_height:
+            return scale
+        scale -= 0.05
+    return min_scale
+
+
+def _wrap_text_lines(text, font_name, font_size, max_width):
+    """Metni verilen genişliğe sığacak şekilde kelime kelime satırlara böler.
+    reportlab drawString satır kaydırma yapmadığından, şekil genişliğini
+    aşan metinler sayfa dışına taşıp görünmez oluyordu."""
+    if max_width <= 0:
+        return [text]
+    words = text.split(" ")
+    lines = []
+    current = ""
+    for word in words:
+        candidate = f"{current} {word}".strip() if current else word
+        if not current or pdfmetrics.stringWidth(candidate, font_name, font_size) <= max_width:
+            current = candidate
+        else:
+            lines.append(current)
+            current = word
+    if current:
+        lines.append(current)
+    return lines
+
+
 def _convert_pptx_to_pdf(pptx_stream):
     """python-pptx ile slaytların gerçek içeriğini (metin, görsel, tablo)
     okuyup reportlab ile aynı konum/boyutta bir PDF sayfasına çizer.
@@ -329,16 +389,31 @@ def _convert_pptx_to_pdf(pptx_stream):
                             c.setFont(PDF_TEXT_FONT, 9)
                             c.drawString(cx + 2, cy + 2, table.cell(r, col).text[:80])
                 elif shape.has_text_frame:
-                    line_y = top_y - 14
+                    max_width = width if width > 0 else (slide_w - left)
+                    font_scale = _autofit_font_scale(shape.text_frame)
+
+                    paragraph_sizes = []
                     for para in shape.text_frame.paragraphs:
                         text = "".join(run.text for run in para.runs) or para.text
                         font_size = 14
                         if para.runs and para.runs[0].font.size:
                             font_size = para.runs[0].font.size.pt
+                        paragraph_sizes.append((text, font_size * font_scale))
+
+                    # normAutofit XML'de yoksa (ör. programatik olarak üretilmiş
+                    # dosyalarda) kendi hesabımızla şekil yüksekliğine sığdırıyoruz.
+                    fit_scale = _shrink_scale_to_fit(paragraph_sizes, PDF_TEXT_FONT, max_width, height)
+
+                    line_y = top_y - 14
+                    for text, base_size in paragraph_sizes:
+                        font_size = base_size * fit_scale
                         if text.strip():
                             c.setFont(PDF_TEXT_FONT, font_size)
-                            c.drawString(left, line_y, text)
-                        line_y -= font_size * 1.2
+                            for line in _wrap_text_lines(text, PDF_TEXT_FONT, font_size, max_width):
+                                c.drawString(left, line_y, line)
+                                line_y -= font_size * 1.2
+                        else:
+                            line_y -= font_size * 1.2
             except Exception:
                 continue
         c.showPage()
