@@ -2,6 +2,10 @@
 
 PAGES = {
     "tr": {
+        "changelog.20260831.1": "PDF → Word ve PPT → PDF dönüştürücüleri sunucu tarafına taşındı: artık tarayıcıda sahte dosya üretmek yerine gerçek .docx ve PDF çıktısı oluşturuluyor.",
+        "changelog.20260831.2": "PPT → PDF çıktısında Türkçe karakterlerin (İ, ı, ğ, ş) siyah kutu olarak görünmesi sorunu giderildi.",
+        "changelog.20260831.3": "PPT → PDF çıktısında uzun metinlerin sayfa dışına taşıp kaybolması sorunu giderildi; otomatik satır kaydırma eklendi.",
+        "changelog.20260831.4": "PPT → PDF çıktısında metnin şekli taşacak kadar büyük görünmesi sorunu giderildi; otomatik yazı boyutu küçültme eklendi.",
         "changelog.20260209.1": "Proje Flask + Vercel altyapısına taşındı.",
         "changelog.20260209.2": "İlk ana sayfa tasarımı ve MikroTik taslağı oluşturuldu.",
         "changelog.20260227.1": "Video, ses, PDF ve MikroTik araç sayfaları eklendi.",
@@ -31,6 +35,10 @@ PAGES = {
         "changelog.title": "Güncelleme Notları",
     },
     "en": {
+        "changelog.20260831.1": "PDF → Word and PPT → PDF converters were moved to the server side: they now produce real .docx and PDF output instead of fake browser-generated files.",
+        "changelog.20260831.2": "Fixed Turkish characters (İ, ı, ğ, ş) showing up as black boxes in PPT → PDF output.",
+        "changelog.20260831.3": "Fixed long text disappearing off the page in PPT → PDF output; automatic line wrapping was added.",
+        "changelog.20260831.4": "Fixed text appearing too large and overflowing its shape in PPT → PDF output; automatic font auto-shrink was added.",
         "changelog.20260209.1": "The project was moved to Flask + Vercel infrastructure.",
         "changelog.20260209.2": "The first home page design and MikroTik draft was created.",
         "changelog.20260227.1": "Added video, audio, PDF and MikroTik tool pages.",
