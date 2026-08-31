@@ -194,6 +194,7 @@ TRANSLATIONS = {
     # --- Sunucu tarafı hata mesajları (index.py) ---
     "err.min_two_pdfs": "Lütfen en az iki PDF dosyası yükleyin.",
     "err.invalid_pdf": "Lütfen geçerli bir PDF dosyası seçin.",
+    "err.invalid_pptx": "Lütfen geçerli bir PPTX dosyası seçin.",
     "err.enter_page_range": "Lütfen ayıklanacak sayfa aralığını belirtin.",
     "err.no_valid_pages_in_range": "Belirtilen aralıkta geçerli sayfa bulunamadı.",
     "err.generic_error": "Hata oluştu: {error}",

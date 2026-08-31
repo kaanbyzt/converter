@@ -12,6 +12,23 @@ from functools import wraps
 from flask import Flask, Response, render_template, request, send_file, jsonify, session, redirect, url_for, g
 from io import BytesIO
 from PyPDF2 import PdfMerger, PdfReader, PdfWriter
+from pdf2docx import Converter as PdfToDocxConverter
+from pptx import Presentation
+from pptx.enum.shapes import MSO_SHAPE_TYPE
+from reportlab.pdfgen import canvas as pdf_canvas
+from reportlab.lib.utils import ImageReader
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+import reportlab as _reportlab
+
+# Helvetica (PDF base14) WinAnsiEncoding kullanır ve Türkçe İ/ı/ğ/Ş gibi
+# karakterleri içermez, bu yüzden kutu (.notdef) olarak basılır.
+# reportlab'ın kendi paketiyle gelen Bitstream Vera Sans tam Unicode
+# glyph setine sahip olduğundan Türkçe karakterleri doğru render eder.
+PDF_TEXT_FONT = "PPTXUnicode"
+pdfmetrics.registerFont(
+    TTFont(PDF_TEXT_FONT, os.path.join(os.path.dirname(_reportlab.__file__), "fonts", "Vera.ttf"))
+)
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -261,7 +278,74 @@ ACTION_LABELS = {
     "pdf_protect": "PDF Şifreleme",
     "pdf_unlock": "PDF Kilit Açma",
     "zip_extract": "ZIP Çıkartma",
+    "pdf_to_word": "PDF -> Word",
+    "ppt_to_pdf": "PPT -> PDF",
 }
+
+
+EMU_PER_POINT = 12700
+
+
+def _emu_to_pt(emu):
+    return (emu or 0) / EMU_PER_POINT
+
+
+def _convert_pptx_to_pdf(pptx_stream):
+    """python-pptx ile slaytların gerçek içeriğini (metin, görsel, tablo)
+    okuyup reportlab ile aynı konum/boyutta bir PDF sayfasına çizer.
+    Grup şekillerin içi ve gelişmiş biçimlendirme (renk, hizalama) kapsam dışıdır."""
+    prs = Presentation(pptx_stream)
+    slide_w = _emu_to_pt(prs.slide_width)
+    slide_h = _emu_to_pt(prs.slide_height)
+
+    output = BytesIO()
+    c = pdf_canvas.Canvas(output, pagesize=(slide_w, slide_h))
+
+    for slide in prs.slides:
+        for shape in slide.shapes:
+            try:
+                left = _emu_to_pt(shape.left)
+                top = _emu_to_pt(shape.top)
+                width = _emu_to_pt(shape.width)
+                height = _emu_to_pt(shape.height)
+                top_y = slide_h - top
+
+                if shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
+                    img_stream = BytesIO(shape.image.blob)
+                    c.drawImage(
+                        ImageReader(img_stream),
+                        left, top_y - height, width=width, height=height,
+                        preserveAspectRatio=True, mask="auto",
+                    )
+                elif shape.has_table:
+                    table = shape.table
+                    rows, cols = len(table.rows), len(table.columns)
+                    cell_h = height / max(rows, 1)
+                    cell_w = width / max(cols, 1)
+                    for r in range(rows):
+                        for col in range(cols):
+                            cx = left + col * cell_w
+                            cy = top_y - (r + 1) * cell_h
+                            c.setFont(PDF_TEXT_FONT, 9)
+                            c.drawString(cx + 2, cy + 2, table.cell(r, col).text[:80])
+                elif shape.has_text_frame:
+                    line_y = top_y - 14
+                    for para in shape.text_frame.paragraphs:
+                        text = "".join(run.text for run in para.runs) or para.text
+                        font_size = 14
+                        if para.runs and para.runs[0].font.size:
+                            font_size = para.runs[0].font.size.pt
+                        if text.strip():
+                            c.setFont(PDF_TEXT_FONT, font_size)
+                            c.drawString(left, line_y, text)
+                        line_y -= font_size * 1.2
+            except Exception:
+                continue
+        c.showPage()
+
+    c.save()
+    output.seek(0)
+    return output
 
 
 def _action_label(action):
@@ -1106,9 +1190,31 @@ def pdf_to_html():
 def word_to_pdf():
     return render_template("pdf_office.html", tool_type="word-pdf", tool_title=t("office.word_to_pdf.title"), tool_desc=t("office.word_to_pdf.desc"), file_accept=".docx")
 
-@app.route("/pdf-tools/pdf-to-word")
+@app.route("/pdf-tools/pdf-to-word", methods=["GET", "POST"])
 def pdf_to_word():
-    return render_template("pdf_office.html", tool_type="pdf-word", tool_title=t("office.pdf_to_word.title"), tool_desc=t("office.pdf_to_word.desc"), file_accept=".pdf")
+    if request.method == "GET":
+        return render_template("pdf_office.html", tool_type="pdf-word", tool_title=t("office.pdf_to_word.title"), tool_desc=t("office.pdf_to_word.desc"), file_accept=".pdf")
+
+    file = request.files.get("pdf_file")
+    if not file or not file.filename.lower().endswith(".pdf"):
+        return jsonify({"error": t("err.invalid_pdf")}), 400
+
+    try:
+        output = BytesIO()
+        cv = PdfToDocxConverter(stream=file.read())
+        cv.convert(output)
+        cv.close()
+        output.seek(0)
+
+        _log_action("pdf_to_word")
+        return send_file(
+            output,
+            mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            as_attachment=True,
+            download_name="toolboxquick-converted.docx",
+        )
+    except Exception as e:
+        return jsonify({"error": t("err.generic_error", error=str(e))}), 500
 
 @app.route("/pdf-tools/excel-to-pdf")
 def excel_to_pdf():
@@ -1118,9 +1224,27 @@ def excel_to_pdf():
 def pdf_to_excel():
     return render_template("pdf_office.html", tool_type="pdf-excel", tool_title=t("office.pdf_to_excel.title"), tool_desc=t("office.pdf_to_excel.desc"), file_accept=".pdf")
 
-@app.route("/pdf-tools/ppt-to-pdf")
+@app.route("/pdf-tools/ppt-to-pdf", methods=["GET", "POST"])
 def ppt_to_pdf():
-    return render_template("pdf_office.html", tool_type="ppt-pdf", tool_title=t("office.ppt_to_pdf.title"), tool_desc=t("office.ppt_to_pdf.desc"), file_accept=".pptx")
+    if request.method == "GET":
+        return render_template("pdf_office.html", tool_type="ppt-pdf", tool_title=t("office.ppt_to_pdf.title"), tool_desc=t("office.ppt_to_pdf.desc"), file_accept=".pptx")
+
+    file = request.files.get("pptx_file")
+    if not file or not file.filename.lower().endswith(".pptx"):
+        return jsonify({"error": t("err.invalid_pptx")}), 400
+
+    try:
+        output = _convert_pptx_to_pdf(BytesIO(file.read()))
+
+        _log_action("ppt_to_pdf")
+        return send_file(
+            output,
+            mimetype="application/pdf",
+            as_attachment=True,
+            download_name="toolboxquick-converted.pdf",
+        )
+    except Exception as e:
+        return jsonify({"error": t("err.generic_error", error=str(e))}), 500
 
 
 # --- VIDEO TOOLS ---

@@ -104,21 +104,46 @@ async function processAndDownload() {
         if (toolType === 'word-pdf') {
             await convertWordToPDF();
         } else if (toolType === 'pdf-word') {
-            await convertPDFToWord();
+            await serverConvert('/pdf-tools/pdf-to-word', 'pdf_file', originalFileName + '.docx');
         } else if (toolType === 'excel-pdf') {
             await convertExcelToPDF();
         } else if (toolType === 'pdf-excel') {
             await convertPDFToExcel();
         } else if (toolType === 'ppt-pdf') {
-            await convertPPTToPDF();
+            await serverConvert('/pdf-tools/ppt-to-pdf', 'pptx_file', originalFileName + '.pdf');
         }
     } catch (e) {
-        alert({{ t('pdf_office.err_process_failed')|tojson }});
+        alert(e && e.message ? e.message : {{ t('pdf_office.err_process_failed')|tojson }});
         console.error(e);
     } finally {
         document.getElementById('processing-msg').classList.add('d-none');
         document.getElementById('process-btn').disabled = false;
     }
+}
+
+// Sunucu tarafında gerçek dönüştürme yapan araçlar için (pdf-word, ppt-pdf):
+// dosya olduğu gibi backend'e gönderilir, gerçek OOXML/PDF çıktısı geri alınır.
+async function serverConvert(url, fieldName, downloadName) {
+    const formData = new FormData();
+    formData.append(fieldName, selectedFile, selectedFile.name);
+
+    const resp = await fetch(url, { method: 'POST', body: formData });
+    if (!resp.ok) {
+        let message = {{ t('pdf_office.err_process_failed')|tojson }};
+        try {
+            const data = await resp.json();
+            if (data && data.error) message = data.error;
+        } catch (e) { /* ignore parse error, use default message */ }
+        throw new Error(message);
+    }
+
+    const blob = await resp.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = downloadName;
+    a.click();
+    URL.revokeObjectURL(blobUrl);
 }
 
 // 1. Word to PDF using mammoth.js to HTML, then jsPDF to render HTML layout
@@ -150,45 +175,6 @@ async function convertWordToPDF() {
     });
 
     pdf.save(originalFileName + '.pdf');
-}
-
-// 2. PDF to Word using pdf.js text extraction, outputting a Word-compatible HTML file
-async function convertPDFToWord() {
-    const arrayBuffer = await selectedFile.arrayBuffer();
-    const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) });
-    const pdf = await loadingTask.promise;
-    
-    let text = "";
-    for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const content = await page.getTextContent();
-        let lastY = null;
-        content.items.forEach(item => {
-            if (lastY !== item.transform[5]) {
-                text += "\n";
-                lastY = item.transform[5];
-            }
-            text += item.str + " ";
-        });
-        text += "\n\n";
-    }
-
-    // Generate Word compatible HTML file structure
-    const docContent = `
-    <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-    <head><title>Converted Word</title></head>
-    <body>
-    ${text.split('\n').map(p => `<p>${p}</p>`).join('')}
-    </body>
-    </html>`;
-    
-    const blob = new Blob(['\ufeff' + docContent], { type: 'application/msword' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = originalFileName + '.doc';
-    a.click();
-    URL.revokeObjectURL(url);
 }
 
 // 3. Excel to PDF using SheetJS to parse, then jsPDF to layout tabular grid
@@ -266,20 +252,5 @@ async function convertPDFToExcel() {
     URL.revokeObjectURL(url);
 }
 
-// 5. PPT to PDF using simple text rendering slide-by-slide
-async function convertPPTToPDF() {
-    // PPTX is essentially zipped XML. We can do simple extraction or compile slides.
-    // To keep it clean and client-side, we draw slide text into PDF pages.
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF({ orientation: 'landscape' });
-    
-    pdf.setFontSize(24);
-    pdf.text(originalFileName, 50, 100);
-    pdf.setFontSize(14);
-    pdf.text({{ t('pdf_office.ppt_converted_label')|tojson }}, 50, 120);
-    
-    // We create a mock formatted landscape document matching standard presentation layout
-    pdf.save(originalFileName + '.pdf');
-}
 </script>
 {% endblock %}

@@ -2,3 +2,6 @@ flask
 gunicorn
 PyPDF2
 requests
+pdf2docx
+python-pptx
+reportlab
