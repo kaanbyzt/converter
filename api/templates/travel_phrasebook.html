@@ -96,6 +96,11 @@
         color: var(--text-color);
     }
 
+    .phrase-speak-btn,
+    .phrase-modal-speak {
+        display: none !important;
+    }
+
     .phrase-speak-btn {
         position: absolute;
         top: 0.55rem;
@@ -199,28 +204,8 @@
 
 {% block scripts %}
 <script>
-    let cachedVoices = [];
-
-    function refreshVoices() {
-        cachedVoices = window.speechSynthesis.getVoices();
-    }
-
-    function pickEnglishVoice() {
-        if (!cachedVoices.length) refreshVoices();
-        return cachedVoices.find((v) => v.lang === 'en-US')
-            || cachedVoices.find((v) => v.lang && v.lang.toLowerCase().startsWith('en'))
-            || null;
-    }
-
-    function speakText(text) {
-        if (!('speechSynthesis' in window) || !text) return;
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'en-US';
-        utterance.rate = 0.92;
-        const voice = pickEnglishVoice();
-        if (voice) utterance.voice = voice;
-        window.speechSynthesis.speak(utterance);
+    function speakText() {
+        // Seslendirme devre dışı bırakıldı.
     }
 
     function openPhrase(card) {
@@ -229,7 +214,6 @@
         document.getElementById('phraseModalEn').textContent = en;
         document.getElementById('phraseModalTr').textContent = tr;
         document.getElementById('phraseModal').classList.add('open');
-        speakText(en);
     }
 
     function closePhraseModal() {
@@ -242,14 +226,6 @@
     });
 
     document.addEventListener('DOMContentLoaded', () => {
-        if (!('speechSynthesis' in window)) {
-            document.getElementById('ttsWarning').classList.remove('d-none');
-            document.querySelectorAll('.phrase-speak-btn').forEach((btn) => btn.style.display = 'none');
-        } else {
-            refreshVoices();
-            window.speechSynthesis.addEventListener('voiceschanged', refreshVoices);
-        }
-
         const search = document.getElementById('phraseSearch');
         const noResults = document.getElementById('noResults');
 
