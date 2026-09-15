@@ -1,5 +1,6 @@
 import datetime
 import hmac
+import json
 import math
 import os
 import sys
@@ -10,6 +11,7 @@ import tempfile
 import requests
 from functools import wraps
 from flask import Flask, Response, render_template, request, send_file, jsonify, session, redirect, url_for, g
+from werkzeug.utils import secure_filename
 from io import BytesIO
 from PyPDF2 import PdfMerger, PdfReader, PdfWriter
 from pdf2docx import Converter as PdfToDocxConverter
@@ -540,6 +542,309 @@ def admin_dashboard():
     ]
     location_stats = analytics.get_location_stats()
     return render_template("admin_dashboard.html", stats=stats, location_stats=location_stats)
+
+
+MAP_DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+MAP_DATA_FILE = os.path.join(MAP_DATA_DIR, "map_locations.json")
+MAP_TRASH_FILE = os.path.join(MAP_DATA_DIR, "map_trash.json")
+MAP_UPLOAD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "uploads", "map")
+MAP_TRASH_DIR = os.path.join(MAP_UPLOAD_DIR, "_trash")
+MAP_ALLOWED_EXT = {"png", "jpg", "jpeg", "webp", "gif"}
+MAP_TRASH_TTL_HOURS = 24
+ANTALYA_CENTER = {"lat": 36.8969, "lng": 30.7133}
+
+
+def _map_load_locations():
+    if not os.path.exists(MAP_DATA_FILE):
+        return []
+    try:
+        with open(MAP_DATA_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return []
+
+
+def _map_save_locations(locations):
+    os.makedirs(MAP_DATA_DIR, exist_ok=True)
+    with open(MAP_DATA_FILE, "w", encoding="utf-8") as f:
+        json.dump(locations, f, ensure_ascii=False, indent=2)
+
+
+def _map_load_trash():
+    if not os.path.exists(MAP_TRASH_FILE):
+        return []
+    try:
+        with open(MAP_TRASH_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return []
+
+
+def _map_save_trash(trash):
+    os.makedirs(MAP_DATA_DIR, exist_ok=True)
+    with open(MAP_TRASH_FILE, "w", encoding="utf-8") as f:
+        json.dump(trash, f, ensure_ascii=False, indent=2)
+
+
+def _map_purge_expired_trash():
+    """1 günü dolan çöp kutusu öğelerini kalıcı olarak siler. Ayrı bir arka plan
+    işi/scheduler olmadığı için çöp kutusuyla ilgili her route çağrısında çalışır."""
+    trash = _map_load_trash()
+    now = datetime.datetime.utcnow()
+    remaining = []
+    changed = False
+    for item in trash:
+        try:
+            trashed_at = datetime.datetime.fromisoformat(item["trashed_at"])
+        except (KeyError, ValueError, TypeError):
+            trashed_at = now
+        if (now - trashed_at).total_seconds() >= MAP_TRASH_TTL_HOURS * 3600:
+            try:
+                os.remove(os.path.join(MAP_TRASH_DIR, item["stored_name"]))
+            except OSError:
+                pass
+            changed = True
+        else:
+            remaining.append(item)
+    if changed:
+        _map_save_trash(remaining)
+    return remaining
+
+
+def _map_allowed_file(filename):
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in MAP_ALLOWED_EXT
+
+
+def _map_save_uploaded_images(marker_dir, files):
+    saved_files = []
+    if not files:
+        return saved_files
+    os.makedirs(marker_dir, exist_ok=True)
+    for file in files:
+        if not file or not file.filename or not _map_allowed_file(file.filename):
+            continue
+        # uuid ön eki: aynı konuma sonradan eklenen görsellerin dosya adı çakışmasını önler
+        safe_name = f"{uuid.uuid4().hex[:8]}_{secure_filename(file.filename)}"
+        file.save(os.path.join(marker_dir, safe_name))
+        saved_files.append(safe_name)
+    return saved_files
+
+
+@app.route("/admin/map")
+@_admin_required
+def admin_map():
+    locations = _map_load_locations()
+    trash_count = len(_map_purge_expired_trash())
+    return render_template(
+        "admin_map.html", locations=locations, center=ANTALYA_CENTER,
+        trash_count=trash_count, trash_ttl_hours=MAP_TRASH_TTL_HOURS,
+    )
+
+
+@app.route("/admin/map/add", methods=["POST"])
+@_admin_required
+def admin_map_add():
+    try:
+        lat = float(request.form.get("lat", ""))
+        lng = float(request.form.get("lng", ""))
+    except ValueError:
+        return jsonify({"error": "Geçersiz konum."}), 400
+
+    title = request.form.get("title", "").strip()[:120]
+    note = request.form.get("note", "").strip()[:2000]
+    if not title:
+        return jsonify({"error": "Başlık gerekli."}), 400
+
+    marker_id = uuid.uuid4().hex
+    marker_dir = os.path.join(MAP_UPLOAD_DIR, marker_id)
+    saved_files = _map_save_uploaded_images(marker_dir, request.files.getlist("images"))
+
+    locations = _map_load_locations()
+    locations.append({
+        "id": marker_id,
+        "lat": lat,
+        "lng": lng,
+        "title": title,
+        "note": note,
+        "images": saved_files,
+        "created_at": datetime.datetime.utcnow().isoformat(),
+    })
+    _map_save_locations(locations)
+    return jsonify({"ok": True, "id": marker_id})
+
+
+@app.route("/admin/map/<marker_id>/add-images", methods=["POST"])
+@_admin_required
+def admin_map_add_images(marker_id):
+    locations = _map_load_locations()
+    loc = next((l for l in locations if l["id"] == marker_id), None)
+    if loc is None:
+        return jsonify({"error": "Bulunamadı."}), 404
+
+    marker_dir = os.path.join(MAP_UPLOAD_DIR, secure_filename(marker_id))
+    saved_files = _map_save_uploaded_images(marker_dir, request.files.getlist("images"))
+    if not saved_files:
+        return jsonify({"error": "Geçerli görsel bulunamadı."}), 400
+
+    loc.setdefault("images", []).extend(saved_files)
+    _map_save_locations(locations)
+    return jsonify({"ok": True, "images": saved_files})
+
+
+@app.route("/admin/map/<marker_id>/rename", methods=["POST"])
+@_admin_required
+def admin_map_rename(marker_id):
+    title = request.form.get("title", "").strip()[:120]
+    if not title:
+        return jsonify({"error": "Başlık boş olamaz."}), 400
+
+    locations = _map_load_locations()
+    loc = next((l for l in locations if l["id"] == marker_id), None)
+    if loc is None:
+        return jsonify({"error": "Bulunamadı."}), 404
+
+    loc["title"] = title
+    _map_save_locations(locations)
+    return jsonify({"ok": True, "title": title})
+
+
+@app.route("/admin/map/<marker_id>/remove-image", methods=["POST"])
+@_admin_required
+def admin_map_remove_image(marker_id):
+    filename = secure_filename(request.form.get("filename", ""))
+    if not filename:
+        return jsonify({"error": "Geçersiz dosya."}), 400
+
+    locations = _map_load_locations()
+    loc = next((l for l in locations if l["id"] == marker_id), None)
+    if loc is None or filename not in loc.get("images", []):
+        return jsonify({"error": "Bulunamadı."}), 404
+
+    src = os.path.join(MAP_UPLOAD_DIR, secure_filename(marker_id), filename)
+    if not os.path.isfile(src):
+        return jsonify({"error": "Dosya bulunamadı."}), 404
+
+    os.makedirs(MAP_TRASH_DIR, exist_ok=True)
+    trash_id = uuid.uuid4().hex
+    stored_name = f"{trash_id}_{filename}"
+    os.replace(src, os.path.join(MAP_TRASH_DIR, stored_name))
+
+    loc["images"].remove(filename)
+    _map_save_locations(locations)
+
+    trash = _map_load_trash()
+    trash.append({
+        "id": trash_id,
+        "stored_name": stored_name,
+        "original_filename": filename,
+        "marker_id": marker_id,
+        "marker_title": loc.get("title", ""),
+        "trashed_at": datetime.datetime.utcnow().isoformat(),
+    })
+    _map_save_trash(trash)
+    return jsonify({"ok": True, "trash_id": trash_id})
+
+
+@app.route("/admin/map/trash")
+@_admin_required
+def admin_map_trash_list():
+    trash = _map_purge_expired_trash()
+    return jsonify({"items": trash, "ttl_hours": MAP_TRASH_TTL_HOURS})
+
+
+@app.route("/admin/map/trash/image/<trash_id>")
+@_admin_required
+def admin_map_trash_image(trash_id):
+    trash = _map_load_trash()
+    item = next((t for t in trash if t["id"] == trash_id), None)
+    if not item:
+        return "", 404
+    path = os.path.join(MAP_TRASH_DIR, secure_filename(item["stored_name"]))
+    if not os.path.isfile(path):
+        return "", 404
+    return send_file(path)
+
+
+@app.route("/admin/map/trash/<trash_id>/restore", methods=["POST"])
+@_admin_required
+def admin_map_trash_restore(trash_id):
+    trash = _map_load_trash()
+    item = next((t for t in trash if t["id"] == trash_id), None)
+    if not item:
+        return jsonify({"error": "Bulunamadı."}), 404
+
+    locations = _map_load_locations()
+    loc = next((l for l in locations if l["id"] == item["marker_id"]), None)
+    if loc is None:
+        return jsonify({"error": "Orijinal konum artık mevcut değil."}), 400
+
+    src = os.path.join(MAP_TRASH_DIR, secure_filename(item["stored_name"]))
+    if not os.path.isfile(src):
+        return jsonify({"error": "Dosya bulunamadı."}), 404
+
+    marker_dir = os.path.join(MAP_UPLOAD_DIR, secure_filename(item["marker_id"]))
+    os.makedirs(marker_dir, exist_ok=True)
+    restore_name = item["original_filename"]
+    if os.path.exists(os.path.join(marker_dir, restore_name)):
+        restore_name = f"{uuid.uuid4().hex[:8]}_{restore_name}"
+    os.replace(src, os.path.join(marker_dir, restore_name))
+
+    loc.setdefault("images", []).append(restore_name)
+    _map_save_locations(locations)
+
+    trash = [t for t in trash if t["id"] != trash_id]
+    _map_save_trash(trash)
+    return jsonify({"ok": True, "marker_id": loc["id"], "filename": restore_name})
+
+
+@app.route("/admin/map/trash/<trash_id>/delete", methods=["POST"])
+@_admin_required
+def admin_map_trash_delete(trash_id):
+    trash = _map_load_trash()
+    item = next((t for t in trash if t["id"] == trash_id), None)
+    if not item:
+        return jsonify({"error": "Bulunamadı."}), 404
+    try:
+        os.remove(os.path.join(MAP_TRASH_DIR, secure_filename(item["stored_name"])))
+    except OSError:
+        pass
+    trash = [t for t in trash if t["id"] != trash_id]
+    _map_save_trash(trash)
+    return jsonify({"ok": True})
+
+
+@app.route("/admin/map/delete/<marker_id>", methods=["POST"])
+@_admin_required
+def admin_map_delete(marker_id):
+    locations = _map_load_locations()
+    remaining = [loc for loc in locations if loc["id"] != marker_id]
+    if len(remaining) == len(locations):
+        return jsonify({"error": "Bulunamadı."}), 404
+    _map_save_locations(remaining)
+
+    marker_dir = os.path.join(MAP_UPLOAD_DIR, secure_filename(marker_id))
+    if os.path.isdir(marker_dir):
+        for fname in os.listdir(marker_dir):
+            try:
+                os.remove(os.path.join(marker_dir, fname))
+            except OSError:
+                pass
+        try:
+            os.rmdir(marker_dir)
+        except OSError:
+            pass
+    return jsonify({"ok": True})
+
+
+@app.route("/admin/map/image/<marker_id>/<filename>")
+@_admin_required
+def admin_map_image(marker_id, filename):
+    safe_marker_id = secure_filename(marker_id)
+    safe_filename = secure_filename(filename)
+    path = os.path.join(MAP_UPLOAD_DIR, safe_marker_id, safe_filename)
+    if not os.path.isfile(path):
+        return "", 404
+    return send_file(path)
 
 
 @app.route("/admin/logs")
