@@ -153,6 +153,14 @@
         text-decoration: none;
     }
     .pg-reco-chip:hover { background: rgba(34, 211, 238, 0.2); color: #22d3ee; }
+    .pg-example-list { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.25rem; }
+    .pg-example-chip {
+        display: inline-flex; align-items: center; gap: 0.4rem;
+        padding: 0.4rem 0.75rem; border-radius: 999px; font-size: 0.8rem; font-weight: 600;
+        background: var(--card-bg); color: var(--text-color); border: 1px solid var(--card-border);
+        cursor: pointer; font-family: inherit; transition: border-color 0.15s, color 0.15s;
+    }
+    .pg-example-chip:hover { border-color: #22d3ee; color: #22d3ee; }
     .pg-fields { display: flex; flex-direction: column; gap: 0.85rem; margin-bottom: 1.1rem; }
     .pg-field label { font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.3rem; }
     .pg-field textarea { resize: vertical; min-height: 2.4rem; }
@@ -621,6 +629,8 @@
             <div class="pg-result">
                 <div class="pg-result-title">{{ t('ai_tools.pg_reco_title') }}</div>
                 <div class="pg-reco-list" id="pgRecoList"></div>
+                <div class="pg-result-title">{{ t('ai_tools.pg_examples_title') }}</div>
+                <div class="pg-example-list" id="pgExampleList"></div>
                 <div class="pg-result-title">{{ t('ai_tools.pg_details_title') }}</div>
                 <div class="pg-fields" id="pgFields"></div>
                 <button type="button" class="pg-generate-btn" onclick="pgGenerate()">✨ {{ t('ai_tools.pg_generate_btn') }}</button>
@@ -734,6 +744,145 @@
         'notSpecified': t('ai_tools.pg_not_specified'),
         'copiedText': t('ai_tools.pg_copied_text')
     } | tojson }};
+
+    const PG_I18N_NEW = {{ {
+        'seo': {
+            'label': t('ai_tools.pg.seo.label'), 'note': t('ai_tools.pg.seo.note'), 'template': t('ai_tools.pg.seo.template'),
+            'fields': {
+                'urun': {'label': t('ai_tools.pg.seo.field.urun.label'), 'default': t('ai_tools.pg.seo.field.urun.default')},
+                'anahtarKelime': {'label': t('ai_tools.pg.seo.field.anahtarKelime.label'), 'default': t('ai_tools.pg.seo.field.anahtarKelime.default')},
+                'hedefKitle': {'label': t('ai_tools.pg.seo.field.hedefKitle.label'), 'default': t('ai_tools.pg.seo.field.hedefKitle.default')}
+            }
+        },
+        'cv': {
+            'label': t('ai_tools.pg.cv.label'), 'note': t('ai_tools.pg.cv.note'), 'template': t('ai_tools.pg.cv.template'),
+            'fields': {
+                'pozisyon': {'label': t('ai_tools.pg.cv.field.pozisyon.label'), 'default': t('ai_tools.pg.cv.field.pozisyon.default')},
+                'deneyim': {'label': t('ai_tools.pg.cv.field.deneyim.label'), 'default': t('ai_tools.pg.cv.field.deneyim.default')},
+                'beceriler': {'label': t('ai_tools.pg.cv.field.beceriler.label'), 'default': t('ai_tools.pg.cv.field.beceriler.default')}
+            }
+        },
+        'eposta': {
+            'label': t('ai_tools.pg.eposta.label'), 'note': t('ai_tools.pg.eposta.note'), 'template': t('ai_tools.pg.eposta.template'),
+            'fields': {
+                'konu': {'label': t('ai_tools.pg.eposta.field.konu.label'), 'default': t('ai_tools.pg.eposta.field.konu.default')},
+                'alici': {'label': t('ai_tools.pg.eposta.field.alici.label'), 'default': t('ai_tools.pg.eposta.field.alici.default')},
+                'amac': {'label': t('ai_tools.pg.eposta.field.amac.label'), 'default': t('ai_tools.pg.eposta.field.amac.default')}
+            }
+        },
+        'sosyal-medya': {
+            'label': t('ai_tools.pg.sosyal_medya.label'), 'note': t('ai_tools.pg.sosyal_medya.note'), 'template': t('ai_tools.pg.sosyal_medya.template'),
+            'fields': {
+                'konu': {'label': t('ai_tools.pg.sosyal_medya.field.konu.label'), 'default': t('ai_tools.pg.sosyal_medya.field.konu.default')},
+                'ton': {'label': t('ai_tools.pg.sosyal_medya.field.ton.label'), 'options': [t('ai_tools.pg.sosyal_medya.field.ton.opt.eglenceli'), t('ai_tools.pg.sosyal_medya.field.ton.opt.profesyonel'), t('ai_tools.pg.sosyal_medya.field.ton.opt.ilhamverici'), t('ai_tools.pg.sosyal_medya.field.ton.opt.bilgilendirici')]}
+            }
+        },
+        'ceviri': {
+            'label': t('ai_tools.pg.ceviri.label'), 'note': t('ai_tools.pg.ceviri.note'), 'template': t('ai_tools.pg.ceviri.template'),
+            'fields': {
+                'metin': {'label': t('ai_tools.pg.ceviri.field.metin.label'), 'default': t('ai_tools.pg.ceviri.field.metin.default')},
+                'kaynakDil': {'label': t('ai_tools.pg.ceviri.field.kaynakDil.label'), 'default': t('ai_tools.pg.ceviri.field.kaynakDil.default')},
+                'hedefDil': {'label': t('ai_tools.pg.ceviri.field.hedefDil.label'), 'default': t('ai_tools.pg.ceviri.field.hedefDil.default')}
+            }
+        },
+        'veri-analizi': {
+            'label': t('ai_tools.pg.veri_analizi.label'), 'note': t('ai_tools.pg.veri_analizi.note'), 'template': t('ai_tools.pg.veri_analizi.template'),
+            'fields': {
+                'veriTipi': {'label': t('ai_tools.pg.veri_analizi.field.veriTipi.label'), 'default': t('ai_tools.pg.veri_analizi.field.veriTipi.default')},
+                'gorev': {'label': t('ai_tools.pg.veri_analizi.field.gorev.label'), 'default': t('ai_tools.pg.veri_analizi.field.gorev.default')}
+            }
+        },
+        'mulakat': {
+            'label': t('ai_tools.pg.mulakat.label'), 'note': t('ai_tools.pg.mulakat.note'), 'template': t('ai_tools.pg.mulakat.template'),
+            'fields': {
+                'pozisyon': {'label': t('ai_tools.pg.mulakat.field.pozisyon.label'), 'default': t('ai_tools.pg.mulakat.field.pozisyon.default')},
+                'seviye': {'label': t('ai_tools.pg.mulakat.field.seviye.label')}
+            }
+        }
+    } | tojson }};
+
+    const PG_EXAMPLES = {{ {
+        'genel': [
+            {'label': t('ai_tools.pg.genel.example.1.label'), 'values': t('ai_tools.pg.genel.example.1').split('|||')},
+            {'label': t('ai_tools.pg.genel.example.2.label'), 'values': t('ai_tools.pg.genel.example.2').split('|||')}
+        ],
+        'kod': [
+            {'label': t('ai_tools.pg.kod.example.1.label'), 'values': t('ai_tools.pg.kod.example.1').split('|||')},
+            {'label': t('ai_tools.pg.kod.example.2.label'), 'values': t('ai_tools.pg.kod.example.2').split('|||')}
+        ],
+        'kod-editor': [
+            {'label': t('ai_tools.pg.kod_editor.example.1.label'), 'values': t('ai_tools.pg.kod_editor.example.1').split('|||')},
+            {'label': t('ai_tools.pg.kod_editor.example.2.label'), 'values': t('ai_tools.pg.kod_editor.example.2').split('|||')}
+        ],
+        'yazi': [
+            {'label': t('ai_tools.pg.yazi.example.1.label'), 'values': t('ai_tools.pg.yazi.example.1').split('|||')},
+            {'label': t('ai_tools.pg.yazi.example.2.label'), 'values': t('ai_tools.pg.yazi.example.2').split('|||')}
+        ],
+        'arastirma': [
+            {'label': t('ai_tools.pg.arastirma.example.1.label'), 'values': t('ai_tools.pg.arastirma.example.1').split('|||')},
+            {'label': t('ai_tools.pg.arastirma.example.2.label'), 'values': t('ai_tools.pg.arastirma.example.2').split('|||')}
+        ],
+        'gorsel': [
+            {'label': t('ai_tools.pg.gorsel.example.1.label'), 'values': t('ai_tools.pg.gorsel.example.1').split('|||')},
+            {'label': t('ai_tools.pg.gorsel.example.2.label'), 'values': t('ai_tools.pg.gorsel.example.2').split('|||')}
+        ],
+        'ofis': [
+            {'label': t('ai_tools.pg.ofis.example.1.label'), 'values': t('ai_tools.pg.ofis.example.1').split('|||')},
+            {'label': t('ai_tools.pg.ofis.example.2.label'), 'values': t('ai_tools.pg.ofis.example.2').split('|||')}
+        ],
+        'guncel': [
+            {'label': t('ai_tools.pg.guncel.example.1.label'), 'values': t('ai_tools.pg.guncel.example.1').split('|||')},
+            {'label': t('ai_tools.pg.guncel.example.2.label'), 'values': t('ai_tools.pg.guncel.example.2').split('|||')}
+        ],
+        'muzik': [
+            {'label': t('ai_tools.pg.muzik.example.1.label'), 'values': t('ai_tools.pg.muzik.example.1').split('|||')},
+            {'label': t('ai_tools.pg.muzik.example.2.label'), 'values': t('ai_tools.pg.muzik.example.2').split('|||')}
+        ],
+        'ai-video': [
+            {'label': t('ai_tools.pg.ai_video.example.1.label'), 'values': t('ai_tools.pg.ai_video.example.1').split('|||')},
+            {'label': t('ai_tools.pg.ai_video.example.2.label'), 'values': t('ai_tools.pg.ai_video.example.2').split('|||')}
+        ],
+        'seslendirme': [
+            {'label': t('ai_tools.pg.seslendirme.example.1.label'), 'values': t('ai_tools.pg.seslendirme.example.1').split('|||')},
+            {'label': t('ai_tools.pg.seslendirme.example.2.label'), 'values': t('ai_tools.pg.seslendirme.example.2').split('|||')}
+        ],
+        'tasarim': [
+            {'label': t('ai_tools.pg.tasarim.example.1.label'), 'values': t('ai_tools.pg.tasarim.example.1').split('|||')},
+            {'label': t('ai_tools.pg.tasarim.example.2.label'), 'values': t('ai_tools.pg.tasarim.example.2').split('|||')}
+        ],
+        'sohbet-karakter': [
+            {'label': t('ai_tools.pg.sohbet_karakter.example.1.label'), 'values': t('ai_tools.pg.sohbet_karakter.example.1').split('|||')},
+            {'label': t('ai_tools.pg.sohbet_karakter.example.2.label'), 'values': t('ai_tools.pg.sohbet_karakter.example.2').split('|||')}
+        ],
+        'seo': [
+            {'label': t('ai_tools.pg.seo.example.1.label'), 'values': t('ai_tools.pg.seo.example.1').split('|||')},
+            {'label': t('ai_tools.pg.seo.example.2.label'), 'values': t('ai_tools.pg.seo.example.2').split('|||')}
+        ],
+        'cv': [
+            {'label': t('ai_tools.pg.cv.example.1.label'), 'values': t('ai_tools.pg.cv.example.1').split('|||')},
+            {'label': t('ai_tools.pg.cv.example.2.label'), 'values': t('ai_tools.pg.cv.example.2').split('|||')}
+        ],
+        'eposta': [
+            {'label': t('ai_tools.pg.eposta.example.1.label'), 'values': t('ai_tools.pg.eposta.example.1').split('|||')},
+            {'label': t('ai_tools.pg.eposta.example.2.label'), 'values': t('ai_tools.pg.eposta.example.2').split('|||')}
+        ],
+        'sosyal-medya': [
+            {'label': t('ai_tools.pg.sosyal_medya.example.1.label'), 'values': t('ai_tools.pg.sosyal_medya.example.1').split('|||')},
+            {'label': t('ai_tools.pg.sosyal_medya.example.2.label'), 'values': t('ai_tools.pg.sosyal_medya.example.2').split('|||')}
+        ],
+        'ceviri': [
+            {'label': t('ai_tools.pg.ceviri.example.1.label'), 'values': t('ai_tools.pg.ceviri.example.1').split('|||')},
+            {'label': t('ai_tools.pg.ceviri.example.2.label'), 'values': t('ai_tools.pg.ceviri.example.2').split('|||')}
+        ],
+        'veri-analizi': [
+            {'label': t('ai_tools.pg.veri_analizi.example.1.label'), 'values': t('ai_tools.pg.veri_analizi.example.1').split('|||')},
+            {'label': t('ai_tools.pg.veri_analizi.example.2.label'), 'values': t('ai_tools.pg.veri_analizi.example.2').split('|||')}
+        ],
+        'mulakat': [
+            {'label': t('ai_tools.pg.mulakat.example.1.label'), 'values': t('ai_tools.pg.mulakat.example.1').split('|||')},
+            {'label': t('ai_tools.pg.mulakat.example.2.label'), 'values': t('ai_tools.pg.mulakat.example.2').split('|||')}
+        ]
+    } | tojson }};
 {% raw %}
     function aiSwitchTab(tab) {
         document.querySelectorAll('.ai-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
@@ -751,7 +900,8 @@
             fields: [
                 { id: 'konu', label: PG_I18N.genel.fields.konu.label, type: 'textarea', default: PG_I18N.genel.fields.konu.default },
                 { id: 'ton', label: PG_I18N.genel.fields.ton.label, type: 'select', options: PG_I18N.genel.fields.ton.options, default: PG_I18N.genel.fields.ton.options[0] }
-            ]
+            ],
+            examples: PG_EXAMPLES.genel
         },
         {
             id: 'kod',
@@ -763,7 +913,8 @@
                 { id: 'dil', label: PG_I18N.kod.fields.dil.label, type: 'text', default: 'Python' },
                 { id: 'hedef', label: PG_I18N.kod.fields.hedef.label, type: 'textarea', default: PG_I18N.kod.fields.hedef.default },
                 { id: 'kod', label: PG_I18N.kod.fields.kod.label, type: 'textarea', default: '' }
-            ]
+            ],
+            examples: PG_EXAMPLES.kod
         },
         {
             id: 'kod-editor',
@@ -774,7 +925,8 @@
             fields: [
                 { id: 'dil', label: PG_I18N['kod-editor'].fields.dil.label, type: 'text', default: 'TypeScript' },
                 { id: 'istek', label: PG_I18N['kod-editor'].fields.istek.label, type: 'textarea', default: PG_I18N['kod-editor'].fields.istek.default }
-            ]
+            ],
+            examples: PG_EXAMPLES['kod-editor']
         },
         {
             id: 'yazi',
@@ -787,7 +939,8 @@
                 { id: 'uzunluk', label: PG_I18N.yazi.fields.uzunluk.label, type: 'select', options: PG_I18N.yazi.fields.uzunluk.options, default: PG_I18N.yazi.fields.uzunluk.options[1] },
                 { id: 'ton', label: PG_I18N.yazi.fields.ton.label, type: 'select', options: PG_I18N.yazi.fields.ton.options, default: PG_I18N.yazi.fields.ton.options[0] },
                 { id: 'hedefKitle', label: PG_I18N.yazi.fields.hedefKitle.label, type: 'text', default: PG_I18N.yazi.fields.hedefKitle.default }
-            ]
+            ],
+            examples: PG_EXAMPLES.yazi
         },
         {
             id: 'arastirma',
@@ -797,7 +950,8 @@
             template: PG_I18N.arastirma.template,
             fields: [
                 { id: 'konu', label: PG_I18N.arastirma.fields.konu.label, type: 'textarea', default: PG_I18N.arastirma.fields.konu.default }
-            ]
+            ],
+            examples: PG_EXAMPLES.arastirma
         },
         {
             id: 'gorsel',
@@ -811,7 +965,8 @@
                 { id: 'isik', label: PG_I18N.gorsel.fields.isik.label, type: 'text', default: PG_I18N.gorsel.fields.isik.default },
                 { id: 'aci', label: PG_I18N.gorsel.fields.aci.label, type: 'text', default: PG_I18N.gorsel.fields.aci.default },
                 { id: 'oran', label: PG_I18N.gorsel.fields.oran.label, type: 'select', options: ['16:9', '1:1', '9:16'], default: '16:9' }
-            ]
+            ],
+            examples: PG_EXAMPLES.gorsel
         },
         {
             id: 'ofis',
@@ -823,7 +978,8 @@
                 { id: 'dosyaTipi', label: PG_I18N.ofis.fields.dosyaTipi.label, type: 'select', options: ['Word', 'Excel', 'PowerPoint'], default: 'PowerPoint' },
                 { id: 'gorev', label: PG_I18N.ofis.fields.gorev.label, type: 'text', default: PG_I18N.ofis.fields.gorev.default },
                 { id: 'icerik', label: PG_I18N.ofis.fields.icerik.label, type: 'textarea', default: PG_I18N.ofis.fields.icerik.default }
-            ]
+            ],
+            examples: PG_EXAMPLES.ofis
         },
         {
             id: 'guncel',
@@ -833,7 +989,8 @@
             template: PG_I18N.guncel.template,
             fields: [
                 { id: 'konu', label: PG_I18N.guncel.fields.konu.label, type: 'text', default: PG_I18N.guncel.fields.konu.default }
-            ]
+            ],
+            examples: PG_EXAMPLES.guncel
         },
         {
             id: 'muzik',
@@ -846,7 +1003,8 @@
                 { id: 'tema', label: PG_I18N.muzik.fields.tema.label, type: 'text', default: PG_I18N.muzik.fields.tema.default },
                 { id: 'ruh', label: PG_I18N.muzik.fields.ruh.label, type: 'select', options: PG_I18N.muzik.fields.ruh.options, default: PG_I18N.muzik.fields.ruh.options[0] },
                 { id: 'vokal', label: PG_I18N.muzik.fields.vokal.label, type: 'select', options: PG_I18N.muzik.fields.vokal.options, default: PG_I18N.muzik.fields.vokal.options[0] }
-            ]
+            ],
+            examples: PG_EXAMPLES.muzik
         },
         {
             id: 'ai-video',
@@ -858,7 +1016,8 @@
                 { id: 'sahne', label: PG_I18N['ai-video'].fields.sahne.label, type: 'textarea', default: PG_I18N['ai-video'].fields.sahne.default },
                 { id: 'kamera', label: PG_I18N['ai-video'].fields.kamera.label, type: 'text', default: PG_I18N['ai-video'].fields.kamera.default },
                 { id: 'stil', label: PG_I18N['ai-video'].fields.stil.label, type: 'select', options: PG_I18N['ai-video'].fields.stil.options, default: PG_I18N['ai-video'].fields.stil.options[0] }
-            ]
+            ],
+            examples: PG_EXAMPLES['ai-video']
         },
         {
             id: 'seslendirme',
@@ -870,7 +1029,8 @@
                 { id: 'metin', label: PG_I18N.seslendirme.fields.metin.label, type: 'textarea', default: PG_I18N.seslendirme.fields.metin.default },
                 { id: 'ses', label: PG_I18N.seslendirme.fields.ses.label, type: 'select', options: PG_I18N.seslendirme.fields.ses.options, default: PG_I18N.seslendirme.fields.ses.options[0] },
                 { id: 'dil', label: PG_I18N.seslendirme.fields.dil.label, type: 'select', options: PG_I18N.seslendirme.fields.dil.options, default: PG_I18N.seslendirme.fields.dil.options[0] }
-            ]
+            ],
+            examples: PG_EXAMPLES.seslendirme
         },
         {
             id: 'tasarim',
@@ -882,7 +1042,8 @@
                 { id: 'karakter', label: PG_I18N.tasarim.fields.karakter.label, type: 'textarea', default: PG_I18N.tasarim.fields.karakter.default },
                 { id: 'stil', label: PG_I18N.tasarim.fields.stil.label, type: 'select', options: PG_I18N.tasarim.fields.stil.options, default: PG_I18N.tasarim.fields.stil.options[0] },
                 { id: 'arkaplan', label: PG_I18N.tasarim.fields.arkaplan.label, type: 'select', options: PG_I18N.tasarim.fields.arkaplan.options, default: PG_I18N.tasarim.fields.arkaplan.options[0] }
-            ]
+            ],
+            examples: PG_EXAMPLES.tasarim
         },
         {
             id: 'sohbet-karakter',
@@ -892,7 +1053,97 @@
             template: PG_I18N['sohbet-karakter'].template,
             fields: [
                 { id: 'karakter', label: PG_I18N['sohbet-karakter'].fields.karakter.label, type: 'text', default: PG_I18N['sohbet-karakter'].fields.karakter.default }
-            ]
+            ],
+            examples: PG_EXAMPLES['sohbet-karakter']
+        },
+        {
+            id: 'seo',
+            label: '📈 ' + PG_I18N_NEW.seo.label,
+            reco: [{ name: 'ChatGPT', url: 'https://chatgpt.com' }, { name: 'Claude', url: 'https://claude.ai' }],
+            note: PG_I18N_NEW.seo.note,
+            template: PG_I18N_NEW.seo.template,
+            fields: [
+                { id: 'urun', label: PG_I18N_NEW.seo.fields.urun.label, type: 'text', default: PG_I18N_NEW.seo.fields.urun.default },
+                { id: 'anahtarKelime', label: PG_I18N_NEW.seo.fields.anahtarKelime.label, type: 'text', default: PG_I18N_NEW.seo.fields.anahtarKelime.default },
+                { id: 'hedefKitle', label: PG_I18N_NEW.seo.fields.hedefKitle.label, type: 'text', default: PG_I18N_NEW.seo.fields.hedefKitle.default }
+            ],
+            examples: PG_EXAMPLES.seo
+        },
+        {
+            id: 'cv',
+            label: '📄 ' + PG_I18N_NEW.cv.label,
+            reco: [{ name: 'ChatGPT', url: 'https://chatgpt.com' }, { name: 'Claude', url: 'https://claude.ai' }],
+            note: PG_I18N_NEW.cv.note,
+            template: PG_I18N_NEW.cv.template,
+            fields: [
+                { id: 'pozisyon', label: PG_I18N_NEW.cv.fields.pozisyon.label, type: 'text', default: PG_I18N_NEW.cv.fields.pozisyon.default },
+                { id: 'deneyim', label: PG_I18N_NEW.cv.fields.deneyim.label, type: 'textarea', default: PG_I18N_NEW.cv.fields.deneyim.default },
+                { id: 'beceriler', label: PG_I18N_NEW.cv.fields.beceriler.label, type: 'text', default: PG_I18N_NEW.cv.fields.beceriler.default }
+            ],
+            examples: PG_EXAMPLES.cv
+        },
+        {
+            id: 'eposta',
+            label: '✉️ ' + PG_I18N_NEW.eposta.label,
+            reco: [{ name: 'ChatGPT', url: 'https://chatgpt.com' }, { name: 'Copilot', url: 'https://copilot.microsoft.com' }],
+            note: PG_I18N_NEW.eposta.note,
+            template: PG_I18N_NEW.eposta.template,
+            fields: [
+                { id: 'konu', label: PG_I18N_NEW.eposta.fields.konu.label, type: 'text', default: PG_I18N_NEW.eposta.fields.konu.default },
+                { id: 'alici', label: PG_I18N_NEW.eposta.fields.alici.label, type: 'text', default: PG_I18N_NEW.eposta.fields.alici.default },
+                { id: 'amac', label: PG_I18N_NEW.eposta.fields.amac.label, type: 'textarea', default: PG_I18N_NEW.eposta.fields.amac.default }
+            ],
+            examples: PG_EXAMPLES.eposta
+        },
+        {
+            id: 'sosyal-medya',
+            label: '📱 ' + PG_I18N_NEW['sosyal-medya'].label,
+            reco: [{ name: 'ChatGPT', url: 'https://chatgpt.com' }, { name: 'Claude', url: 'https://claude.ai' }],
+            note: PG_I18N_NEW['sosyal-medya'].note,
+            template: PG_I18N_NEW['sosyal-medya'].template,
+            fields: [
+                { id: 'platform', label: 'Platform', type: 'select', options: ['Instagram', 'LinkedIn', 'X', 'TikTok'], default: 'Instagram' },
+                { id: 'konu', label: PG_I18N_NEW['sosyal-medya'].fields.konu.label, type: 'text', default: PG_I18N_NEW['sosyal-medya'].fields.konu.default },
+                { id: 'ton', label: PG_I18N_NEW['sosyal-medya'].fields.ton.label, type: 'select', options: PG_I18N_NEW['sosyal-medya'].fields.ton.options, default: PG_I18N_NEW['sosyal-medya'].fields.ton.options[0] }
+            ],
+            examples: PG_EXAMPLES['sosyal-medya']
+        },
+        {
+            id: 'ceviri',
+            label: '🌐 ' + PG_I18N_NEW.ceviri.label,
+            reco: [{ name: 'ChatGPT', url: 'https://chatgpt.com' }, { name: 'Gemini', url: 'https://gemini.google.com' }, { name: 'DeepSeek', url: 'https://chat.deepseek.com' }],
+            note: PG_I18N_NEW.ceviri.note,
+            template: PG_I18N_NEW.ceviri.template,
+            fields: [
+                { id: 'metin', label: PG_I18N_NEW.ceviri.fields.metin.label, type: 'textarea', default: PG_I18N_NEW.ceviri.fields.metin.default },
+                { id: 'kaynakDil', label: PG_I18N_NEW.ceviri.fields.kaynakDil.label, type: 'text', default: PG_I18N_NEW.ceviri.fields.kaynakDil.default },
+                { id: 'hedefDil', label: PG_I18N_NEW.ceviri.fields.hedefDil.label, type: 'text', default: PG_I18N_NEW.ceviri.fields.hedefDil.default }
+            ],
+            examples: PG_EXAMPLES.ceviri
+        },
+        {
+            id: 'veri-analizi',
+            label: '🧮 ' + PG_I18N_NEW['veri-analizi'].label,
+            reco: [{ name: 'Copilot', url: 'https://copilot.microsoft.com' }, { name: 'ChatGPT', url: 'https://chatgpt.com' }, { name: 'Gemini', url: 'https://gemini.google.com' }],
+            note: PG_I18N_NEW['veri-analizi'].note,
+            template: PG_I18N_NEW['veri-analizi'].template,
+            fields: [
+                { id: 'veriTipi', label: PG_I18N_NEW['veri-analizi'].fields.veriTipi.label, type: 'text', default: PG_I18N_NEW['veri-analizi'].fields.veriTipi.default },
+                { id: 'gorev', label: PG_I18N_NEW['veri-analizi'].fields.gorev.label, type: 'textarea', default: PG_I18N_NEW['veri-analizi'].fields.gorev.default }
+            ],
+            examples: PG_EXAMPLES['veri-analizi']
+        },
+        {
+            id: 'mulakat',
+            label: '🎤 ' + PG_I18N_NEW.mulakat.label,
+            reco: [{ name: 'ChatGPT', url: 'https://chatgpt.com' }, { name: 'Claude', url: 'https://claude.ai' }],
+            note: PG_I18N_NEW.mulakat.note,
+            template: PG_I18N_NEW.mulakat.template,
+            fields: [
+                { id: 'pozisyon', label: PG_I18N_NEW.mulakat.fields.pozisyon.label, type: 'text', default: PG_I18N_NEW.mulakat.fields.pozisyon.default },
+                { id: 'seviye', label: PG_I18N_NEW.mulakat.fields.seviye.label, type: 'select', options: ['Junior', 'Mid-level', 'Senior'], default: 'Mid-level' }
+            ],
+            examples: PG_EXAMPLES.mulakat
         }
     ];
 
@@ -980,9 +1231,29 @@
             recoList.appendChild(chip);
         });
 
+        const exampleList = document.getElementById('pgExampleList');
+        exampleList.innerHTML = '';
+        (task.examples || []).forEach(ex => {
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'pg-example-chip';
+            chip.textContent = '✨ ' + ex.label;
+            chip.onclick = () => pgApplyExample(task, ex);
+            exampleList.appendChild(chip);
+        });
+
         pgRenderFields(task);
         pgGenerate();
         document.getElementById('pgNote').textContent = '💡 ' + task.note;
+    }
+
+    function pgApplyExample(task, ex) {
+        task.fields.forEach((f, i) => {
+            const el = document.getElementById('pgf-' + f.id);
+            const val = ex.values[i];
+            if (el && val !== undefined && val !== '') el.value = val;
+        });
+        pgGenerate();
     }
 
     function pgCopyPrompt() {
