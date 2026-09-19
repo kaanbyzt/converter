@@ -1220,14 +1220,21 @@ def pdf_tools():
             error=t("err.min_two_pdfs"),
         )
 
-    merger = PdfMerger()
-    for f in pdf_files:
-        merger.append(f.stream)
+    try:
+        merger = PdfMerger()
+        for f in pdf_files:
+            merger.append(f.stream)
 
-    output = BytesIO()
-    merger.write(output)
-    merger.close()
-    output.seek(0)
+        output = BytesIO()
+        merger.write(output)
+        merger.close()
+        output.seek(0)
+    except Exception as e:
+        return render_template(
+            "pdf_tools.html",
+            download_url=None,
+            error=t("err.generic_error", error=str(e)),
+        )
 
     _log_action("pdf_merge")
     return send_file(
@@ -1710,10 +1717,10 @@ def convert_archive():
         elif filename.endswith(".tar") or filename.endswith(".gz") or filename.endswith(".tgz"):
             in_buf.seek(0)
             mode = "r:gz" if (filename.endswith(".gz") or filename.endswith(".tgz")) else "r:"
-            with tarfile.open(fileobj=in_buf, mode=mode) as t:
-                for member in t.getmembers():
+            with tarfile.open(fileobj=in_buf, mode=mode) as tf:
+                for member in tf.getmembers():
                     if member.isfile():
-                        f = t.extractfile(member)
+                        f = tf.extractfile(member)
                         if f:
                             files_dict[member.name] = f.read()
         else:
@@ -1727,22 +1734,24 @@ def convert_archive():
             download_name = "converted.zip"
             mimetype = "application/zip"
         elif target_format == "tar":
-            with tarfile.open(fileobj=out_buf, mode="w:") as t:
+            with tarfile.open(fileobj=out_buf, mode="w:") as tf:
                 for name, data in files_dict.items():
                     info = tarfile.TarInfo(name=name)
                     info.size = len(data)
-                    t.addfile(tarinfo=info, fileobj=BytesIO(data))
+                    tf.addfile(tarinfo=info, fileobj=BytesIO(data))
             download_name = "converted.tar"
             mimetype = "application/x-tar"
         elif target_format == "tgz":
-            with tarfile.open(fileobj=out_buf, mode="w:gz") as t:
+            with tarfile.open(fileobj=out_buf, mode="w:gz") as tf:
                 for name, data in files_dict.items():
                     info = tarfile.TarInfo(name=name)
                     info.size = len(data)
-                    t.addfile(tarinfo=info, fileobj=BytesIO(data))
+                    tf.addfile(tarinfo=info, fileobj=BytesIO(data))
             download_name = "converted.tar.gz"
             mimetype = "application/gzip"
-            
+        else:
+            return render_template("convert_archive.html", error=t("err.unsupported_archive_format"))
+
         out_buf.seek(0)
         _log_action(f"archive_convert_to_{target_format}")
         return send_file(

@@ -104,6 +104,19 @@ let audioCtx = null;
 let analyser = null;
 let drawVisual = null;
 let localStream = null;
+let recordedMimeType = 'audio/webm';
+
+function mimeToExtension(mimeType) {
+    const base = (mimeType || '').split(';')[0].trim();
+    const map = {
+        'audio/webm': 'webm',
+        'audio/ogg': 'ogg',
+        'audio/mp4': 'm4a',
+        'audio/mpeg': 'mp3',
+        'audio/wav': 'wav'
+    };
+    return map[base] || 'webm';
+}
 
 function toggleRecord() {
     if (isRecording) {
@@ -121,13 +134,14 @@ async function startRecording() {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         localStream = stream;
         mediaRecorder = new MediaRecorder(stream);
-        
+        recordedMimeType = mediaRecorder.mimeType || 'audio/webm';
+
         mediaRecorder.ondataavailable = event => {
             audioChunks.push(event.data);
         };
 
         mediaRecorder.onstop = () => {
-            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            const audioBlob = new Blob(audioChunks, { type: recordedMimeType });
             const audioUrl = URL.createObjectURL(audioBlob);
             document.getElementById('audio-playback').src = audioUrl;
             document.getElementById('playback-section').classList.remove('d-none');
@@ -223,12 +237,12 @@ function setupVisualizer(stream) {
 
 function downloadRecording() {
     if (audioChunks.length === 0) return;
-    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+    const audioBlob = new Blob(audioChunks, { type: recordedMimeType });
     const url = URL.createObjectURL(audioBlob);
-    
+
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'toolboxquick-kayit.webm';
+    a.download = 'toolboxquick-kayit.' + mimeToExtension(recordedMimeType);
     a.click();
     URL.revokeObjectURL(url);
 }

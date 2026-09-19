@@ -76,6 +76,15 @@ const toolType = "{{ tool_type }}";
 let selectedFile = null;
 let originalFileName = "";
 
+function friendlyPdfErrorMessage(e, fallbackMsg) {
+    const name = e && e.name ? e.name : '';
+    const msg = (e && e.message ? String(e.message) : '').toLowerCase();
+    if (name === 'PasswordException' || msg.includes('password') || msg.includes('encrypt')) {
+        return {{ t('pdf_office.err_encrypted')|tojson }};
+    }
+    return fallbackMsg;
+}
+
 function resetEditor() {
     selectedFile = null;
     originalFileName = "";
@@ -113,7 +122,8 @@ async function processAndDownload() {
             await serverConvert('/pdf-tools/ppt-to-pdf', 'pptx_file', originalFileName + '.pdf');
         }
     } catch (e) {
-        alert(e && e.message ? e.message : {{ t('pdf_office.err_process_failed')|tojson }});
+        const fallback = e && e.message ? e.message : {{ t('pdf_office.err_process_failed')|tojson }};
+        alert(friendlyPdfErrorMessage(e, fallback));
         console.error(e);
     } finally {
         document.getElementById('processing-msg').classList.add('d-none');
@@ -162,16 +172,21 @@ async function convertWordToPDF() {
     const lines = tempDiv.innerText.split('\n');
     let y = 15;
     pdf.setFontSize(11);
-    
+    const maxTextWidth = pdf.internal.pageSize.getWidth() - 30; // 15mm sol + 15mm sağ boşluk
+
     lines.forEach(line => {
-        if (y > 280) {
-            pdf.addPage();
-            y = 15;
-        }
-        if (line.trim() !== '') {
-            pdf.text(line.trim(), 15, y);
+        const trimmed = line.trim();
+        if (trimmed === '') return;
+
+        const wrappedLines = pdf.splitTextToSize(trimmed, maxTextWidth);
+        wrappedLines.forEach(wrappedLine => {
+            if (y > 280) {
+                pdf.addPage();
+                y = 15;
+            }
+            pdf.text(wrappedLine, 15, y);
             y += 8;
-        }
+        });
     });
 
     pdf.save(originalFileName + '.pdf');
@@ -181,25 +196,35 @@ async function convertWordToPDF() {
 async function convertExcelToPDF() {
     const arrayBuffer = await selectedFile.arrayBuffer();
     const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-    const firstSheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[firstSheetName];
-    
-    const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-    
+
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF();
-    
-    pdf.setFontSize(10);
-    let y = 15;
-    
-    json.forEach(row => {
-        if (y > 280) {
+
+    // Çalışma kitabındaki TÜM sayfalar işlenir; her sayfa kendi başlığıyla
+    // yeni bir PDF sayfasında başlar (ilk sayfa hariç, o mevcut sayfada başlar).
+    workbook.SheetNames.forEach((sheetName, sheetIdx) => {
+        const worksheet = workbook.Sheets[sheetName];
+        const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+        if (sheetIdx > 0) {
             pdf.addPage();
-            y = 15;
         }
-        let rowStr = row.map(cell => String(cell === null ? '' : cell)).join(' | ');
-        pdf.text(rowStr, 15, y);
-        y += 7;
+
+        let y = 15;
+        pdf.setFontSize(12);
+        pdf.text(sheetName, 15, y);
+        y += 9;
+        pdf.setFontSize(10);
+
+        json.forEach(row => {
+            if (y > 280) {
+                pdf.addPage();
+                y = 15;
+            }
+            let rowStr = row.map(cell => String(cell === null || cell === undefined ? '' : cell)).join(' | ');
+            pdf.text(rowStr, 15, y);
+            y += 7;
+        });
     });
 
     pdf.save(originalFileName + '.pdf');

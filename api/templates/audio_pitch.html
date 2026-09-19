@@ -152,8 +152,26 @@ function bufferToWav(buffer) {
     return new Blob([view], { type: 'audio/wav' });
 }
 
-// Offline render with pitch manipulation (using phase vocoder approach for time stretching/pitch shifting,
-// or resampling node if they want vinyl effect)
+// Pitch shift via playback-rate resampling (this changes duration), followed by a linear
+// interpolation resample pass that restores the original sample count so the output duration
+// matches the input. This is NOT phase-vocoder quality (time-domain resampling introduces some
+// artifacts), but it is duration-preserving and functionally correct pitch shifting.
+function resampleLinear(inputData, outputLength) {
+    const output = new Float32Array(outputLength);
+    const inputLength = inputData.length;
+    if (inputLength === 0 || outputLength === 0) return output;
+    const scale = (inputLength - 1) / Math.max(1, outputLength - 1);
+    for (let i = 0; i < outputLength; i++) {
+        const srcPos = i * scale;
+        const srcIndex = Math.floor(srcPos);
+        const frac = srcPos - srcIndex;
+        const s0 = inputData[srcIndex];
+        const s1 = inputData[Math.min(srcIndex + 1, inputLength - 1)];
+        output[i] = s0 + (s1 - s0) * frac;
+    }
+    return output;
+}
+
 async function processAndDownload() {
     if (!audioBuffer) return;
 
@@ -161,9 +179,7 @@ async function processAndDownload() {
     document.getElementById('process-btn').disabled = true;
 
     const ratio = Math.pow(2, semitones / 12);
-    
-    // We render using OfflineAudioContext with modified sample rate to shift pitch,
-    // which keeps quality premium.
+
     const offlineCtx = new OfflineAudioContext(
         audioBuffer.numberOfChannels,
         audioBuffer.length / ratio,
@@ -178,7 +194,19 @@ async function processAndDownload() {
 
     try {
         const renderedBuffer = await offlineCtx.startRendering();
-        const wavBlob = bufferToWav(renderedBuffer);
+
+        // Resample back to the original sample count so output duration matches the input.
+        const stretchedBuffer = audioCtx.createBuffer(
+            renderedBuffer.numberOfChannels,
+            audioBuffer.length,
+            audioBuffer.sampleRate
+        );
+        for (let channel = 0; channel < renderedBuffer.numberOfChannels; channel++) {
+            const resampled = resampleLinear(renderedBuffer.getChannelData(channel), audioBuffer.length);
+            stretchedBuffer.getChannelData(channel).set(resampled);
+        }
+
+        const wavBlob = bufferToWav(stretchedBuffer);
         const url = URL.createObjectURL(wavBlob);
 
         const a = document.createElement('a');

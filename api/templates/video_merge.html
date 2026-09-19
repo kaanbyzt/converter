@@ -158,7 +158,17 @@ function startExport() {
     currentVideoIndex = 0;
     
     recordedChunks = [];
-    const stream = canvasEl.captureStream(30); // 30 FPS
+    const canvasStream = canvasEl.captureStream(30); // 30 FPS
+    const outputTracks = [...canvasStream.getVideoTracks()];
+    if (videoEl.captureStream) {
+        // Captured once on the shared <video> element; keeps reflecting
+        // whichever clip is currently playing as its src changes below.
+        const audioTracks = videoEl.captureStream().getAudioTracks();
+        if (audioTracks.length > 0) {
+            outputTracks.push(audioTracks[0]);
+        }
+    }
+    const stream = new MediaStream(outputTracks);
     mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
 
     mediaRecorder.ondataavailable = (event) => {

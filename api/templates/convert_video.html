@@ -196,6 +196,7 @@ function startConversion() {
     videoEl.pause();
     videoEl.currentTime = 0;
     videoEl.controls = false;
+    videoEl.loop = false; // must be false or 'ended' never fires and export never stops
 
     recordedChunks = [];
     
@@ -217,10 +218,19 @@ function startConversion() {
     }
 
     canvasEl.classList.remove('d-none');
-    
-    // Draw loop for scaling
+
+    // Draw loop for scaling (letterbox/pillarbox to keep source aspect ratio)
     loopInterval = setInterval(() => {
-        ctx.drawImage(videoEl, 0, 0, canvasEl.width, canvasEl.height);
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0, 0, canvasEl.width, canvasEl.height);
+        const srcW = videoEl.videoWidth;
+        const srcH = videoEl.videoHeight;
+        const scale = Math.min(canvasEl.width / srcW, canvasEl.height / srcH);
+        const drawW = srcW * scale;
+        const drawH = srcH * scale;
+        const offsetX = (canvasEl.width - drawW) / 2;
+        const offsetY = (canvasEl.height - drawH) / 2;
+        ctx.drawImage(videoEl, 0, 0, srcW, srcH, offsetX, offsetY, drawW, drawH);
     }, 1000 / fps);
 
     stream = canvasEl.captureStream(fps);
@@ -255,6 +265,7 @@ function startConversion() {
         document.getElementById('processing-msg').classList.add('d-none');
         document.getElementById('convert-btn').disabled = false;
         videoEl.controls = true;
+        videoEl.loop = true;
         videoEl.play();
     };
 

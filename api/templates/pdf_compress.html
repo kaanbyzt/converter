@@ -19,8 +19,9 @@
         display: none;
     }
 </style>
-<!-- Load pdf-lib CDN -->
+<!-- Load pdf-lib and pdf.js CDNs -->
 <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -56,6 +57,10 @@
             </select>
         </div>
 
+        <div class="alert alert-warning py-2 my-3 small" style="max-width: 420px; margin: 0 auto;">
+            {{ t('pdf_compress.warning_rasterized') }}
+        </div>
+
         <div id="processing-msg" class="text-warning small mb-3 d-none">{{ t('pdf_compress.processing_msg') }}</div>
 
         <button class="btn btn-warning text-white px-5 py-2" id="process-btn" onclick="processAndDownload()" style="border-radius: 8px; font-weight: 600; background-color: #f97316; border-color: #f97316;">
@@ -73,6 +78,17 @@
 <script>
 let pdfData = null;
 let originalFileName = "";
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
+function friendlyPdfErrorMessage(e, fallbackMsg) {
+    const name = e && e.name ? e.name : '';
+    const msg = (e && e.message ? String(e.message) : '').toLowerCase();
+    if (name === 'PasswordException' || msg.includes('password') || msg.includes('encrypt')) {
+        return {{ t('pdf_compress.err_encrypted')|tojson }};
+    }
+    return fallbackMsg;
+}
 
 function resetEditor() {
     pdfData = null;
@@ -106,19 +122,45 @@ async function processAndDownload() {
     document.getElementById('process-btn').disabled = true;
 
     try {
+        const level = document.getElementById('compress-level').value;
+        // "Yüksek" seviye daha düşük JPEG kalitesi ve daha düşük render ölçeği kullanarak
+        // dosya boyutunu daha fazla küçültür; "standart" görsel kaliteyi daha çok korur.
+        const jpegQuality = level === 'high' ? 0.35 : 0.65;
+        const renderScale = level === 'high' ? 1.0 : 1.5;
+
+        // Her sayfayı pdf.js ile canvas'a render edip seçilen kalitede JPEG'e
+        // yeniden kodluyoruz, ardından pdf-lib ile sıfırdan bir PDF paketliyoruz.
+        const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(pdfData.slice(0)) });
+        const sourcePdf = await loadingTask.promise;
+        const totalPages = sourcePdf.numPages;
+
         const { PDFDocument } = PDFLib;
-        const pdfDoc = await PDFDocument.load(pdfData);
-        
-        // Remove metadata and compress streams
-        pdfDoc.setTitle('');
-        pdfDoc.setAuthor('');
-        pdfDoc.setSubject('');
-        pdfDoc.setCreator('');
-        pdfDoc.setProducer('');
-        
-        // Save PDF with stream compression
-        const pdfBytes = await pdfDoc.save({ useObjectStreams: true });
-        
+        const outputDoc = await PDFDocument.create();
+
+        for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+            const page = await sourcePdf.getPage(pageNum);
+            const viewport = page.getViewport({ scale: renderScale });
+
+            const canvas = document.createElement('canvas');
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            const context = canvas.getContext('2d');
+            context.fillStyle = '#ffffff';
+            context.fillRect(0, 0, canvas.width, canvas.height);
+
+            await page.render({ canvasContext: context, viewport: viewport }).promise;
+
+            const dataUrl = canvas.toDataURL('image/jpeg', jpegQuality);
+            const jpegBase64 = dataUrl.split(',')[1];
+            const jpegBytes = Uint8Array.from(atob(jpegBase64), c => c.charCodeAt(0));
+
+            const embeddedImage = await outputDoc.embedJpg(jpegBytes);
+            const newPage = outputDoc.addPage([viewport.width, viewport.height]);
+            newPage.drawImage(embeddedImage, { x: 0, y: 0, width: viewport.width, height: viewport.height });
+        }
+
+        const pdfBytes = await outputDoc.save({ useObjectStreams: true });
+
         const blob = new Blob([pdfBytes], { type: 'application/pdf' });
         const url = URL.createObjectURL(blob);
 
@@ -128,7 +170,7 @@ async function processAndDownload() {
         a.click();
         URL.revokeObjectURL(url);
     } catch (e) {
-        alert({{ t('pdf_compress.err_process_failed')|tojson }});
+        alert(friendlyPdfErrorMessage(e, {{ t('pdf_compress.err_process_failed')|tojson }}));
         console.error(e);
     } finally {
         document.getElementById('processing-msg').classList.add('d-none');

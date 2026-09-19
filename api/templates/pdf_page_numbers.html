@@ -82,6 +82,15 @@
 let pdfData = null;
 let originalFileName = "";
 
+function friendlyPdfErrorMessage(e, fallbackMsg) {
+    const name = e && e.name ? e.name : '';
+    const msg = (e && e.message ? String(e.message) : '').toLowerCase();
+    if (name === 'PasswordException' || msg.includes('password') || msg.includes('encrypt')) {
+        return {{ t('pdf_page_numbers.err_encrypted')|tojson }};
+    }
+    return fallbackMsg;
+}
+
 function resetEditor() {
     pdfData = null;
     originalFileName = "";
@@ -150,7 +159,7 @@ async function processAndDownload() {
         a.click();
         URL.revokeObjectURL(url);
     } catch (e) {
-        alert({{ t('pdf_page_numbers.err_process_failed')|tojson }});
+        alert(friendlyPdfErrorMessage(e, {{ t('pdf_page_numbers.err_process_failed')|tojson }}));
         console.error(e);
     } finally {
         document.getElementById('processing-msg').classList.add('d-none');

@@ -19,6 +19,9 @@
         display: none;
     }
 </style>
+<!-- Load opentype.js (TrueType/CFF outline parse+write) and pako (zlib deflate/inflate for WOFF1 packaging) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/opentype.js/1.3.4/opentype.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -73,6 +76,13 @@
 let selectedFile = null;
 let originalFileName = "";
 
+const FONT_MSG = {
+    generic: {{ t('convert_font.err_generic')|tojson }},
+    cffToTtf: {{ t('convert_font.err_cff_to_ttf')|tojson }},
+    woff2: {{ t('convert_font.err_woff2')|tojson }},
+    unknown: {{ t('convert_font.err_unknown_format')|tojson }}
+};
+
 function resetEditor() {
     selectedFile = null;
     originalFileName = "";
@@ -85,10 +95,168 @@ function loadFontFile(input) {
     if (!input.files || !input.files[0]) return;
     selectedFile = input.files[0];
     originalFileName = selectedFile.name.substring(0, selectedFile.name.lastIndexOf('.'));
-    
+
     document.getElementById('file-name').textContent = selectedFile.name;
     document.getElementById('upload-stage').classList.add('d-none');
     document.getElementById('editor-stage').classList.remove('d-none');
+}
+
+// --- Font container detection (magic bytes) ---
+function detectFont(buf) {
+    const dv = new DataView(buf);
+    if (buf.byteLength < 8) return { container: 'unknown', outline: 'unknown' };
+    const sig = dv.getUint32(0);
+    if (sig === 0x00010000 || sig === 0x74727565 /* 'true' */) return { container: 'sfnt', outline: 'truetype' };
+    if (sig === 0x4F54544F /* 'OTTO' */) return { container: 'sfnt', outline: 'cff' };
+    if (sig === 0x774F4646 /* 'wOFF' */) {
+        const flavor = dv.getUint32(4);
+        if (flavor === 0x00010000 || flavor === 0x74727565) return { container: 'woff', outline: 'truetype' };
+        if (flavor === 0x4F54544F) return { container: 'woff', outline: 'cff' };
+        return { container: 'woff', outline: 'unknown' };
+    }
+    if (sig === 0x774F4632 /* 'wOF2' */) return { container: 'woff2', outline: 'unknown' };
+    return { container: 'unknown', outline: 'unknown' };
+}
+
+// --- Manual, lossless WOFF1 <-> SFNT (TTF/OTF) packaging ---
+// Operates on raw sfnt table bytes copied as-is; no outline reinterpretation, so this direction is always lossless.
+function pad4(n) { return (4 - (n % 4)) % 4; }
+
+function readSfntDirectory(buf) {
+    const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+    const sfntVersion = dv.getUint32(0);
+    const numTables = dv.getUint16(4);
+    const tables = [];
+    for (let i = 0; i < numTables; i++) {
+        const rec = 12 + i * 16;
+        const tag = String.fromCharCode(buf[rec], buf[rec + 1], buf[rec + 2], buf[rec + 3]);
+        const checkSum = dv.getUint32(rec + 4);
+        const offset = dv.getUint32(rec + 8);
+        const length = dv.getUint32(rec + 12);
+        tables.push({ tag, checkSum, offset, length, data: buf.slice(offset, offset + length) });
+    }
+    return { sfntVersion, numTables, tables };
+}
+
+function sfntToWoff(buf) {
+    const { sfntVersion, tables } = readSfntDirectory(buf);
+    const numTables = tables.length;
+
+    const compTables = tables.map(t => {
+        const compressed = pako.deflate(t.data);
+        const useComp = compressed.length < t.length;
+        return {
+            tag: t.tag,
+            checkSum: t.checkSum,
+            origLength: t.length,
+            compLength: useComp ? compressed.length : t.length,
+            payload: useComp ? compressed : t.data
+        };
+    });
+
+    const HEADER_SIZE = 44;
+    const DIR_ENTRY_SIZE = 20;
+    let cursor = HEADER_SIZE + numTables * DIR_ENTRY_SIZE;
+
+    const dataLayout = [];
+    const payloadByTag = {};
+    compTables.forEach(ct => {
+        payloadByTag[ct.tag] = ct.payload;
+        dataLayout.push({ tag: ct.tag, offset: cursor, compLength: ct.compLength, origLength: ct.origLength, checkSum: ct.checkSum });
+        cursor += ct.compLength + pad4(ct.compLength);
+    });
+    const totalLength = cursor;
+
+    const sortedDir = [...dataLayout].sort((a, b) => (a.tag < b.tag ? -1 : a.tag > b.tag ? 1 : 0));
+    const totalSfntSize = 12 + numTables * 16 + tables.reduce((sum, t) => sum + t.length + pad4(t.length), 0);
+
+    const out = new Uint8Array(totalLength);
+    const dv = new DataView(out.buffer);
+    dv.setUint32(0, 0x774F4646);
+    dv.setUint32(4, sfntVersion);
+    dv.setUint32(8, totalLength);
+    dv.setUint16(12, numTables);
+    dv.setUint16(14, 0);
+    dv.setUint32(16, totalSfntSize);
+    dv.setUint16(20, 1);
+    dv.setUint16(22, 0);
+    dv.setUint32(24, 0);
+    dv.setUint32(28, 0);
+    dv.setUint32(32, 0);
+    dv.setUint32(36, 0);
+    dv.setUint32(40, 0);
+
+    sortedDir.forEach((entry, i) => {
+        const rec = HEADER_SIZE + i * DIR_ENTRY_SIZE;
+        out[rec] = entry.tag.charCodeAt(0);
+        out[rec + 1] = entry.tag.charCodeAt(1);
+        out[rec + 2] = entry.tag.charCodeAt(2);
+        out[rec + 3] = entry.tag.charCodeAt(3);
+        dv.setUint32(rec + 4, entry.offset);
+        dv.setUint32(rec + 8, entry.compLength);
+        dv.setUint32(rec + 12, entry.origLength);
+        dv.setUint32(rec + 16, entry.checkSum);
+    });
+
+    dataLayout.forEach(entry => out.set(payloadByTag[entry.tag], entry.offset));
+    return out;
+}
+
+function woffToSfnt(buf) {
+    const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+    const flavor = dv.getUint32(4);
+    const numTables = dv.getUint16(12);
+
+    const entries = [];
+    for (let i = 0; i < numTables; i++) {
+        const rec = 44 + i * 20;
+        const tag = String.fromCharCode(buf[rec], buf[rec + 1], buf[rec + 2], buf[rec + 3]);
+        const offset = dv.getUint32(rec + 4);
+        const compLength = dv.getUint32(rec + 8);
+        const origLength = dv.getUint32(rec + 12);
+        const checkSum = dv.getUint32(rec + 16);
+        let data = buf.slice(offset, offset + compLength);
+        if (compLength !== origLength) {
+            data = pako.inflate(data);
+        }
+        entries.push({ tag, checkSum, data });
+    }
+
+    const sorted = [...entries].sort((a, b) => (a.tag < b.tag ? -1 : a.tag > b.tag ? 1 : 0));
+    const numT = sorted.length;
+    let searchRange = 1, entrySelector = 0;
+    while (searchRange * 2 <= numT) { searchRange *= 2; entrySelector++; }
+    searchRange *= 16;
+    const rangeShift = numT * 16 - searchRange;
+
+    let cursor = 12 + numT * 16;
+    const layout = sorted.map(e => {
+        const offset = cursor;
+        cursor += e.data.length + pad4(e.data.length);
+        return { ...e, offset };
+    });
+
+    const out = new Uint8Array(cursor);
+    const odv = new DataView(out.buffer);
+    odv.setUint32(0, flavor);
+    odv.setUint16(4, numT);
+    odv.setUint16(6, searchRange);
+    odv.setUint16(8, entrySelector);
+    odv.setUint16(10, rangeShift);
+
+    layout.forEach((e, i) => {
+        const rec = 12 + i * 16;
+        out[rec] = e.tag.charCodeAt(0);
+        out[rec + 1] = e.tag.charCodeAt(1);
+        out[rec + 2] = e.tag.charCodeAt(2);
+        out[rec + 3] = e.tag.charCodeAt(3);
+        odv.setUint32(rec + 4, e.checkSum);
+        odv.setUint32(rec + 8, e.offset);
+        odv.setUint32(rec + 12, e.data.length);
+        out.set(e.data, e.offset);
+    });
+
+    return out;
 }
 
 async function processAndDownload() {
@@ -101,21 +269,45 @@ async function processAndDownload() {
 
     try {
         const fileData = await selectedFile.arrayBuffer();
-        
-        // Local Font format conversion helper
-        // Since converting raw binary table structures is complex in pure inline client-side,
-        // we offer a direct buffer conversion wrapper that updates the font container header 
-        // structure. For downloading, the file is repackaged to the selected target extension.
-        const blob = new Blob([fileData], { type: 'font/' + targetFormat });
+        const info = detectFont(fileData);
+
+        if (info.container === 'woff2') throw new Error(FONT_MSG.woff2);
+        if (info.container === 'unknown') throw new Error(FONT_MSG.unknown);
+
+        let outBytes;
+
+        if (targetFormat === 'woff') {
+            outBytes = (info.container === 'woff')
+                ? new Uint8Array(fileData)
+                : sfntToWoff(new Uint8Array(fileData));
+        } else if (targetFormat === 'ttf') {
+            if (info.outline !== 'truetype') throw new Error(FONT_MSG.cffToTtf);
+            outBytes = (info.container === 'sfnt')
+                ? new Uint8Array(fileData)
+                : woffToSfnt(new Uint8Array(fileData));
+        } else if (targetFormat === 'otf') {
+            if (info.outline === 'cff') {
+                outBytes = (info.container === 'sfnt')
+                    ? new Uint8Array(fileData)
+                    : woffToSfnt(new Uint8Array(fileData));
+            } else {
+                // Real TrueType (glyf) -> OpenType (CFF) outline conversion via opentype.js.
+                const sfntBytes = (info.container === 'woff') ? woffToSfnt(new Uint8Array(fileData)) : new Uint8Array(fileData);
+                const font = opentype.parse(sfntBytes.buffer.slice(sfntBytes.byteOffset, sfntBytes.byteOffset + sfntBytes.byteLength));
+                outBytes = new Uint8Array(font.toArrayBuffer());
+            }
+        }
+
+        const blob = new Blob([outBytes], { type: 'font/' + targetFormat });
         const url = URL.createObjectURL(blob);
-        
+
         const a = document.createElement('a');
         a.href = url;
         a.download = originalFileName + '.' + targetFormat;
         a.click();
         URL.revokeObjectURL(url);
     } catch (e) {
-        alert({{ t('convert_font.err_generic')|tojson }});
+        alert((e && e.message) ? e.message : FONT_MSG.generic);
         console.error(e);
     } finally {
         document.getElementById('processing-msg').classList.add('d-none');

@@ -209,6 +209,7 @@ function updateSliders() {
     if (startTimeVal < 0) startTimeVal = 0;
     if (endTimeVal > duration) endTimeVal = duration;
     if (startTimeVal >= endTimeVal) startTimeVal = endTimeVal - 0.5;
+    startTimeVal = Math.max(0, startTimeVal);
 
     startInput.value = startTimeVal.toFixed(2);
     endInput.value = endTimeVal.toFixed(2);

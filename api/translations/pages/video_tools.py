@@ -69,6 +69,7 @@ PAGES = {
         "video_editor.resize_original": "Orijinal Çözünürlük",
         "video_editor.stabilize_label": "Sarsıntı Azaltma (Stabilize)",
         "video_editor.stabilize_toggle_label": "Yumuşak Kamera Dengeleyiciyi Etkinleştir",
+        "video_editor.stabilize_note": "Deneysel: Bu sürümde gerçek hareket analizi yapılmaz, görüntü olduğu gibi (değişiklik yapılmadan) işlenir.",
         "video_editor.rendering_msg": "Lütfen bekleyin, video render ediliyor...",
         "video_editor.export_download_btn": "Dışa Aktar ve İndir",
         "video_editor.back_home": "Ana sayfaya dön",
@@ -151,6 +152,10 @@ PAGES = {
         "video_tts.back_home": "Ana sayfaya dön",
         "video_tts.enter_text_alert": "Lütfen sese dönüştürülecek bir metin girin.",
         "video_tts.playback_error": "Ses çalınırken hata oluşdu.",
+        "video_tts.no_voice_support": "Tarayıcınız konuşma sentezini (Web Speech API) desteklemiyor.",
+        "video_tts.share_audio_hint": "İndirmek için tarayıcı bu sekmeyi paylaşmanızı isteyecek: açılan pencerede \"Bu Sekme\" seçilip \"Sekme sesini paylaş\" kutusu işaretlenmelidir. Ardından metin okunurken ses otomatik olarak kaydedilir.",
+        "video_tts.recording_msg": "Kaydediliyor, lütfen bekleyin (metin okunuyor)...",
+        "video_tts.share_denied_error": "Sekme sesi paylaşımı reddedildi veya alınamadı, bu yüzden ses kaydedilemedi.",
 
         # video_trim.html
         "video_trim.page_title": "Video Kesici",
@@ -248,6 +253,7 @@ PAGES = {
         "video_editor.resize_original": "Original Resolution",
         "video_editor.stabilize_label": "Shake Reduction (Stabilize)",
         "video_editor.stabilize_toggle_label": "Enable smooth camera stabilizer",
+        "video_editor.stabilize_note": "Experimental: this version does not perform real motion analysis; the footage is processed unchanged.",
         "video_editor.rendering_msg": "Please wait, the video is rendering...",
         "video_editor.export_download_btn": "Export and Download",
         "video_editor.back_home": "Back to home",
@@ -326,6 +332,10 @@ PAGES = {
         "video_tts.back_home": "Back to home",
         "video_tts.enter_text_alert": "Please enter some text to convert to speech.",
         "video_tts.playback_error": "An error occurred while playing the audio.",
+        "video_tts.no_voice_support": "Your browser does not support speech synthesis (Web Speech API).",
+        "video_tts.share_audio_hint": "To download, your browser will ask you to share this tab: in the dialog, pick \"This Tab\" and check \"Share tab audio\". The speech will then be recorded automatically while it plays.",
+        "video_tts.recording_msg": "Recording, please wait (speaking text)...",
+        "video_tts.share_denied_error": "Tab audio sharing was denied or unavailable, so the audio could not be recorded.",
 
         "video_trim.page_title": "Video Trimmer",
         "video_trim.eyebrow": "Video Tools",

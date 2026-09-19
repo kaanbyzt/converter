@@ -75,6 +75,15 @@
 let pdfData = null;
 let originalFileName = "";
 
+function friendlyPdfErrorMessage(e, fallbackMsg) {
+    const name = e && e.name ? e.name : '';
+    const msg = (e && e.message ? String(e.message) : '').toLowerCase();
+    if (name === 'PasswordException' || msg.includes('password') || msg.includes('encrypt')) {
+        return {{ t('pdf_rotate.err_encrypted')|tojson }};
+    }
+    return fallbackMsg;
+}
+
 function resetEditor() {
     pdfData = null;
     originalFileName = "";
@@ -110,7 +119,7 @@ async function processAndDownload() {
         const { PDFDocument, degrees } = PDFLib;
         const pdfDoc = await PDFDocument.load(pdfData);
         const rotationVal = parseInt(document.getElementById('rotate-degrees').value);
-        
+
         const pages = pdfDoc.getPages();
         pages.forEach(page => {
             const currentRotation = page.getRotation().angle;
@@ -127,7 +136,7 @@ async function processAndDownload() {
         a.click();
         URL.revokeObjectURL(url);
     } catch (e) {
-        alert({{ t('pdf_rotate.err_process_failed')|tojson }});
+        alert(friendlyPdfErrorMessage(e, {{ t('pdf_rotate.err_process_failed')|tojson }}));
         console.error(e);
     } finally {
         document.getElementById('processing-msg').classList.add('d-none');

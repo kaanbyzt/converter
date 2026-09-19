@@ -244,6 +244,7 @@
                         <input class="form-check-input" type="checkbox" id="stabilize-toggle" onchange="drawFrame()">
                         <label class="form-check-label text-secondary small" for="stabilize-toggle">{{ t('video_editor.stabilize_toggle_label') }}</label>
                     </div>
+                    <div class="form-text text-secondary small mt-1">{{ t('video_editor.stabilize_note') }}</div>
                 </div>
 
                 <hr class="my-3">
@@ -406,14 +407,6 @@ function drawFrame() {
     ctx.clearRect(0, 0, targetW, targetH);
     ctx.save();
 
-    // 1. Stabilize simulation (random slight offset correction)
-    if (document.getElementById('stabilize-toggle').checked) {
-        const offsetLimit = 4;
-        const dx = (Math.random() - 0.5) * offsetLimit;
-        const dy = (Math.random() - 0.5) * offsetLimit;
-        ctx.translate(dx, dy);
-    }
-
     // Draw video frame (cropping + scaling)
     ctx.drawImage(videoEl, cropX, cropY, cropW, cropH, 0, 0, targetW, targetH);
 
@@ -472,25 +465,32 @@ function startExport() {
     
     const stream = canvasEl.captureStream(30); // 30 FPS
     
-    // Setup audio combining
+    // Setup audio combining (routed through a GainNode so the volume
+    // setting, which can go above 100%, is actually baked into the export
+    // instead of only affecting local <video> playback)
     let audioStreamDestination = null;
-    
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const gainNode = audioCtx.createGain();
+    gainNode.gain.value = volumeVal;
+
     if (bgAudioBuffer) {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         audioStreamDestination = audioCtx.createMediaStreamDestination();
         const source = audioCtx.createBufferSource();
         source.buffer = bgAudioBuffer;
         source.loop = true;
-        source.connect(audioStreamDestination);
+        source.connect(gainNode).connect(audioStreamDestination);
         source.start(0);
-        
+
         // Add custom audio track
         stream.addTrack(audioStreamDestination.stream.getAudioTracks()[0]);
     } else if (videoEl.captureStream) {
         const videoStream = videoEl.captureStream();
         const audioTracks = videoStream.getAudioTracks();
         if (audioTracks.length > 0) {
-            stream.addTrack(audioTracks[0]);
+            audioStreamDestination = audioCtx.createMediaStreamDestination();
+            const sourceNode = audioCtx.createMediaStreamSource(new MediaStream([audioTracks[0]]));
+            sourceNode.connect(gainNode).connect(audioStreamDestination);
+            stream.addTrack(audioStreamDestination.stream.getAudioTracks()[0]);
         }
     }
 

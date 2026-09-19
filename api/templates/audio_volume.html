@@ -163,7 +163,7 @@ async function processAndDownload() {
     // Apply volume factor channel-by-channel
     for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
         const sourceData = audioBuffer.getChannelData(channel);
-        const targetData = trimmedData = targetBuffer.getChannelData(channel);
+        const targetData = targetBuffer.getChannelData(channel);
         for (let i = 0; i < audioBuffer.length; i++) {
             targetData[i] = sourceData[i] * volumeFactor;
         }
