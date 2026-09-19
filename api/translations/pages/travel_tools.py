@@ -155,7 +155,6 @@ PAGES = {
         "travel.currency.name.AED": "BAE Dirhemi",
         "travel.currency.name.SAR": "Suudi Arabistan Riyali",
         "travel.currency.name.NZD": "Yeni Zelanda Doları",
-        "travel.currency.name.ILS": "İsrail Şekeli",
     },
     "en": {
         "nav.travel_panel": "Travel Assistant",
@@ -311,6 +310,5 @@ PAGES = {
         "travel.currency.name.AED": "UAE Dirham",
         "travel.currency.name.SAR": "Saudi Riyal",
         "travel.currency.name.NZD": "New Zealand Dollar",
-        "travel.currency.name.ILS": "Israeli Shekel",
     },
 }

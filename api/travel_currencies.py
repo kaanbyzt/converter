@@ -31,7 +31,6 @@ CURRENCIES = [
     ("AED", "🇦🇪", "travel.currency.name.AED"),
     ("SAR", "🇸🇦", "travel.currency.name.SAR"),
     ("NZD", "🇳🇿", "travel.currency.name.NZD"),
-    ("ILS", "🇮🇱", "travel.currency.name.ILS"),
 ]
 
 # Çevirici açıldığında hızlı referans tablosunda gösterilecek en çok kullanılan kodlar.
