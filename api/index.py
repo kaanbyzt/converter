@@ -1614,14 +1614,22 @@ def pdf_to_excel():
 @app.route("/pdf-tools/ppt-to-pdf", methods=["GET", "POST"])
 def ppt_to_pdf():
     if request.method == "GET":
-        return render_template("pdf_office.html", tool_type="ppt-pdf", tool_title=t("office.ppt_to_pdf.title"), tool_desc=t("office.ppt_to_pdf.desc"), file_accept=".pptx")
+        return render_template("pdf_office.html", tool_type="ppt-pdf", tool_title=t("office.ppt_to_pdf.title"), tool_desc=t("office.ppt_to_pdf.desc"), file_accept=".pptx,.pptm,.ppt")
 
     file = request.files.get("pptx_file")
-    if not file or not file.filename.lower().endswith(".pptx"):
+    if not file:
+        return jsonify({"error": t("err.invalid_pptx")}), 400
+
+    data = file.read()
+    # Uzantı yerine dosya imzasına bakıyoruz: .pptx/.pptm ZIP (PK), eski
+    # .ppt ise OLE2 (D0CF11E0) formatındadır ve python-pptx ile açılamaz.
+    if data[:4] == b"\xd0\xcf\x11\xe0":
+        return jsonify({"error": t("err.legacy_ppt")}), 400
+    if data[:2] != b"PK":
         return jsonify({"error": t("err.invalid_pptx")}), 400
 
     try:
-        output = _convert_pptx_to_pdf(BytesIO(file.read()))
+        output = _convert_pptx_to_pdf(BytesIO(data))
 
         _log_action("ppt_to_pdf")
         return send_file(

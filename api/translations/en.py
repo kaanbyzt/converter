@@ -187,6 +187,7 @@ TRANSLATIONS = {
     "err.min_two_pdfs": "Please upload at least two PDF files.",
     "err.invalid_pdf": "Please select a valid PDF file.",
     "err.invalid_pptx": "Please select a valid PPTX file.",
+    "err.legacy_ppt": "The legacy .ppt format is not supported. Save the file as .pptx in PowerPoint (\"Save As > .pptx\") and try again.",
     "err.enter_page_range": "Please specify the page range to extract.",
     "err.no_valid_pages_in_range": "No valid pages found in the specified range.",
     "err.generic_error": "An error occurred: {error}",
