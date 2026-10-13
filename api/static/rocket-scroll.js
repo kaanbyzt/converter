@@ -40,8 +40,9 @@
         '.rs-rocket {' +
         '  position: fixed; left: 0; top: 0; width: 30px; height: 56px; z-index: 151;' +
         '  cursor: grab; touch-action: none; will-change: transform; outline: none;' +
-        '  -webkit-tap-highlight-color: transparent;' +
+        '  -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;' +
         '}' +
+        '@media (pointer: coarse) { .rs-rocket::before { content: ""; position: absolute; inset: -14px -10px; } }' +
         '.rs-rocket:focus-visible .rs-body { filter: drop-shadow(0 0 6px #60a5fa); }' +
         '.rs-dragging, .rs-dragging * { cursor: grabbing !important; user-select: none !important; }' +
         '.rs-ship { position: absolute; inset: 0; transform-origin: 50% 50%; will-change: transform; }' +
@@ -146,6 +147,19 @@
             targetScroll = ratio * maxScroll;
         }
 
+        // Kare hızından bağımsız yumuşatma: 60fps'te k, düşük fps'te aynı süre
+        function ease(k, dt) { return 1 - Math.pow(1 - k, dt); }
+
+        // Anında kaydır: Bootstrap'in scroll-behavior: smooth ayarını geçici olarak devre dışı bırakır
+        // (behavior: 'instant' eski Safari sürümlerinde desteklenmiyor)
+        var rootStyle = document.documentElement.style;
+        function jumpTo(y) {
+            var prev = rootStyle.scrollBehavior;
+            rootStyle.scrollBehavior = 'auto';
+            window.scrollTo(0, y);
+            rootStyle.scrollBehavior = prev;
+        }
+
         // En kısa yoldan hedef açıya dön
         function turnTo(target, k) {
             var d = ((target - angle) % 360 + 540) % 360 - 180;
@@ -177,6 +191,10 @@
             targetScroll = null;
             document.documentElement.classList.remove('rs-dragging');
         }
+        // iOS Safari touch-action'ı her zaman dinlemiyor: tutarken sayfanın kendi kaymasını engelle
+        rocket.addEventListener('touchmove', function (e) { e.preventDefault(); }, { passive: false });
+        rocket.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+
         rocket.addEventListener('pointerup', endDrag);
         rocket.addEventListener('pointercancel', endDrag);
         rocket.addEventListener('lostpointercapture', endDrag);
@@ -243,7 +261,7 @@
         }
 
         function frame(now) {
-            var dt = Math.min(3, (now - lastTime) / 16.67);
+            var dt = Math.min(6, (now - lastTime) / 16.67);
             lastTime = now;
 
             // Serbest uçuşta roketin yüksekliği = sayfa konumu (ray ile aynı oran)
@@ -253,11 +271,12 @@
                 var cur = window.scrollY;
                 var diff = targetScroll - cur;
                 if (Math.abs(diff) < 0.5) {
-                    window.scrollTo({ top: targetScroll, behavior: 'instant' });
+                    jumpTo(targetScroll);
                     if (mode !== 'free') targetScroll = null;
+                } else if (mode === 'free') {
+                    jumpTo(targetScroll);   // tutarken sayfa roketle birebir gider
                 } else {
-                    var ease = mode === 'free' ? 0.35 : 0.14;
-                    window.scrollTo({ top: cur + diff * Math.min(1, ease * dt), behavior: 'instant' });
+                    jumpTo(cur + diff * ease(0.14, dt));
                 }
             }
 
@@ -267,7 +286,7 @@
             velocity += (delta - velocity) * 0.25;
 
             var ratio = maxScroll > 0 ? sy / maxScroll : 0;
-            railY += (ratio * travel() - railY) * Math.min(1, 0.22 * dt);
+            railY += (ratio * travel() - railY) * ease(0.22, dt);
             var rail = railPoint();
 
             var px = pos.x, py = pos.y, speed, heading = null;
@@ -283,8 +302,8 @@
             } else {
                 var target = mode === 'free' ? goal : rail;
                 var k = mode === 'free' ? 0.3 : 0.1;
-                pos.x += (target.x - pos.x) * Math.min(1, k * dt);
-                pos.y += (target.y - pos.y) * Math.min(1, k * dt);
+                pos.x += (target.x - pos.x) * ease(k, dt);
+                pos.y += (target.y - pos.y) * ease(k, dt);
                 var mx = pos.x - px, my = pos.y - py;
                 var moved = Math.sqrt(mx * mx + my * my);
                 speed = Math.min(1, moved / (12 * dt));
@@ -295,9 +314,9 @@
                 }
             }
 
-            if (heading !== null) turnTo(heading, Math.min(1, (mode === 'rail' ? 0.15 : 0.25) * dt));
+            if (heading !== null) turnTo(heading, ease((mode === 'rail' ? 0.15 : 0.25), dt));
 
-            flamePow += ((0.35 + speed * 1.4) - flamePow) * Math.min(1, 0.2 * dt);
+            flamePow += ((0.35 + speed * 1.4) - flamePow) * ease(0.2, dt);
 
             var small = window.innerWidth <= 900;
             rocket.style.transform = 'translate3d(' + (pos.x - ROCKET_W / 2).toFixed(2) + 'px,' +
