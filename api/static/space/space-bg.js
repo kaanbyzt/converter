@@ -5,12 +5,13 @@
   if (!canvas || !window.THREE) return;
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const BASE = canvas.dataset.base || '/static/space/';
+  const mobile = matchMedia('(max-width: 900px), (pointer: coarse)').matches;
 
   let renderer;
   try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'low-power' }); }
   catch (e) { return; }                                   // WebGL yoksa düz arka plan kalır
   // Araç sayfaları ağır işler yapabiliyor: piksel oranı sınırlı
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+  renderer.setPixelRatio(Math.min(devicePixelRatio, mobile ? 1.25 : 1.5));
   renderer.setClearColor(0x05060c, 1);
   const scene = new THREE.Scene();
   scene.fog = new THREE.FogExp2(0x05060c, 0.0028);
@@ -86,8 +87,9 @@
     });
     const pts = new THREE.Points(g, m); scene.add(pts); return pts;
   }
-  const stars  = starLayer(9000, 900, 900, 1.6);
-  const stars2 = starLayer(1200, 500, 900, 3.2);
+  // Telefonlarda daha az yıldız: GPU yükü ve pil için
+  const stars  = starLayer(mobile ? 4000 : 9000, 900, 900, 1.6);
+  const stars2 = starLayer(mobile ? 600 : 1200, 500, 900, 3.2);
 
   const loader = new THREE.TextureLoader();
   const maxAniso = renderer.capabilities.getMaxAnisotropy();
@@ -307,6 +309,14 @@
     planet({ r: 36, x: -10, y: -55, z: -560, tilt: .05, spin: .05,
       map: 'jupiter', atm: '#ffd2a8', atmStr: .4, limb: .9 }),
   ];
+
+  // Dikey (telefon) ekranda uzak gezegenler ortadaki metnin arkasına düşmesin: yanlara yay
+  planets.forEach(p => { p.baseX = p.grp.position.x; });
+  function layoutPlanets() {
+    const k = Math.min(Math.max(1, 0.75 / camera.aspect), 1.7);
+    planets.forEach((p, i) => { if (i > 0) p.grp.position.x = p.baseX * k; });
+  }
+  addEventListener('resize', layoutPlanets); layoutPlanets();
 
   // ---------- Kaydırma -> kamera yolculuğu (sayfa ne kadar uzunsa o kadar yol alır) ----------
   const path = [

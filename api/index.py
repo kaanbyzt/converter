@@ -235,16 +235,24 @@ TOOL_CARDS = {
     "/qr-kod": ("utility", "📱", "active", "home.utility.qr.title", "home.utility.qr.desc"),
 }
 _POPULAR_TOOLS_LIMIT = 6
+# İstatistik yoksa (yerelde KV yok) ya da yeterli veri birikmemişse listeyi bunlarla tamamla
+_DEFAULT_POPULAR_TOOLS = (
+    "/pdf-tools",
+    "/pdf-tools/compress",
+    "/convert/image",
+    "/convert/image-compress",
+    "/convert/video",
+    "/qr-kod",
+)
 
 
 def _popular_tools():
     """En çok ziyaret edilen ve TOOL_CARDS'ta karşılığı olan araçları döner.
-    KV yapılandırılmamışsa (yerelde) boş liste döner, bölüm gizlenir."""
+    İstatistik yoksa veya az ise varsayılan araçlarla tamamlanır; bölüm hiç boş kalmaz."""
     stats = analytics.get_stats()
-    if not stats.get("available"):
-        return []
+    routes = [path for path, _count in stats["routes"]] if stats.get("available") else []
     popular = []
-    for path, _count in stats["routes"]:
+    for path in dict.fromkeys(routes + list(_DEFAULT_POPULAR_TOOLS)):
         card = TOOL_CARDS.get(path)
         if not card:
             continue
