@@ -62,7 +62,7 @@
         flex-shrink: 0;
         margin-left: 0.4rem;
     }
-    /* Varsayılan (tüm ekran boyutları): kapalı; "toggled" sınıfı açar */
+    /* Kategoriler sayfada "toggled" ile açık gelir; sınıf kaldırılınca kapanır */
     .category-body {
         overflow: hidden;
         max-height: 0;
@@ -351,11 +351,11 @@
 
 <!-- AI TOOLS -->
 <section class="category-section" id="cat-ai">
-    <button class="category-toggle category-title cat-ai" onclick="toggleCat('cat-ai')" aria-expanded="false">
+    <button class="category-toggle category-title cat-ai toggled" onclick="toggleCat('cat-ai')" aria-expanded="true">
         <span class="category-title-inner">🤖 {{ t('home.cat.ai') }}</span>
         <span class="cat-chevron">▼</span>
     </button>
-    <div class="category-body" id="cat-ai-body">
+    <div class="category-body toggled" id="cat-ai-body">
     <div class="tools-grid">
         <a href="/ai-tools" class="tool-card card-ai">
             <div class="tool-header">
@@ -383,11 +383,11 @@
 
 <!-- PDF TOOLS -->
 <section class="category-section" id="cat-pdf">
-    <button class="category-toggle category-title cat-pdf" onclick="toggleCat('cat-pdf')" aria-expanded="false">
+    <button class="category-toggle category-title cat-pdf toggled" onclick="toggleCat('cat-pdf')" aria-expanded="true">
         <span class="category-title-inner">📄 {{ t('home.cat.pdf') }}</span>
         <span class="cat-chevron">▼</span>
     </button>
-    <div class="category-body" id="cat-pdf-body">
+    <div class="category-body toggled" id="cat-pdf-body">
     <div class="tools-grid">
         <a href="/pdf-tools" class="tool-card card-pdf">
             <div class="tool-header">
@@ -565,11 +565,11 @@
 
 <!-- CONVERTERS -->
 <section class="category-section" id="cat-converter">
-    <button class="category-toggle category-title cat-converter" onclick="toggleCat('cat-converter')" aria-expanded="false">
+    <button class="category-toggle category-title cat-converter toggled" onclick="toggleCat('cat-converter')" aria-expanded="true">
         <span class="category-title-inner">🔄 {{ t('home.cat.converter') }}</span>
         <span class="cat-chevron">▼</span>
     </button>
-    <div class="category-body" id="cat-converter-body">
+    <div class="category-body toggled" id="cat-converter-body">
     <div class="tools-grid">
         <a href="/convert/image" class="tool-card card-converter">
             <div class="tool-header">
@@ -667,12 +667,12 @@
 
 <!-- VIDEO TOOLS -->
 <section class="category-section" id="cat-video">
-    <button class="category-toggle category-title cat-video" onclick="toggleCat('cat-video')" aria-expanded="false">
+    <button class="category-toggle category-title cat-video toggled" onclick="toggleCat('cat-video')" aria-expanded="true">
         <span class="category-title-inner">🎬 {{ t('home.cat.video') }}</span>
         <span class="cat-chevron">▼</span>
     </button>
     <p class="beta-note">⚠️ {{ t('home.beta_note') }}</p>
-    <div class="category-body" id="cat-video-body">
+    <div class="category-body toggled" id="cat-video-body">
     <div class="tools-grid">
         <a href="/video-tools/screen-record" class="tool-card card-video">
             <div class="tool-header">
@@ -860,12 +860,12 @@
 
 <!-- AUDIO TOOLS -->
 <section class="category-section" id="cat-audio">
-    <button class="category-toggle category-title cat-audio" onclick="toggleCat('cat-audio')" aria-expanded="false">
+    <button class="category-toggle category-title cat-audio toggled" onclick="toggleCat('cat-audio')" aria-expanded="true">
         <span class="category-title-inner">🎵 {{ t('home.cat.audio') }}</span>
         <span class="cat-chevron">▼</span>
     </button>
     <p class="beta-note">⚠️ {{ t('home.beta_note') }}</p>
-    <div class="category-body" id="cat-audio-body">
+    <div class="category-body toggled" id="cat-audio-body">
     <div class="tools-grid">
         <a href="/audio-tools/trim" class="tool-card card-audio">
             <div class="tool-header">
@@ -953,11 +953,11 @@
 
 <!-- UTILITY TOOLS -->
 <section class="category-section" id="cat-utility">
-    <button class="category-toggle category-title cat-utility" onclick="toggleCat('cat-utility')" aria-expanded="false">
+    <button class="category-toggle category-title cat-utility toggled" onclick="toggleCat('cat-utility')" aria-expanded="true">
         <span class="category-title-inner">🧩 {{ t('home.cat.utility') }}</span>
         <span class="cat-chevron">▼</span>
     </button>
-    <div class="category-body" id="cat-utility-body">
+    <div class="category-body toggled" id="cat-utility-body">
     <div class="tools-grid">
         <a href="/qr-kod" class="tool-card card-utility">
             <div class="tool-header">
