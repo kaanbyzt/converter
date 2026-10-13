@@ -22,6 +22,7 @@
 <!-- Load necessary Office parsing libraries via CDN -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="{{ url_for('static', filename='pdf-font.js') }}"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 {% endblock %}
@@ -164,12 +165,16 @@ async function convertWordToPDF() {
 
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF();
+    await useUnicodeFont(pdf);
     
     // Using simple formatting rules to write text blocks to PDF
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = html;
     
-    const lines = tempDiv.innerText.split('\n');
+    // innerText, sayfaya eklenmemiş öğede satır sonu üretmez; paragrafları tek tek al
+    const blocks = Array.from(tempDiv.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, td, th'))
+        .map(el => el.textContent);
+    const lines = blocks.length ? blocks : tempDiv.textContent.split('\n');
     let y = 15;
     pdf.setFontSize(11);
     const maxTextWidth = pdf.internal.pageSize.getWidth() - 30; // 15mm sol + 15mm sağ boşluk
@@ -199,6 +204,7 @@ async function convertExcelToPDF() {
 
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF();
+    await useUnicodeFont(pdf);
 
     // Çalışma kitabındaki TÜM sayfalar işlenir; her sayfa kendi başlığıyla
     // yeni bir PDF sayfasında başlar (ilk sayfa hariç, o mevcut sayfada başlar).

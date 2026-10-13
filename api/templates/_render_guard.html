@@ -1,0 +1,8 @@
+<script>
+window.RENDER_GUARD_MSG = {
+    keepTab: {{ t('render_guard.keep_tab')|tojson }},
+    resumed: {{ t('render_guard.resumed')|tojson }},
+    pausedTitle: {{ t('render_guard.paused_title')|tojson }}
+};
+</script>
+<script src="{{ url_for('static', filename='render-guard.js') }}"></script>

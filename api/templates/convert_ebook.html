@@ -22,6 +22,7 @@
 <!-- Load JSZip and jsPDF CDNs -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="{{ url_for('static', filename='pdf-font.js') }}"></script>
 {% endblock %}
 
 {% block content %}
@@ -117,8 +118,10 @@ async function processAndDownload() {
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = rawContent;
             
-            // Extract textual content
-            fullText += tempDiv.innerText + "\n\n";
+            // Extract textual content (innerText, sayfaya eklenmemiş öğede satır sonu üretmez)
+            const blocks = Array.from(tempDiv.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, td, th, pre'))
+                .map(el => el.textContent.trim()).filter(Boolean);
+            fullText += (blocks.length ? blocks.join('\n') : tempDiv.textContent) + "\n\n";
         }
 
         if (targetFormat === 'txt') {
@@ -132,19 +135,22 @@ async function processAndDownload() {
         } else if (targetFormat === 'pdf') {
             const { jsPDF } = window.jspdf;
             const pdf = new jsPDF();
+            await useUnicodeFont(pdf);
             pdf.setFontSize(10);
             
             let y = 15;
             const lines = fullText.split('\n');
+            const maxTextWidth = pdf.internal.pageSize.getWidth() - 30;
             lines.forEach(line => {
-                if (y > 280) {
-                    pdf.addPage();
-                    y = 15;
-                }
-                if (line.trim() !== '') {
-                    pdf.text(line.trim(), 15, y);
+                if (line.trim() === '') return;
+                pdf.splitTextToSize(line.trim(), maxTextWidth).forEach(wrapped => {
+                    if (y > 280) {
+                        pdf.addPage();
+                        y = 15;
+                    }
+                    pdf.text(wrapped, 15, y);
                     y += 7;
-                }
+                });
             });
             
             pdf.save(originalFileName + '.pdf');

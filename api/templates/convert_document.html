@@ -22,6 +22,7 @@
 <!-- Load mammoth and jsPDF CDNs -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="{{ url_for('static', filename='pdf-font.js') }}"></script>
 {% endblock %}
 
 {% block content %}
@@ -59,6 +60,7 @@
         </div>
 
         <div id="processing-msg" class="text-warning small mb-3 d-none">{{ t('convert_document.processing_msg') }}</div>
+        <div id="error-msg" class="alert alert-danger py-2 small mb-3 d-none" role="alert" style="max-width: 420px; margin: 0 auto;"></div>
 
         <button class="btn btn-success px-5 py-2" id="process-btn" onclick="processAndDownload()" style="border-radius: 8px; font-weight: 600;">
             {{ t('convert_document.convert_btn') }}
@@ -98,9 +100,32 @@ function loadDocFile(input) {
     document.getElementById('editor-stage').classList.remove('d-none');
 }
 
+function escapeHtml(s) {
+    return s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
+function downloadBlob(blob, name) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    // Hemen iptal edilirse bazı tarayıcılar (Firefox/Safari) indirmeyi başlatmıyor
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+
+function showError(msg) {
+    const box = document.getElementById('error-msg');
+    box.textContent = msg;
+    box.classList.toggle('d-none', !msg);
+}
+
 async function processAndDownload() {
     if (!selectedFile) return;
 
+    showError('');
     document.getElementById('processing-msg').classList.remove('d-none');
     document.getElementById('process-btn').disabled = true;
 
@@ -111,58 +136,58 @@ async function processAndDownload() {
         let html = "";
 
         if (fileExtension === 'docx') {
+            if (typeof mammoth === 'undefined') throw new Error({{ t('convert_document.err_lib_load')|tojson }});
             const arrayBuffer = await selectedFile.arrayBuffer();
             const result = await mammoth.convertToHtml({ arrayBuffer: arrayBuffer });
             html = result.value;
-            const textResult = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
-            text = textResult.value;
-        } else if (fileExtension === 'txt') {
-            text = await selectedFile.text();
-            html = `<p>${text.replace(/\n/g, '</p><p>')}</p>`;
-        } else if (fileExtension === 'html' || fileExtension === 'htm') {
-            html = await selectedFile.text();
+            // Düz metni aynı HTML'den çıkar (paragraflar satır olarak)
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = html;
-            text = tempDiv.innerText;
+            text = Array.from(tempDiv.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, td, th'))
+                .map(el => el.textContent.trim()).filter(Boolean).join('\n');
+            if (!text) text = tempDiv.textContent;
+        } else if (fileExtension === 'txt') {
+            text = await selectedFile.text();
+            html = '<p>' + text.split('\n').map(escapeHtml).join('</p><p>') + '</p>';
+        } else if (fileExtension === 'html' || fileExtension === 'htm') {
+            html = await selectedFile.text();
+            text = new DOMParser().parseFromString(html, 'text/html').body.textContent || '';
+        } else {
+            throw new Error({{ t('convert_document.err_unsupported')|tojson }});
         }
 
         if (targetFormat === 'pdf') {
             const { jsPDF } = window.jspdf;
             const pdf = new jsPDF();
+            await useUnicodeFont(pdf);
             pdf.setFontSize(11);
+            const maxTextWidth = pdf.internal.pageSize.getWidth() - 30;
             let y = 15;
-            const lines = text.split('\n');
-            lines.forEach(line => {
-                if (y > 280) {
-                    pdf.addPage();
-                    y = 15;
-                }
-                if (line.trim() !== '') {
-                    pdf.text(line.trim(), 15, y);
-                    y += 8;
-                }
+            text.split('\n').forEach(line => {
+                if (line.trim() === '') return;
+                pdf.splitTextToSize(line.trim(), maxTextWidth).forEach(wrapped => {
+                    if (y > 280) {
+                        pdf.addPage();
+                        y = 15;
+                    }
+                    pdf.text(wrapped, 15, y);
+                    y += 7;
+                });
             });
             pdf.save(originalFileName + '.pdf');
         } else if (targetFormat === 'txt') {
-            const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = originalFileName + '.txt';
-            a.click();
-            URL.revokeObjectURL(url);
+            downloadBlob(new Blob([text], { type: 'text/plain;charset=utf-8' }), originalFileName + '.txt');
         } else if (targetFormat === 'html') {
-            const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = originalFileName + '.html';
-            a.click();
-            URL.revokeObjectURL(url);
+            const doc = fileExtension === 'docx' || fileExtension === 'txt'
+                ? '<!DOCTYPE html>\n<html><head><meta charset="utf-8"><title>' + escapeHtml(originalFileName) +
+                  '</title></head><body>\n' + html + '\n</body></html>'
+                : html;
+            downloadBlob(new Blob([doc], { type: 'text/html;charset=utf-8' }), originalFileName + '.html');
         }
     } catch (e) {
-        alert({{ t('convert_document.err_generic')|tojson }});
         console.error(e);
+        const detail = e && e.message ? ' (' + e.message + ')' : '';
+        showError({{ t('convert_document.err_generic')|tojson }} + detail);
     } finally {
         document.getElementById('processing-msg').classList.add('d-none');
         document.getElementById('process-btn').disabled = false;

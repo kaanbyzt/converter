@@ -97,6 +97,7 @@
 {% endblock %}
 
 {% block scripts %}
+{% include "_render_guard.html" %}
 <script>
 let videoFile = null;
 let videoEl = null;
@@ -234,6 +235,7 @@ function startExport() {
     };
 
     mediaRecorder.onstop = () => {
+        RenderGuard.stop();
         const blob = new Blob(recordedChunks, { type: 'video/webm' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -255,6 +257,7 @@ function startExport() {
     // Play to capture frame-by-frame
     videoEl.play();
     mediaRecorder.start();
+    RenderGuard.start({ recorder: mediaRecorder, media: [videoEl] });
 
     // Check when we hit the end time
     const checkEnd = setInterval(() => {

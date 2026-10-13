@@ -7,13 +7,12 @@ import sys
 import zipfile
 import uuid
 import tarfile
-import tempfile
 import requests
 from functools import wraps
 from flask import Flask, Response, render_template, request, send_file, jsonify, session, redirect, url_for, g
 from werkzeug.utils import secure_filename
 from io import BytesIO
-from PyPDF2 import PdfMerger, PdfReader, PdfWriter
+from pypdf import PdfReader, PdfWriter
 from pdf2docx import Converter as PdfToDocxConverter
 from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE
@@ -73,16 +72,27 @@ def _haversine_m(lat1, lng1, lat2, lng2):
     return 2 * r * math.asin(math.sqrt(a))
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-insecure-change-me-in-prod")
-init_i18n(app)
-
-ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD")
 
 # Vercel prod/preview/dev ortamlarında otomatik olarak set edilir; yerel
 # `flask run` sırasında tanımlı değildir. Cookie'lerin Secure bayrağını
 # yerel http testini bozmadan yalnızca gerçek (https) ortamda açmak için kullanılır.
 IS_VERCEL = bool(os.environ.get("VERCEL_ENV"))
+
+# Gizli anahtar yoksa canlıda başlamayı reddet: bilinen bir yedek anahtarla
+# herkes sahte admin oturumu imzalayabilirdi. Yerelde geçici anahtar üretilir.
+_secret_key = os.environ.get("FLASK_SECRET_KEY")
+if not _secret_key:
+    if IS_VERCEL:
+        raise RuntimeError("FLASK_SECRET_KEY ortam değişkeni tanımlı değil.")
+    _secret_key = os.urandom(32).hex()
+app.secret_key = _secret_key
+init_i18n(app)
+
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD")
+
 app.config["SESSION_COOKIE_SECURE"] = IS_VERCEL
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
 # Sitemap için site içindeki tüm statik/GET sayfa yolları
 SITEMAP_ROUTES = [
@@ -271,10 +281,31 @@ def _popular_tools():
 
 
 def _client_ip():
-    forwarded = request.headers.get("X-Forwarded-For", "")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
+    # Başlıklar istemci tarafından taklit edilebilir; yalnızca Vercel'de güvenilir
+    # (Vercel x-real-ip / x-forwarded-for'u gerçek istemci IP'siyle ezer).
+    if IS_VERCEL:
+        real_ip = request.headers.get("X-Real-IP", "").strip()
+        if real_ip:
+            return real_ip
+        forwarded = request.headers.get("X-Forwarded-For", "")
+        if forwarded:
+            return forwarded.split(",")[0].strip()
     return request.remote_addr or "unknown"
+
+
+# Dosya işleyen POST uç noktaları için IP başına dakikalık istek sınırı
+# (CPU/bellek yoğun dönüştürmelerle sunucuyu yorma / fatura şişirme koruması).
+_HEAVY_POST_LIMIT_PER_MIN = 12
+
+
+@app.before_request
+def _limit_heavy_posts():
+    if request.method != "POST" or request.path.startswith("/admin"):
+        return None
+    if not analytics.try_consume_ip_quota(_client_ip(), "heavy-post", _HEAVY_POST_LIMIT_PER_MIN, 60):
+        return Response(t("err.rate_limited"), status=429, mimetype="text/plain",
+                        headers={"Retry-After": "60"})
+    return None
 
 
 def _log_action(action):
@@ -495,7 +526,6 @@ def robots_txt():
     root = request.host_url.rstrip("/")
     lines = [
         "User-agent: *",
-        "Disallow: /convert/extract/download",
         "Disallow: /admin",
         f"Sitemap: {root}/sitemap.xml",
     ]
@@ -882,6 +912,37 @@ _ZIP_MAX_FILE_BYTES = 50 * 1024 * 1024    # 50 MB tek dosya
 _ZIP_MAX_RATIO = 100                       # sıkıştırma oranı üst sınırı
 
 
+_TAR_MAX_ENTRIES = 500  # klasör/link dahil taranacak en fazla kayıt
+
+
+def _read_tar_safely(in_buf, mode, compressed_size):
+    """Tar/tar.gz içeriğini zip ile aynı sınırlarla okur (tar bomb koruması).
+    Boyutlar okumadan önce başlıktan kontrol edilir. (dosyalar, hata) döner."""
+    files = {}
+    total = 0
+    with tarfile.open(fileobj=in_buf, mode=mode) as tf:
+        for _ in range(_TAR_MAX_ENTRIES + 1):
+            member = tf.next()
+            if member is None:
+                return files, None
+            if not member.isfile():
+                continue
+            if len(files) >= _ZIP_MAX_FILES:
+                return None, t("err.zip_too_many_files", max_files=_ZIP_MAX_FILES, count=f"{_ZIP_MAX_FILES}+")
+            if member.size > _ZIP_MAX_FILE_BYTES:
+                return None, t("err.zip_file_too_large", filename=member.name,
+                               max_mb=_ZIP_MAX_FILE_BYTES // (1024 * 1024))
+            total += member.size
+            if total > _ZIP_MAX_TOTAL_BYTES:
+                return None, t("err.zip_total_too_large", max_mb=_ZIP_MAX_TOTAL_BYTES // (1024 * 1024))
+            if mode == "r:gz" and total / max(compressed_size, 1) > _ZIP_MAX_RATIO:
+                return None, t("err.zip_suspicious_ratio", ratio=total // max(compressed_size, 1))
+            f = tf.extractfile(member)
+            if f:
+                files[member.name] = f.read()
+    return None, t("err.zip_too_many_files", max_files=_ZIP_MAX_FILES, count=f"{_TAR_MAX_ENTRIES}+")
+
+
 def _check_zip_safety(zip_ref: zipfile.ZipFile):
     """Zip bomb kontrolü. Sorun varsa (False, hata_mesajı) döner."""
     members = [i for i in zip_ref.infolist() if not i.is_dir()]
@@ -1229,7 +1290,7 @@ def pdf_tools():
         )
 
     try:
-        merger = PdfMerger()
+        merger = PdfWriter()
         for f in pdf_files:
             merger.append(f.stream)
 
@@ -1237,11 +1298,12 @@ def pdf_tools():
         merger.write(output)
         merger.close()
         output.seek(0)
-    except Exception as e:
+    except Exception:
+        app.logger.exception("İstek işlenemedi: %s", request.path)
         return render_template(
             "pdf_tools.html",
             download_url=None,
-            error=t("err.generic_error", error=str(e)),
+            error=t("err.generic_error"),
         )
 
     _log_action("pdf_merge")
@@ -1305,8 +1367,9 @@ def pdf_split():
             as_attachment=True,
             download_name="toolboxquick-split.pdf",
         )
-    except Exception as e:
-        return render_template("pdf_split.html", error=t("err.generic_error", error=str(e)))
+    except Exception:
+        app.logger.exception("İstek işlenemedi: %s", request.path)
+        return render_template("pdf_split.html", error=t("err.generic_error"))
 
 
 @app.route("/audio-tools/trim")
@@ -1335,10 +1398,6 @@ def convert_image_compress():
 
 
 # Temporary directory setup for ZIP extractor
-TEMP_DIR = os.path.join(tempfile.gettempdir(), "toolboxquick_zips")
-os.makedirs(TEMP_DIR, exist_ok=True)
-
-
 @app.route("/pdf-tools/protect", methods=["GET", "POST"])
 def pdf_protect():
     if request.method == "GET":
@@ -1360,7 +1419,8 @@ def pdf_protect():
         for page in reader.pages:
             writer.add_page(page)
 
-        writer.encrypt(password)
+        # AES-256 (PDF 2.0 / R6): RC4 artık güvenli kabul edilmiyor
+        writer.encrypt(user_password=password, algorithm="AES-256")
 
         output = BytesIO()
         writer.write(output)
@@ -1373,8 +1433,9 @@ def pdf_protect():
             as_attachment=True,
             download_name="toolboxquick-protected.pdf"
         )
-    except Exception as e:
-        return render_template("pdf_protect.html", error=t("err.generic_error", error=str(e)))
+    except Exception:
+        app.logger.exception("İstek işlenemedi: %s", request.path)
+        return render_template("pdf_protect.html", error=t("err.generic_error"))
 
 
 @app.route("/pdf-tools/unlock", methods=["GET", "POST"])
@@ -1416,8 +1477,9 @@ def pdf_unlock():
             as_attachment=True,
             download_name="toolboxquick-unlocked.pdf"
         )
-    except Exception as e:
-        return render_template("pdf_unlock.html", error=t("err.generic_error", error=str(e)))
+    except Exception:
+        app.logger.exception("İstek işlenemedi: %s", request.path)
+        return render_template("pdf_unlock.html", error=t("err.generic_error"))
 
 
 @app.route("/audio-tools/volume")
@@ -1455,79 +1517,10 @@ def convert_video():
     return render_template("convert_video.html")
 
 
-@app.route("/convert/extract", methods=["GET", "POST"])
+@app.route("/convert/extract")
 def convert_extract():
-    if request.method == "GET":
-        return render_template("convert_extract.html", files=None, error=None)
-
-    file = request.files.get("zip_file")
-    if not file or not file.filename.lower().endswith(".zip"):
-        return render_template("convert_extract.html", files=None, error=t("err.invalid_zip"))
-
-    try:
-        zip_id = str(uuid.uuid4())
-        zip_path = os.path.join(TEMP_DIR, f"{zip_id}.zip")
-        file.save(zip_path)
-
-        files_list = []
-        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-            ok, err = _check_zip_safety(zip_ref)
-            if not ok:
-                os.remove(zip_path)
-                return render_template("convert_extract.html", files=None, error=err)
-
-            for info in zip_ref.infolist():
-                if not info.is_dir():
-                    files_list.append({
-                        "name": info.filename,
-                        "size": info.file_size
-                    })
-
-        _log_action("zip_extract")
-        return render_template(
-            "convert_extract.html",
-            files=files_list,
-            zip_id=zip_id,
-            archive_name=file.filename,
-            error=None
-        )
-    except Exception as e:
-        return render_template("convert_extract.html", files=None, error=t("err.generic_error", error=str(e)))
-
-
-@app.route("/convert/extract/download")
-def convert_extract_download():
-    zip_id = request.args.get("id")
-    file_path = request.args.get("file")
-
-    if not zip_id or not file_path:
-        return t("err.invalid_request"), 400
-
-    try:
-        uuid.UUID(zip_id)
-    except ValueError:
-        return t("err.invalid_request"), 400
-
-    zip_path = os.path.join(TEMP_DIR, f"{zip_id}.zip")
-    if not os.path.exists(zip_path):
-        return t("err.archive_not_found_or_expired"), 404
-
-    try:
-        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-            if file_path not in zip_ref.namelist():
-                return t("err.file_not_found_in_archive"), 404
-
-            data = zip_ref.read(file_path)
-            io_buf = BytesIO(data)
-            basename = os.path.basename(file_path)
-            
-            return send_file(
-                io_buf,
-                as_attachment=True,
-                download_name=basename
-            )
-    except Exception as e:
-        return t("err.download_error", error=str(e)), 500
+    # ZIP tamamen tarayıcıda (JSZip) açılır; sunucuya dosya gönderilmez.
+    return render_template("convert_extract.html")
 
 
 # --- AUDIO TOOLS ---
@@ -1608,8 +1601,9 @@ def pdf_to_word():
             as_attachment=True,
             download_name="toolboxquick-converted.docx",
         )
-    except Exception as e:
-        return jsonify({"error": t("err.generic_error", error=str(e))}), 500
+    except Exception:
+        app.logger.exception("İstek işlenemedi: %s", request.path)
+        return jsonify({"error": t("err.generic_error")}), 500
 
 @app.route("/pdf-tools/excel-to-pdf")
 def excel_to_pdf():
@@ -1646,8 +1640,9 @@ def ppt_to_pdf():
             as_attachment=True,
             download_name="toolboxquick-converted.pdf",
         )
-    except Exception as e:
-        return jsonify({"error": t("err.generic_error", error=str(e))}), 500
+    except Exception:
+        app.logger.exception("İstek işlenemedi: %s", request.path)
+        return jsonify({"error": t("err.generic_error")}), 500
 
 
 # --- VIDEO TOOLS ---
@@ -1733,12 +1728,9 @@ def convert_archive():
         elif filename.endswith(".tar") or filename.endswith(".gz") or filename.endswith(".tgz"):
             in_buf.seek(0)
             mode = "r:gz" if (filename.endswith(".gz") or filename.endswith(".tgz")) else "r:"
-            with tarfile.open(fileobj=in_buf, mode=mode) as tf:
-                for member in tf.getmembers():
-                    if member.isfile():
-                        f = tf.extractfile(member)
-                        if f:
-                            files_dict[member.name] = f.read()
+            files_dict, err = _read_tar_safely(in_buf, mode, in_buf.getbuffer().nbytes)
+            if err:
+                return render_template("convert_archive.html", error=err)
         else:
             return render_template("convert_archive.html", error=t("err.unsupported_archive_format"))
             
@@ -1776,5 +1768,6 @@ def convert_archive():
             as_attachment=True,
             download_name=download_name
         )
-    except Exception as e:
-        return render_template("convert_archive.html", error=t("err.generic_error", error=str(e)))
+    except Exception:
+        app.logger.exception("İstek işlenemedi: %s", request.path)
+        return render_template("convert_archive.html", error=t("err.generic_error"))

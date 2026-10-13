@@ -100,6 +100,7 @@
 {% endblock %}
 
 {% block scripts %}
+{% include "_render_guard.html" %}
 <script>
 let videoFile = null;
 let originalFileName = "";
@@ -250,6 +251,7 @@ function startConversion() {
     };
 
     mediaRecorder.onstop = () => {
+        RenderGuard.stop();
         clearInterval(loopInterval);
         canvasEl.classList.add('d-none');
 
@@ -280,6 +282,7 @@ function startConversion() {
 
     videoEl.play();
     mediaRecorder.start();
+    RenderGuard.start({ recorder: mediaRecorder, media: [videoEl] });
 
     videoEl.onended = () => {
         mediaRecorder.stop();

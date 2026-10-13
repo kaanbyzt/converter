@@ -19,8 +19,7 @@
         display: none;
     }
 </style>
-<!-- Load opentype.js (TrueType/CFF outline parse+write) and pako (zlib deflate/inflate for WOFF1 packaging) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/opentype.js/1.3.4/opentype.min.js"></script>
+<!-- pako: WOFF1 paketleme için zlib deflate/inflate -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
 {% endblock %}
 
@@ -59,6 +58,8 @@
         </div>
 
         <div id="processing-msg" class="text-warning small mb-3 d-none">{{ t('convert_font.processing_msg') }}</div>
+        <div id="error-msg" class="alert alert-danger py-2 small mb-3 d-none" role="alert" style="max-width: 420px; margin: 0 auto;"></div>
+        <div id="note-msg" class="alert alert-info py-2 small mb-3 d-none" style="max-width: 420px; margin: 0 auto;"></div>
 
         <button class="btn btn-success px-5 py-2" id="process-btn" onclick="processAndDownload()" style="border-radius: 8px; font-weight: 600;">
             {{ t('convert_font.convert_btn') }}
@@ -80,8 +81,21 @@ const FONT_MSG = {
     generic: {{ t('convert_font.err_generic')|tojson }},
     cffToTtf: {{ t('convert_font.err_cff_to_ttf')|tojson }},
     woff2: {{ t('convert_font.err_woff2')|tojson }},
-    unknown: {{ t('convert_font.err_unknown_format')|tojson }}
+    unknown: {{ t('convert_font.err_unknown_format')|tojson }},
+    otfTruetype: {{ t('convert_font.note_otf_truetype')|tojson }}
 };
+
+function showError(msg) {
+    const box = document.getElementById('error-msg');
+    box.textContent = msg;
+    box.classList.toggle('d-none', !msg);
+}
+
+function showNote(msg) {
+    const box = document.getElementById('note-msg');
+    box.textContent = msg;
+    box.classList.toggle('d-none', !msg);
+}
 
 function resetEditor() {
     selectedFile = null;
@@ -266,6 +280,8 @@ async function processAndDownload() {
     document.getElementById('process-btn').disabled = true;
 
     const targetFormat = document.getElementById('target-format').value;
+    showError('');
+    showNote('');
 
     try {
         const fileData = await selectedFile.arrayBuffer();
@@ -286,16 +302,13 @@ async function processAndDownload() {
                 ? new Uint8Array(fileData)
                 : woffToSfnt(new Uint8Array(fileData));
         } else if (targetFormat === 'otf') {
-            if (info.outline === 'cff') {
-                outBytes = (info.container === 'sfnt')
-                    ? new Uint8Array(fileData)
-                    : woffToSfnt(new Uint8Array(fileData));
-            } else {
-                // Real TrueType (glyf) -> OpenType (CFF) outline conversion via opentype.js.
-                const sfntBytes = (info.container === 'woff') ? woffToSfnt(new Uint8Array(fileData)) : new Uint8Array(fileData);
-                const font = opentype.parse(sfntBytes.buffer.slice(sfntBytes.byteOffset, sfntBytes.byteOffset + sfntBytes.byteLength));
-                outBytes = new Uint8Array(font.toArrayBuffer());
-            }
+            // OpenType, TrueType (glyf) ana hatlarını da destekler: SFNT olduğu gibi
+            // .otf olarak kaydedilir (kayıpsız). opentype.js ile CFF'e çevirmek
+            // GSUB/GPOS tabloları olan çoğu gerçek fontta hata veriyor ve hinting'i siliyordu.
+            outBytes = (info.container === 'sfnt')
+                ? new Uint8Array(fileData)
+                : woffToSfnt(new Uint8Array(fileData));
+            if (info.outline === 'truetype') showNote(FONT_MSG.otfTruetype);
         }
 
         const blob = new Blob([outBytes], { type: 'font/' + targetFormat });
@@ -304,10 +317,12 @@ async function processAndDownload() {
         const a = document.createElement('a');
         a.href = url;
         a.download = originalFileName + '.' + targetFormat;
+        document.body.appendChild(a);
         a.click();
-        URL.revokeObjectURL(url);
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
     } catch (e) {
-        alert((e && e.message) ? e.message : FONT_MSG.generic);
+        showError((e && e.message) ? e.message : FONT_MSG.generic);
         console.error(e);
     } finally {
         document.getElementById('processing-msg').classList.add('d-none');

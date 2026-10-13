@@ -1,6 +1,6 @@
 flask
 gunicorn
-PyPDF2
+pypdf[crypto]>=5,<7
 requests
 pdf2docx
 python-pptx

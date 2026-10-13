@@ -296,3 +296,22 @@ def try_acquire_ip_slot(ip, scope, seconds):
     zaman izin verir."""
     digest = hashlib.sha256(f"{_IP_RATE_PEPPER}:{scope}:{ip}".encode()).hexdigest()[:24]
     return _try_acquire_lock(_IP_RATE_PREFIX + digest, seconds * 1000)
+
+
+def try_consume_ip_quota(ip, scope, limit, window_seconds):
+    """Aynı IP'nin `scope` için `window_seconds` içinde en fazla `limit` istek
+    yapmasına izin verir (sabit pencere sayacı). IP tuzlanıp hash'lenir.
+    KV yoksa/erişilemezse her zaman izin verir."""
+    digest = hashlib.sha256(f"{_IP_RATE_PEPPER}:{scope}:{ip}".encode()).hexdigest()[:24]
+    key = _IP_RATE_PREFIX + "q:" + digest
+    result = _pipeline([
+        ["INCR", key],
+        ["TTL", key],
+    ])
+    if result is None:
+        return True
+    count = int((result[0] or {}).get("result") or 0)
+    ttl = int((result[1] or {}).get("result") or -1)
+    if ttl < 0:  # yeni anahtar (veya süresi kaybolmuş): pencereyi başlat
+        _pipeline([["EXPIRE", key, str(window_seconds)]])
+    return count <= limit

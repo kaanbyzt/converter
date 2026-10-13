@@ -80,6 +80,7 @@
 {% endblock %}
 
 {% block scripts %}
+{% include "_render_guard.html" %}
 <script>
 let videoFiles = [];
 let currentVideoIndex = 0;
@@ -178,6 +179,7 @@ function startExport() {
     };
 
     mediaRecorder.onstop = () => {
+        RenderGuard.stop();
         const blob = new Blob(recordedChunks, { type: 'video/webm' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -196,6 +198,7 @@ function startExport() {
     };
 
     mediaRecorder.start();
+    RenderGuard.start({ recorder: mediaRecorder, media: [videoEl] });
     
     // Set up transition handling
     playNextVideoAndRecord();

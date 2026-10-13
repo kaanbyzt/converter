@@ -19,6 +19,8 @@
         display: none;
     }
 </style>
+<!-- ZIP tamamen tarayıcıda açılır; dosya sunucuya gönderilmez -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -31,55 +33,41 @@
 </header>
 
 <section class="tool-card p-4 mb-4">
-    {% if error %}
-    <div class="alert alert-danger py-2 mb-3" role="alert">
-        {{ error }}
-    </div>
-    {% endif %}
+    <div id="error-msg" class="alert alert-danger py-2 mb-3 d-none" role="alert"></div>
 
-    {% if not files %}
     <!-- UPLOAD STATE -->
-    <form action="/convert/extract" method="post" enctype="multipart/form-data">
+    <div id="upload-stage">
         <label class="form-label fw-semibold mb-2">{{ t('convert_extract.file_label') }}</label>
         <div class="dropzone" onclick="document.getElementById('zip_file').click()">
             <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🗄️</div>
             <div class="fw-semibold mb-1" id="file-label" style="color: var(--text-color);">{{ t('convert_extract.file_placeholder') }}</div>
-            <input type="file" name="zip_file" id="zip_file" class="file-input" accept=".zip" required onchange="updateFileLabel(this)">
+            <input type="file" id="zip_file" class="file-input" accept=".zip" onchange="updateFileLabel(this)">
         </div>
-        <button type="submit" class="btn btn-primary px-4 py-2 mt-4" style="border-radius: 8px; font-weight: 600;">
+        <button type="button" id="read-btn" class="btn btn-primary px-4 py-2 mt-4" style="border-radius: 8px; font-weight: 600;" onclick="readArchive()">
             {{ t('convert_extract.read_btn') }}
         </button>
-    </form>
-    {% else %}
-    <!-- LISTING STATE -->
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <span class="fw-semibold text-success">{{ archive_name }} ({{ files|length }} {{ t('convert_extract.file_count') }})</span>
-        <a class="btn btn-sm btn-outline-danger" href="/convert/extract">{{ t('convert_extract.new_archive_btn') }}</a>
     </div>
 
-    <div class="table-responsive">
-        <table class="table table-hover align-middle" style="color: var(--text-color);">
-            <thead>
-                <tr style="border-color: var(--navbar-border);">
-                    <th scope="col" style="color: var(--text-secondary);">{{ t('convert_extract.col_path') }}</th>
-                    <th scope="col" style="color: var(--text-secondary);" class="text-end">{{ t('convert_extract.col_size') }}</th>
-                    <th scope="col" style="color: var(--text-secondary);" class="text-end">{{ t('convert_extract.col_action') }}</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for file in files %}
-                <tr style="border-color: var(--navbar-border);">
-                    <td class="font-mono small" style="word-break: break-all;">{{ file.name }}</td>
-                    <td class="text-end small text-secondary">{{ (file.size / 1024)|round(1) }} KB</td>
-                    <td class="text-end">
-                        <a href="/convert/extract/download?id={{ zip_id }}&file={{ file.name|urlencode }}" class="btn btn-sm btn-outline-primary py-1 px-3" style="border-radius: 6px;">{{ t('convert_extract.download_btn') }}</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <!-- LISTING STATE -->
+    <div id="list-stage" class="d-none">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <span class="fw-semibold text-success" id="archive-summary"></span>
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="resetExtractor()">{{ t('convert_extract.new_archive_btn') }}</button>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle" style="color: var(--text-color);">
+                <thead>
+                    <tr style="border-color: var(--navbar-border);">
+                        <th scope="col" style="color: var(--text-secondary);">{{ t('convert_extract.col_path') }}</th>
+                        <th scope="col" style="color: var(--text-secondary);" class="text-end">{{ t('convert_extract.col_size') }}</th>
+                        <th scope="col" style="color: var(--text-secondary);" class="text-end">{{ t('convert_extract.col_action') }}</th>
+                    </tr>
+                </thead>
+                <tbody id="file-rows"></tbody>
+            </table>
+        </div>
     </div>
-    {% endif %}
 </section>
 
 <section class="mt-4">
@@ -89,14 +77,156 @@
 
 {% block scripts %}
 <script>
+// Zip bomb koruması (sunucudaki sınırlarla aynı)
+const ZIP_MAX_FILES = 30;
+const ZIP_MAX_FILE_BYTES = 50 * 1024 * 1024;
+const ZIP_MAX_TOTAL_BYTES = 100 * 1024 * 1024;
+const ZIP_MAX_RATIO = 100;
+
+const MSG = {
+    invalidZip: {{ t('err.invalid_zip')|tojson }},
+    tooMany: {{ t('err.zip_too_many_files', max_files=30, count='__COUNT__')|tojson }},
+    fileTooLarge: {{ t('err.zip_file_too_large', filename='__NAME__', max_mb=50)|tojson }},
+    ratio: {{ t('err.zip_suspicious_ratio', ratio='__RATIO__')|tojson }},
+    totalTooLarge: {{ t('err.zip_total_too_large', max_mb=100)|tojson }},
+    generic: {{ t('err.generic_error')|tojson }},
+    placeholder: {{ t('convert_extract.file_placeholder')|tojson }},
+    fileCount: {{ t('convert_extract.file_count')|tojson }},
+    download: {{ t('convert_extract.download_btn')|tojson }}
+};
+
+let currentZip = null;
+
 function updateFileLabel(input) {
     const label = document.getElementById('file-label');
     if (input.files && input.files[0]) {
         label.textContent = input.files[0].name + " (" + (input.files[0].size / 1024 / 1024).toFixed(2) + " MB)";
         label.style.color = '#3b82f6';
     } else {
-        label.textContent = {{ t('convert_extract.file_placeholder')|tojson }};
+        label.textContent = MSG.placeholder;
         label.style.color = 'var(--text-color)';
+    }
+    showError('');
+}
+
+function showError(msg) {
+    const box = document.getElementById('error-msg');
+    box.textContent = msg;
+    box.classList.toggle('d-none', !msg);
+}
+
+function resetExtractor() {
+    currentZip = null;
+    document.getElementById('zip_file').value = '';
+    updateFileLabel(document.getElementById('zip_file'));
+    document.getElementById('file-rows').replaceChildren();
+    document.getElementById('list-stage').classList.add('d-none');
+    document.getElementById('upload-stage').classList.remove('d-none');
+}
+
+// JSZip girişin açılmış/sıkıştırılmış boyutlarını merkezi dizinden okur (içerik açılmadan)
+function entrySizes(entry) {
+    const d = entry._data || {};
+    return { size: d.uncompressedSize || 0, compressed: d.compressedSize || 0 };
+}
+
+function checkSafety(entries) {
+    if (entries.length > ZIP_MAX_FILES) return MSG.tooMany.replace('__COUNT__', entries.length);
+    let total = 0;
+    for (const entry of entries) {
+        const { size, compressed } = entrySizes(entry);
+        if (size > ZIP_MAX_FILE_BYTES) return MSG.fileTooLarge.replace('__NAME__', entry.name);
+        if (compressed > 0 && size / compressed > ZIP_MAX_RATIO) {
+            return MSG.ratio.replace('__RATIO__', Math.floor(size / compressed));
+        }
+        total += size;
+        if (total > ZIP_MAX_TOTAL_BYTES) return MSG.totalTooLarge;
+    }
+    return null;
+}
+
+async function readArchive() {
+    const input = document.getElementById('zip_file');
+    const file = input.files && input.files[0];
+    if (!file || !file.name.toLowerCase().endsWith('.zip')) {
+        showError(MSG.invalidZip);
+        return;
+    }
+
+    const btn = document.getElementById('read-btn');
+    btn.disabled = true;
+    showError('');
+    try {
+        const zip = await JSZip.loadAsync(file);
+        const entries = Object.values(zip.files).filter(e => !e.dir);
+        const err = checkSafety(entries);
+        if (err) {
+            showError(err);
+            return;
+        }
+        currentZip = zip;
+        renderList(file.name, entries);
+    } catch (e) {
+        console.error(e);
+        showError(MSG.invalidZip);
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+function renderList(archiveName, entries) {
+    document.getElementById('archive-summary').textContent =
+        archiveName + ' (' + entries.length + ' ' + MSG.fileCount + ')';
+
+    const rows = entries.map(entry => {
+        const tr = document.createElement('tr');
+        tr.style.borderColor = 'var(--navbar-border)';
+
+        const name = document.createElement('td');
+        name.className = 'font-mono small';
+        name.style.wordBreak = 'break-all';
+        name.textContent = entry.name;
+
+        const size = document.createElement('td');
+        size.className = 'text-end small text-secondary';
+        size.textContent = (entrySizes(entry).size / 1024).toFixed(1) + ' KB';
+
+        const action = document.createElement('td');
+        action.className = 'text-end';
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn btn-sm btn-outline-primary py-1 px-3';
+        btn.style.borderRadius = '6px';
+        btn.textContent = MSG.download;
+        btn.addEventListener('click', () => downloadEntry(entry, btn));
+        action.appendChild(btn);
+
+        tr.append(name, size, action);
+        return tr;
+    });
+    document.getElementById('file-rows').replaceChildren(...rows);
+
+    document.getElementById('upload-stage').classList.add('d-none');
+    document.getElementById('list-stage').classList.remove('d-none');
+}
+
+async function downloadEntry(entry, btn) {
+    btn.disabled = true;
+    try {
+        const blob = await entry.async('blob');
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = entry.name.split('/').pop() || 'dosya';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
+    } catch (e) {
+        console.error(e);
+        showError(MSG.generic);
+    } finally {
+        btn.disabled = false;
     }
 }
 </script>
