@@ -258,25 +258,49 @@ _DEFAULT_POPULAR_TOOLS = (
 )
 
 
-def _popular_tools():
+# Ana sayfadaki "Yeni Eklenenler" bölümü: yeni araç eklerken buraya bir satır yazmak yeterlidir.
+# Araç, eklenme tarihinden _NEW_TOOLS_DAYS gün sonra bölümden kendiliğinden düşer.
+NEW_TOOLS = {
+    "/convert/tiff": datetime.date(2026, 11, 4),
+}
+_NEW_TOOLS_DAYS = 60
+_NEW_TOOLS_LIMIT = 3
+
+
+def _tool_card(path):
+    cat, icon, badge, title_key, desc_key = TOOL_CARDS[path]
+    return {
+        "path": path,
+        "cat": cat,
+        "icon": icon,
+        "badge": badge,
+        "title_key": title_key,
+        "desc_key": desc_key,
+    }
+
+
+def _new_tools(today=None):
+    """Son _NEW_TOOLS_DAYS günde eklenen araçları en yeniden eskiye döner; yoksa boş liste."""
+    today = today or datetime.date.today()
+    recent = [
+        path for path, added in NEW_TOOLS.items()
+        if path in TOOL_CARDS and 0 <= (today - added).days < _NEW_TOOLS_DAYS
+    ]
+    recent.sort(key=NEW_TOOLS.get, reverse=True)
+    return [_tool_card(path) for path in recent[:_NEW_TOOLS_LIMIT]]
+
+
+def _popular_tools(exclude=()):
     """En çok ziyaret edilen ve TOOL_CARDS'ta karşılığı olan araçları döner.
-    İstatistik yoksa veya az ise varsayılan araçlarla tamamlanır; bölüm hiç boş kalmaz."""
+    İstatistik yoksa veya az ise varsayılan araçlarla tamamlanır; bölüm hiç boş kalmaz.
+    `exclude` içindeki yollar, sayfada başka bir bölümde gösterildikleri için atlanır."""
     stats = analytics.get_stats()
     routes = [path for path, _count in stats["routes"]] if stats.get("available") else []
     popular = []
     for path in dict.fromkeys(routes + list(_DEFAULT_POPULAR_TOOLS)):
-        card = TOOL_CARDS.get(path)
-        if not card:
+        if path not in TOOL_CARDS or path in exclude:
             continue
-        cat, icon, badge, title_key, desc_key = card
-        popular.append({
-            "path": path,
-            "cat": cat,
-            "icon": icon,
-            "badge": badge,
-            "title_key": title_key,
-            "desc_key": desc_key,
-        })
+        popular.append(_tool_card(path))
         if len(popular) >= _POPULAR_TOOLS_LIMIT:
             break
     return popular
@@ -986,7 +1010,9 @@ def landing():
 
 @app.route("/araclar")
 def tools_home():
-    return render_template("index.html", popular_tools=_popular_tools())
+    new_tools = _new_tools()
+    popular_tools = _popular_tools(exclude={tool["path"] for tool in new_tools})
+    return render_template("index.html", new_tools=new_tools, popular_tools=popular_tools)
 
 
 @app.route("/mikrotik")

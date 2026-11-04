@@ -326,6 +326,29 @@
     </div>
 </section>
 
+{% if new_tools %}
+<!-- NEW TOOLS -->
+<section class="category-section" id="cat-new">
+    <div class="category-title">
+        <span class="category-title-inner">✨ {{ t('home.new.title') }}</span>
+    </div>
+    <div class="tools-grid">
+        {% for tool in new_tools %}
+        <a href="{{ tool.path }}" class="tool-card card-{{ tool.cat }}">
+            <div class="tool-header">
+                <div class="tool-icon icon-{{ tool.cat }}">{{ tool.icon }}</div>
+                <span class="tool-badge badge-{{ tool.badge }}">{{ t('home.badge.' + tool.badge) }}</span>
+            </div>
+            <div>
+                <h3 class="tool-title">{{ t(tool.title_key) }}</h3>
+                <p class="tool-desc">{{ t(tool.desc_key) }}</p>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
 {% if popular_tools %}
 <!-- POPULAR TOOLS -->
 <section class="category-section" id="cat-popular">
@@ -1009,7 +1032,7 @@ const TOOL_CATEGORY_LABELS = {
     if (!input || !resultsBox) return;
 
     const searchIndex = Array.prototype.slice.call(document.querySelectorAll('.tool-card'))
-        .filter(function (card) { return !card.closest('#cat-popular'); })
+        .filter(function (card) { return !card.closest('#cat-popular, #cat-new'); })
         .map(function (card, i) {
             card.id = card.id || ('tool-card-' + i);
             const titleEl = card.querySelector('.tool-title');

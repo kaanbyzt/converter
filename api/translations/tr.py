@@ -64,6 +64,7 @@ TRANSLATIONS = {
     "home.badge.active": "Aktif",
     "home.badge.beta": "Beta",
     "home.beta_note": "Beta: bu araçlar çalışır durumda ancak tam verim alınamayabilir.",
+    "home.new.title": "Yeni Eklenenler",
     "home.popular.title": "En Çok Kullanılan Araçlar",
     "home.search.placeholder": "Bir araç ara... (örn. pdf birleştir)",
     "home.search.no_results": "Sonuç bulunamadı.",

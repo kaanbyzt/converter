@@ -60,6 +60,7 @@ TRANSLATIONS = {
     "home.badge.active": "Active",
     "home.badge.beta": "Beta",
     "home.beta_note": "Beta: these tools are functional but may not perform at full efficiency yet.",
+    "home.new.title": "Recently Added",
 
     "home.cat.ai": "AI Tools",
     "home.cat.pdf": "PDF Tools",
