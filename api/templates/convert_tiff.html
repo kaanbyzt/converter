@@ -1,0 +1,719 @@
+{% extends "base.html" %}
+{% block title %}{{ t('convert_tiff.title') }} | toolboxquick{% endblock %}
+{% block head %}
+<style>
+    .dropzone {
+        display: block;
+        width: 100%;
+        color: inherit;
+        border: 2px dashed var(--btn-outline-border);
+        border-radius: 12px;
+        padding: 2.5rem 1.5rem;
+        background: rgba(15, 23, 42, 0.2);
+        text-align: center;
+        cursor: pointer;
+        transition: border-color 0.15s, background-color 0.15s;
+    }
+    .dropzone:hover,
+    .dropzone.is-over {
+        border-color: #3b82f6;
+        background: rgba(59, 130, 246, 0.05);
+    }
+    .file-input { display: none; }
+    .page-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 0.75rem;
+        max-height: 460px;
+        overflow-y: auto;
+        padding: 0.25rem;
+    }
+    .page-item {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        margin: 0;
+        padding: 0.5rem;
+        border: 2px solid var(--navbar-border);
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 0.75rem;
+        text-align: center;
+    }
+    .page-item.is-selected { border-color: #10b981; }
+    .page-item input {
+        position: absolute;
+        top: 0.5rem;
+        left: 0.5rem;
+    }
+    .page-thumb {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 130px;
+        margin-bottom: 0.35rem;
+        overflow: hidden;
+        border-radius: 6px;
+        background: rgba(148, 163, 184, 0.14);
+        color: var(--text-secondary);
+    }
+    .page-thumb canvas {
+        max-width: 100%;
+        max-height: 100%;
+        background: #fff;
+    }
+    .page-meta { color: var(--text-secondary); overflow-wrap: anywhere; }
+    .image-list { list-style: none; margin: 0 0 1rem; padding: 0; }
+    .image-list li {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.4rem 0;
+        border-bottom: 1px solid var(--navbar-border);
+    }
+    .image-list .name { flex: 1; min-width: 0; overflow-wrap: anywhere; font-size: 0.875rem; }
+    #pane-split .form-text,
+    #pane-create .form-text { color: var(--text-secondary); }
+    .tiff-status { min-height: 1.5rem; font-size: 0.875rem; }
+    .tiff-status.is-error { color: #ef4444; }
+</style>
+{% endblock %}
+
+{% block content %}
+<header class="mb-4">
+    <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #10b981 !important;">{{ t('convert_tiff.kicker') }}</p>
+    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">{{ t('convert_tiff.heading') }}</h1>
+    <p class="text-secondary mb-0">{{ t('convert_tiff.subtitle') }}</p>
+</header>
+
+<ul class="nav nav-pills mb-3" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button type="button" class="nav-link active" id="tab-split" data-pane="pane-split" role="tab" aria-controls="pane-split" aria-selected="true">{{ t('convert_tiff.tab_split') }}</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button type="button" class="nav-link" id="tab-create" data-pane="pane-create" role="tab" aria-controls="pane-create" aria-selected="false">{{ t('convert_tiff.tab_create') }}</button>
+    </li>
+</ul>
+
+<div>
+    <section class="tool-card p-4 mb-4" id="pane-split" role="tabpanel" aria-labelledby="tab-split">
+        <div id="split-upload">
+            <button type="button" class="dropzone" id="split-drop">
+                <span class="d-block" style="font-size: 2.5rem; margin-bottom: 0.5rem;">📑</span>
+                <span class="d-block fw-semibold mb-1" style="color: var(--text-color);">{{ t('convert_tiff.split_placeholder') }}</span>
+                <span class="d-block text-secondary small">{{ t('convert_tiff.local_hint') }}</span>
+            </button>
+            <input type="file" id="split-file" class="file-input" accept=".tif,.tiff,image/tiff">
+        </div>
+
+        <div id="split-editor" class="d-none">
+            <div class="mb-3 d-flex justify-content-between align-items-center gap-2 flex-wrap">
+                <span id="split-name" class="fw-semibold text-success" style="overflow-wrap: anywhere;"></span>
+                <button type="button" class="btn btn-sm btn-outline-danger" id="split-reset">{{ t('convert_tiff.new_file_btn') }}</button>
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-5">
+                    <label class="form-label fw-semibold mb-1" for="split-range">{{ t('convert_tiff.range_label') }}</label>
+                    <input type="text" id="split-range" class="form-control" inputmode="numeric" placeholder="1-3, 5" autocomplete="off">
+                    <div class="form-text">{{ t('convert_tiff.range_hint') }}</div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold mb-1" for="split-format">{{ t('convert_tiff.format_label') }}</label>
+                    <select id="split-format" class="form-select">
+                        <option value="tiff">{{ t('convert_tiff.opt_tiff') }}</option>
+                        <option value="pdf">PDF (.pdf)</option>
+                        <option value="image/png">PNG (.png)</option>
+                        <option value="image/jpeg">JPEG (.jpg)</option>
+                        <option value="image/webp">WebP (.webp)</option>
+                    </select>
+                </div>
+                <div class="col-md-3" id="split-layout-wrap">
+                    <label class="form-label fw-semibold mb-1" for="split-layout">{{ t('convert_tiff.layout_label') }}</label>
+                    <select id="split-layout" class="form-select">
+                        <option value="separate">{{ t('convert_tiff.layout_separate') }}</option>
+                        <option value="single">{{ t('convert_tiff.layout_single') }}</option>
+                    </select>
+                </div>
+            </div>
+            <div id="split-format-note" class="form-text mb-3"></div>
+
+            <div class="d-flex gap-2 mb-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="split-all">{{ t('convert_tiff.select_all') }}</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="split-none">{{ t('convert_tiff.select_none') }}</button>
+            </div>
+            <div class="page-grid mb-3" id="split-pages"></div>
+
+            <div class="tiff-status mb-2" id="split-status" role="status" aria-live="polite"></div>
+            <button type="button" class="btn btn-success px-4 py-2" id="split-run" style="border-radius: 8px; font-weight: 600;">{{ t('convert_tiff.run_btn') }}</button>
+        </div>
+    </section>
+
+    <section class="tool-card p-4 mb-4 d-none" id="pane-create" role="tabpanel" aria-labelledby="tab-create">
+        <button type="button" class="dropzone mb-3" id="create-drop">
+            <span class="d-block" style="font-size: 2.5rem; margin-bottom: 0.5rem;">🖼️</span>
+            <span class="d-block fw-semibold mb-1" style="color: var(--text-color);">{{ t('convert_tiff.create_placeholder') }}</span>
+            <span class="d-block text-secondary small">{{ t('convert_tiff.local_hint') }}</span>
+        </button>
+        <input type="file" id="create-file" class="file-input" accept="image/png,image/jpeg,image/webp,image/bmp,image/gif" multiple>
+
+        <div id="create-editor" class="d-none">
+            <ul class="image-list" id="create-list"></ul>
+            <div class="row g-3 mb-3">
+                <div class="col-md-5">
+                    <label class="form-label fw-semibold mb-1" for="create-layout">{{ t('convert_tiff.layout_label') }}</label>
+                    <select id="create-layout" class="form-select">
+                        <option value="single">{{ t('convert_tiff.layout_multipage') }}</option>
+                        <option value="separate">{{ t('convert_tiff.layout_separate') }}</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold mb-1" for="create-compression">{{ t('convert_tiff.compression_label') }}</label>
+                    <select id="create-compression" class="form-select">
+                        <option value="lzw">{{ t('convert_tiff.compression_lzw') }}</option>
+                        <option value="none">{{ t('convert_tiff.compression_none') }}</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold mb-1" for="create-dpi">DPI</label>
+                    <input type="number" id="create-dpi" class="form-control" value="300" min="1" max="9600" step="1">
+                </div>
+            </div>
+            <div class="tiff-status mb-2" id="create-status" role="status" aria-live="polite"></div>
+            <button type="button" class="btn btn-success px-4 py-2" id="create-run" style="border-radius: 8px; font-weight: 600;">{{ t('convert_tiff.run_btn') }}</button>
+        </div>
+    </section>
+</div>
+
+<section class="mt-4">
+    <a href="/araclar" class="text-secondary small text-decoration-none">&larr; {{ t('convert_tiff.back_home') }}</a>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/utif@3.1.0/UTIF.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="{{ url_for('static', filename='tiff-tools.js') }}"></script>
+<script>
+(function () {
+    'use strict';
+
+    const MSG = {{ {
+        'pages': t('convert_tiff.msg_pages'),
+        'noPreview': t('convert_tiff.msg_no_preview'),
+        'working': t('convert_tiff.msg_working'),
+        'done': t('convert_tiff.msg_done'),
+        'doneSkipped': t('convert_tiff.msg_done_skipped'),
+        'noSelection': t('convert_tiff.err_no_selection'),
+        'badRange': t('convert_tiff.err_bad_range'),
+        'notTiff': t('convert_tiff.err_not_tiff'),
+        'bigTiff': t('convert_tiff.err_bigtiff'),
+        'corrupt': t('convert_tiff.err_corrupt'),
+        'damaged': t('convert_tiff.warn_damaged'),
+        'tooLarge': t('convert_tiff.err_too_large'),
+        'unsupportedPage': t('convert_tiff.err_unsupported_page'),
+        'libs': t('convert_tiff.err_libs'),
+        'webp': t('convert_tiff.err_webp'),
+        'generic': t('convert_tiff.err_generic'),
+        'noteTiff': t('convert_tiff.note_tiff'),
+        'notePdf': t('convert_tiff.note_pdf'),
+        'noteImage': t('convert_tiff.note_image'),
+        'remove': t('convert_tiff.remove'),
+        'moveUp': t('convert_tiff.move_up'),
+        'moveDown': t('convert_tiff.move_down'),
+        'loadFailed': t('convert_tiff.err_image_load')
+    } | tojson }};
+
+    const EXT = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' };
+    const THUMB = 240;
+    const PDF_MAX_PT = 14400; // PDF 1.4 sayfa kenarı üst sınırı
+    const $ = (id) => document.getElementById(id);
+    const nextFrame = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+    function fill(template, values) {
+        return template.replace(/\{(\w+)\}/g, (m, key) => (key in values ? values[key] : m));
+    }
+    function setStatus(el, text, isError) {
+        el.textContent = text || '';
+        el.classList.toggle('is-error', !!isError);
+    }
+    function errorText(err) {
+        const map = {
+            not_tiff: MSG.notTiff, no_pages: MSG.corrupt, bigtiff: MSG.bigTiff, corrupt: MSG.corrupt,
+            old_jpeg: MSG.corrupt, too_large: MSG.tooLarge, unsupported_page: MSG.unsupportedPage,
+            webp: MSG.webp
+        };
+        if (err && map[err.code]) return map[err.code];
+        if (err instanceof RangeError) return MSG.tooLarge;
+        return MSG.generic;
+    }
+    function stem(name) {
+        const dot = name.lastIndexOf('.');
+        return (dot > 0 ? name.slice(0, dot) : name) || 'tiff';
+    }
+    function saveBlob(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+    }
+    async function deliver(files, zipName) {
+        if (files.length === 1) {
+            saveBlob(files[0].blob, files[0].name);
+            return;
+        }
+        const zip = new JSZip();
+        files.forEach((f) => zip.file(f.name, f.blob));
+        saveBlob(await zip.generateAsync({ type: 'blob', compression: 'STORE' }), zipName);
+    }
+    function pad(n, total) {
+        return String(n).padStart(String(total).length, '0');
+    }
+    function wireDropzone(zone, input, onFiles) {
+        zone.addEventListener('click', () => input.click());
+        ['dragenter', 'dragover'].forEach((type) => zone.addEventListener(type, (e) => {
+            e.preventDefault();
+            zone.classList.add('is-over');
+        }));
+        ['dragleave', 'drop'].forEach((type) => zone.addEventListener(type, (e) => {
+            e.preventDefault();
+            zone.classList.remove('is-over');
+        }));
+        zone.addEventListener('drop', (e) => {
+            if (e.dataTransfer.files.length) onFiles(Array.from(e.dataTransfer.files));
+        });
+        input.addEventListener('change', () => {
+            if (input.files.length) onFiles(Array.from(input.files));
+            input.value = '';
+        });
+    }
+    function canvasToBlob(canvas, mime, quality) {
+        return new Promise((resolve, reject) => {
+            canvas.toBlob((blob) => {
+                if (!blob) { reject(Object.assign(new Error('too_large'), { code: 'too_large' })); return; }
+                // Safari WebP üretemez, sessizce PNG döner.
+                if (blob.type !== mime) { reject(Object.assign(new Error('webp'), { code: 'webp' })); return; }
+                resolve(blob);
+            }, mime, quality);
+        });
+    }
+    function flattenOnWhite(canvas) {
+        const ctx = canvas.getContext('2d');
+        ctx.globalCompositeOperation = 'destination-over';
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    document.querySelectorAll('[data-pane]').forEach((tab, _, tabs) => {
+        tab.addEventListener('click', () => {
+            tabs.forEach((other) => {
+                const active = other === tab;
+                other.classList.toggle('active', active);
+                other.setAttribute('aria-selected', active ? 'true' : 'false');
+                $(other.dataset.pane).classList.toggle('d-none', !active);
+            });
+        });
+    });
+
+    /* ---------- TIFF böl / dönüştür ---------- */
+    let tiff = null;
+    let baseName = '';
+    let session = 0;
+    let splitRunning = false;
+    let thumbObserver = null;
+    const checkboxes = [];
+
+    function selectedIndexes() {
+        return checkboxes.filter((c) => c.checked).map((c) => +c.value);
+    }
+    function syncRangeFromChecks() {
+        const picked = selectedIndexes();
+        const parts = [];
+        for (let i = 0; i < picked.length; i++) {
+            let j = i;
+            while (j + 1 < picked.length && picked[j + 1] === picked[j] + 1) j++;
+            parts.push(i === j ? String(picked[i] + 1) : (picked[i] + 1) + '-' + (picked[j] + 1));
+            i = j;
+        }
+        $('split-range').value = parts.join(', ');
+    }
+    function paintSelection() {
+        checkboxes.forEach((c) => c.closest('.page-item').classList.toggle('is-selected', c.checked));
+    }
+    function syncFormat() {
+        const fmt = $('split-format').value;
+        $('split-layout-wrap').classList.toggle('d-none', fmt !== 'tiff' && fmt !== 'pdf');
+        $('split-format-note').textContent = fmt === 'tiff' ? MSG.noteTiff : (fmt === 'pdf' ? MSG.notePdf : MSG.noteImage);
+    }
+    function resetSplit() {
+        session++;
+        if (thumbObserver) thumbObserver.disconnect();
+        thumbObserver = null;
+        tiff = null;
+        checkboxes.length = 0;
+        $('split-pages').replaceChildren();
+        $('split-range').value = '';
+        setStatus($('split-status'), '');
+        $('split-editor').classList.add('d-none');
+        $('split-upload').classList.remove('d-none');
+    }
+    function buildPageCard(page, index) {
+        const label = document.createElement('label');
+        label.className = 'page-item is-selected';
+        const box = document.createElement('input');
+        box.type = 'checkbox';
+        box.checked = true;
+        box.value = index;
+        box.addEventListener('change', () => { paintSelection(); syncRangeFromChecks(); });
+        checkboxes.push(box);
+        const thumb = document.createElement('div');
+        thumb.className = 'page-thumb';
+        const title = document.createElement('strong');
+        title.textContent = String(index + 1);
+        const meta = document.createElement('span');
+        meta.className = 'page-meta';
+        meta.textContent = page.width + '×' + page.height;
+        label.append(box, thumb, title, meta);
+        return { label, thumb };
+    }
+    function renderThumb(card, index) {
+        try {
+            const full = TiffTools.renderToCanvas(tiff, index);
+            const scale = Math.min(1, THUMB / Math.max(full.width, full.height));
+            const small = document.createElement('canvas');
+            small.width = Math.max(1, Math.round(full.width * scale));
+            small.height = Math.max(1, Math.round(full.height * scale));
+            const ctx = small.getContext('2d');
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(full, 0, 0, small.width, small.height);
+            full.width = full.height = 0;
+            card.thumb.replaceChildren(small);
+        } catch (err) {
+            card.thumb.textContent = MSG.noPreview;
+        }
+    }
+    // Yüzlerce sayfalı dosyada yalnızca görünen küçük resimler çözülür; dönüştürme sırasında beklenir.
+    function startThumbs(cards, mySession) {
+        const queue = [];
+        let pumping = false;
+        const pump = async () => {
+            if (pumping) return;
+            pumping = true;
+            while (queue.length && mySession === session) {
+                await nextFrame();
+                if (splitRunning || mySession !== session) {
+                    await new Promise((resolve) => setTimeout(resolve, 150));
+                    continue;
+                }
+                const index = queue.shift();
+                renderThumb(cards[index], index);
+            }
+            pumping = false;
+        };
+        thumbObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach((entry) => {
+                if (!entry.isIntersecting) return;
+                observer.unobserve(entry.target);
+                queue.push(+entry.target.dataset.index);
+            });
+            pump();
+        }, { root: $('split-pages'), rootMargin: '200px' });
+        cards.forEach((card, i) => {
+            card.label.dataset.index = i;
+            thumbObserver.observe(card.label);
+        });
+    }
+    async function openTiff(files) {
+        const file = files[0];
+        resetSplit();
+        const status = $('split-status');
+        if (!window.UTIF || !window.JSZip || !window.pako) {
+            $('split-upload').classList.add('d-none');
+            $('split-editor').classList.remove('d-none');
+            $('split-run').disabled = true;
+            setStatus(status, MSG.libs, true);
+            return;
+        }
+        $('split-run').disabled = false;
+        try {
+            tiff = TiffTools.parse(await file.arrayBuffer());
+        } catch (err) {
+            alert(errorText(err));
+            return;
+        }
+        baseName = stem(file.name);
+        $('split-name').textContent = file.name + ' · ' + fill(MSG.pages, { count: tiff.pages.length });
+        $('split-upload').classList.add('d-none');
+        $('split-editor').classList.remove('d-none');
+        const cards = tiff.pages.map(buildPageCard);
+        $('split-pages').replaceChildren(...cards.map((c) => c.label));
+        syncRangeFromChecks();
+        syncFormat();
+        if (tiff.damaged) setStatus(status, MSG.damaged, true);
+        startThumbs(cards, session);
+    }
+    function canvasToBilevel(canvas) {
+        const w = canvas.width, h = canvas.height;
+        const rgba = canvas.getContext('2d').getImageData(0, 0, w, h).data;
+        const rowBytes = (w + 7) >> 3;
+        const packed = new Uint8Array(rowBytes * h);
+        for (let y = 0, src = 0; y < h; y++) {
+            const row = y * rowBytes;
+            for (let x = 0; x < w; x++, src += 4) {
+                if (rgba[src] >= 128) packed[row + (x >> 3)] |= 0x80 >> (x & 7);
+            }
+        }
+        return window.pako.deflate(packed);
+    }
+    async function pageToPdfImage(index) {
+        const page = tiff.pages[index];
+        const canvas = TiffTools.renderToCanvas(tiff, index);
+        flattenOnWhite(canvas);
+        const dpiX = page.dpiX || 72;
+        const dpiY = page.dpiY || dpiX;
+        const swapped = page.orientation >= 5;
+        let widthPt = canvas.width / (swapped ? dpiY : dpiX) * 72;
+        let heightPt = canvas.height / (swapped ? dpiX : dpiY) * 72;
+        const shrink = Math.min(1, PDF_MAX_PT / Math.max(widthPt, heightPt));
+        widthPt *= shrink;
+        heightPt *= shrink;
+        // 1-bit taramalarda JPEG metni bulanıklaştırır; 1-bit Flate hem net hem küçük kalır.
+        const bilevel = page.bitsPerSample === 1;
+        const bytes = bilevel
+            ? canvasToBilevel(canvas)
+            : new Uint8Array(await (await canvasToBlob(canvas, 'image/jpeg', 0.92)).arrayBuffer());
+        const result = {
+            kind: bilevel ? 'bilevel' : 'jpeg',
+            bytes,
+            pixelWidth: canvas.width,
+            pixelHeight: canvas.height,
+            widthPt,
+            heightPt
+        };
+        canvas.width = canvas.height = 0;
+        return result;
+    }
+    async function runSplit() {
+        const status = $('split-status');
+        const picked = selectedIndexes();
+        if (!picked.length) { setStatus(status, MSG.noSelection, true); return; }
+        const fmt = $('split-format').value;
+        const single = (fmt === 'tiff' || fmt === 'pdf') && $('split-layout').value === 'single';
+        const total = tiff.pages.length;
+        const files = [];
+        const skipped = [];
+        const runButton = $('split-run');
+        const mySession = session;
+        let lastPageError = null;
+        // Tek bir sorunlu sayfa, sağlam sayfaların indirilmesini engellemesin.
+        const skipOrThrow = (err, idx) => {
+            if (!['unsupported_page', 'corrupt', 'old_jpeg'].includes(err.code)) throw err;
+            lastPageError = err;
+            skipped.push(idx + 1);
+        };
+        runButton.disabled = true;
+        splitRunning = true;
+        const progress = (i) => setStatus(status, fill(MSG.working, { current: i + 1, total: picked.length }));
+        try {
+            if (fmt === 'tiff' && single) {
+                const usable = picked.filter((idx) => {
+                    if (TiffTools.isCopyable(tiff, tiff.pages[idx])) return true;
+                    skipOrThrow({ code: 'corrupt' }, idx);
+                    return false;
+                });
+                if (usable.length) {
+                    files.push({ name: baseName + '_secili.tiff', blob: new Blob([TiffTools.copyPages(tiff, usable)], { type: 'image/tiff' }) });
+                }
+            } else if (fmt === 'pdf' && single) {
+                const pdfImages = [];
+                for (let i = 0; i < picked.length; i++) {
+                    if (mySession !== session) return;
+                    progress(i);
+                    await nextFrame();
+                    try {
+                        pdfImages.push(await pageToPdfImage(picked[i]));
+                    } catch (err) {
+                        skipOrThrow(err, picked[i]);
+                    }
+                }
+                if (pdfImages.length) files.push({ name: baseName + '.pdf', blob: TiffTools.buildPdf(pdfImages) });
+            } else {
+                for (let i = 0; i < picked.length; i++) {
+                    if (mySession !== session) return;
+                    progress(i);
+                    await nextFrame();
+                    const idx = picked[i];
+                    const prefix = baseName + '_sayfa_' + pad(idx + 1, total);
+                    try {
+                        if (fmt === 'tiff') {
+                            files.push({ name: prefix + '.tiff', blob: new Blob([TiffTools.copyPages(tiff, [idx])], { type: 'image/tiff' }) });
+                        } else if (fmt === 'pdf') {
+                            files.push({ name: prefix + '.pdf', blob: TiffTools.buildPdf([await pageToPdfImage(idx)]) });
+                        } else {
+                            const canvas = TiffTools.renderToCanvas(tiff, idx);
+                            if (fmt === 'image/jpeg') flattenOnWhite(canvas);
+                            const blob = await canvasToBlob(canvas, fmt, 0.92);
+                            canvas.width = canvas.height = 0;
+                            files.push({ name: prefix + '.' + EXT[fmt], blob });
+                        }
+                    } catch (err) {
+                        skipOrThrow(err, idx);
+                    }
+                }
+            }
+            if (mySession !== session) return;
+            if (!files.length) {
+                setStatus(status, errorText(lastPageError), true);
+                return;
+            }
+            await deliver(files, baseName + '_sayfalar.zip');
+            setStatus(status, skipped.length
+                ? fill(MSG.doneSkipped, { pages: skipped.join(', ') })
+                : MSG.done, skipped.length > 0);
+        } catch (err) {
+            console.error(err);
+            if (mySession === session) setStatus(status, errorText(err), true);
+        } finally {
+            splitRunning = false;
+            if (mySession === session) runButton.disabled = false;
+        }
+    }
+
+    wireDropzone($('split-drop'), $('split-file'), openTiff);
+    $('split-reset').addEventListener('click', resetSplit);
+    $('split-run').addEventListener('click', runSplit);
+    $('split-format').addEventListener('change', syncFormat);
+    $('split-all').addEventListener('click', () => {
+        checkboxes.forEach((c) => { c.checked = true; });
+        paintSelection();
+        syncRangeFromChecks();
+        setStatus($('split-status'), '');
+    });
+    $('split-none').addEventListener('click', () => {
+        checkboxes.forEach((c) => { c.checked = false; });
+        paintSelection();
+        syncRangeFromChecks();
+    });
+    $('split-range').addEventListener('change', (e) => {
+        if (!tiff) return;
+        const picked = TiffTools.parseRange(e.target.value, tiff.pages.length);
+        if (!picked) {
+            setStatus($('split-status'), MSG.badRange, true);
+            syncRangeFromChecks();
+            return;
+        }
+        setStatus($('split-status'), '');
+        checkboxes.forEach((c, i) => { c.checked = picked.includes(i); });
+        paintSelection();
+        syncRangeFromChecks();
+    });
+
+    /* ---------- Görsellerden TIFF ---------- */
+    let images = [];
+
+    function renderImageList() {
+        const list = $('create-list');
+        list.replaceChildren();
+        $('create-editor').classList.toggle('d-none', images.length === 0);
+        images.forEach((file, i) => {
+            const li = document.createElement('li');
+            const name = document.createElement('span');
+            name.className = 'name';
+            name.textContent = (i + 1) + '. ' + file.name;
+            const button = (text, label, disabled, onClick) => {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'btn btn-sm btn-outline-secondary';
+                b.textContent = text;
+                b.title = label;
+                b.setAttribute('aria-label', label);
+                b.disabled = disabled;
+                b.addEventListener('click', onClick);
+                return b;
+            };
+            const swap = (a, b) => { [images[a], images[b]] = [images[b], images[a]]; renderImageList(); };
+            li.append(
+                name,
+                button('↑', MSG.moveUp, i === 0, () => swap(i, i - 1)),
+                button('↓', MSG.moveDown, i === images.length - 1, () => swap(i, i + 1)),
+                button('✕', MSG.remove, false, () => { images.splice(i, 1); renderImageList(); })
+            );
+            list.appendChild(li);
+        });
+    }
+    function loadBitmap(file) {
+        return new Promise((resolve, reject) => {
+            const url = URL.createObjectURL(file);
+            const img = new Image();
+            img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+            img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('load')); };
+            img.src = url;
+        });
+    }
+    async function runCreate() {
+        const status = $('create-status');
+        const runButton = $('create-run');
+        const layout = $('create-layout').value;
+        const dpi = Math.min(9600, Math.max(1, Math.round(+$('create-dpi').value) || 300));
+        const opts = { lzw: $('create-compression').value === 'lzw', dpi };
+        const pages = [];
+        const files = [];
+        const failed = [];
+        runButton.disabled = true;
+        try {
+            for (let i = 0; i < images.length; i++) {
+                setStatus(status, fill(MSG.working, { current: i + 1, total: images.length }));
+                await nextFrame();
+                let img;
+                try {
+                    img = await loadBitmap(images[i]);
+                } catch (e) {
+                    failed.push(images[i].name);
+                    continue;
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = img.naturalWidth;
+                canvas.height = img.naturalHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+                const page = TiffTools.encodeRgbaPage(pixels, canvas.width, canvas.height, opts);
+                canvas.width = canvas.height = 0;
+                if (layout === 'single') {
+                    pages.push(page);
+                } else {
+                    files.push({ name: stem(images[i].name) + '.tiff', blob: new Blob([TiffTools.write([page], true)], { type: 'image/tiff' }) });
+                }
+            }
+            if (layout === 'single' && pages.length) {
+                const name = (images.length === 1 ? stem(images[0].name) : 'gorseller') + '.tiff';
+                files.push({ name, blob: new Blob([TiffTools.write(pages, true)], { type: 'image/tiff' }) });
+            }
+            if (!files.length) {
+                setStatus(status, fill(MSG.loadFailed, { names: failed.join(', ') }), true);
+                return;
+            }
+            await deliver(files, 'gorseller_tiff.zip');
+            setStatus(status, failed.length ? fill(MSG.loadFailed, { names: failed.join(', ') }) : MSG.done, failed.length > 0);
+        } catch (err) {
+            console.error(err);
+            setStatus(status, errorText(err), true);
+        } finally {
+            runButton.disabled = false;
+        }
+    }
+
+    wireDropzone($('create-drop'), $('create-file'), (files) => {
+        images = images.concat(files);
+        setStatus($('create-status'), '');
+        renderImageList();
+    });
+    $('create-run').addEventListener('click', runCreate);
+})();
+</script>
+{% endblock %}

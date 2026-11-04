@@ -591,6 +591,16 @@
                 <p class="tool-desc">{{ t('home.conv.image_compress.desc') }}</p>
             </div>
         </a>
+        <a href="/convert/tiff" class="tool-card card-converter">
+            <div class="tool-header">
+                <div class="tool-icon icon-converter">📑</div>
+                <span class="tool-badge badge-active">{{ t('home.badge.active') }}</span>
+            </div>
+            <div>
+                <h3 class="tool-title">{{ t('home.conv.tiff.title') }}</h3>
+                <p class="tool-desc">{{ t('home.conv.tiff.desc') }}</p>
+            </div>
+        </a>
         <a href="/convert/audio" class="tool-card card-converter">
             <div class="tool-header">
                 <div class="tool-icon icon-converter">🎵</div>
@@ -1028,13 +1038,18 @@ const TOOL_CATEGORY_LABELS = {
         resultsBox.classList.remove('open');
     }
 
+    // Türkçe küçültme "TIFF"i "tıff" yapar; i/ı ayrımı kaldırılmazsa "tiff", "gif", "zip" aramaları sonuç vermez.
+    function foldSearch(str) {
+        return str.toLocaleLowerCase('tr').replace(/ı/g, 'i');
+    }
+
     function renderResults(query) {
-        const q = query.trim().toLocaleLowerCase('tr');
+        const q = foldSearch(query.trim());
         if (!q) { closeResults(); return; }
 
         const matches = searchIndex.filter(function (item) {
-            return item.title.toLocaleLowerCase('tr').indexOf(q) !== -1 ||
-                   item.desc.toLocaleLowerCase('tr').indexOf(q) !== -1;
+            return foldSearch(item.title).indexOf(q) !== -1 ||
+                   foldSearch(item.desc).indexOf(q) !== -1;
         }).slice(0, 8);
 
         if (!matches.length) {

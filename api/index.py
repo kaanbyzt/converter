@@ -169,6 +169,7 @@ SITEMAP_ROUTES = [
     ("/qr-kod", 0.6),
     ("/convert/image", 0.6),
     ("/convert/image-compress", 0.6),
+    ("/convert/tiff", 0.6),
     ("/convert/audio", 0.6),
     ("/convert/video", 0.6),
     ("/convert/extract", 0.6),
@@ -209,6 +210,7 @@ TOOL_CARDS = {
     "/pdf-tools/ppt-to-pdf": ("pdf", "📉", "active", "home.pdf.ppt_to_pdf.title", "home.pdf.ppt_to_pdf.desc"),
     "/convert/image": ("converter", "🖼️", "active", "home.conv.image.title", "home.conv.image.desc"),
     "/convert/image-compress": ("converter", "🗜️", "active", "home.conv.image_compress.title", "home.conv.image_compress.desc"),
+    "/convert/tiff": ("converter", "📑", "active", "home.conv.tiff.title", "home.conv.tiff.desc"),
     "/convert/audio": ("converter", "🎵", "active", "home.conv.audio.title", "home.conv.audio.desc"),
     "/convert/video": ("converter", "🎬", "active", "home.conv.video.title", "home.conv.video.desc"),
     "/convert/extract": ("converter", "🗄️", "active", "home.conv.extract.title", "home.conv.extract.desc"),
@@ -1395,6 +1397,11 @@ def convert_image():
 @app.route("/convert/image-compress")
 def convert_image_compress():
     return render_template("image_compress.html")
+
+
+@app.route("/convert/tiff")
+def convert_tiff():
+    return render_template("convert_tiff.html")
 
 
 # Temporary directory setup for ZIP extractor

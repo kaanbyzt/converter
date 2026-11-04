@@ -126,6 +126,8 @@ TRANSLATIONS = {
     "home.conv.archive.desc": "Convert between ZIP, TAR and GZ archive package formats.",
     "home.conv.image_compress.title": "Image Compressor",
     "home.conv.image_compress.desc": "Shrink image file size with quality and width controls.",
+    "home.conv.tiff.title": "TIFF Splitter & Converter",
+    "home.conv.tiff.desc": "Split multi-page TIFFs into pages; convert to PDF, PNG or JPG, or create a TIFF from images.",
 
     "home.video.screen_record.title": "Screen Recorder",
     "home.video.screen_record.desc": "Record your screen or specific windows locally, right from your browser.",

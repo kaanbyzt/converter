@@ -133,6 +133,8 @@ TRANSLATIONS = {
     "home.conv.archive.desc": "ZIP, TAR, GZ arşiv paket formatları arasında dönüştürme.",
     "home.conv.image_compress.title": "Resim Sıkıştırma",
     "home.conv.image_compress.desc": "Kalite ve genişlik ayarıyla resim dosya boyutunu küçültün.",
+    "home.conv.tiff.title": "TIFF Bölücü ve Dönüştürücü",
+    "home.conv.tiff.desc": "Çok sayfalı TIFF'i sayfalarına ayırın; PDF, PNG, JPG'ye dönüştürün veya görsellerden TIFF oluşturun.",
 
     "home.video.screen_record.title": "Ekran Kaydedici",
     "home.video.screen_record.desc": "Tarayıcı üzerinden ekranınızı veya belirli pencereleri yerel olarak kaydedin.",

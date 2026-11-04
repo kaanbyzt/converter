@@ -2,6 +2,7 @@
 
 PAGES = {
     "tr": {
+        "changelog.20261104.1": "TIFF Bölücü ve Dönüştürücü eklendi: çok sayfalı TIFF'ler kayıpsız olarak sayfalarına ayrılabiliyor; PDF, PNG, JPG ve WebP'ye dönüştürülebiliyor; görsellerden TIFF oluşturulabiliyor.",
         "changelog.20260831.1": "PDF → Word ve PPT → PDF dönüştürücüleri sunucu tarafına taşındı: artık tarayıcıda sahte dosya üretmek yerine gerçek .docx ve PDF çıktısı oluşturuluyor.",
         "changelog.20260831.2": "PPT → PDF çıktısında Türkçe karakterlerin (İ, ı, ğ, ş) siyah kutu olarak görünmesi sorunu giderildi.",
         "changelog.20260831.3": "PPT → PDF çıktısında uzun metinlerin sayfa dışına taşıp kaybolması sorunu giderildi; otomatik satır kaydırma eklendi.",
@@ -35,6 +36,7 @@ PAGES = {
         "changelog.title": "Güncelleme Notları",
     },
     "en": {
+        "changelog.20261104.1": "Added TIFF Splitter & Converter: split multi-page TIFFs into pages losslessly, convert to PDF, PNG, JPG and WebP, or create a TIFF from images.",
         "changelog.20260831.1": "PDF → Word and PPT → PDF converters were moved to the server side: they now produce real .docx and PDF output instead of fake browser-generated files.",
         "changelog.20260831.2": "Fixed Turkish characters (İ, ı, ğ, ş) showing up as black boxes in PPT → PDF output.",
         "changelog.20260831.3": "Fixed long text disappearing off the page in PPT → PDF output; automatic line wrapping was added.",

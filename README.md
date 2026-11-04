@@ -15,6 +15,7 @@ Bu proje, ağ yöneticileri ve genel kullanıcılar için çeşitli web tabanlı
     *   **Ses Kaydedici**: Mikrofon üzerinden yerel ses kaydı yapar ve dalga görselleştirici sunar.
     *   **Ekran Kaydedici**: Belirli pencereleri veya tüm ekranı tarayıcı üzerinden kaydeder.
     *   **Görüntü Dönüştürücü**: Resimleri JPG, PNG, WebP, BMP formatları arasında yerel olarak dönüştürür.
+    *   **TIFF Bölücü ve Dönüştürücü**: Çok sayfalı TIFF'leri kayıpsız olarak sayfalarına ayırır; PDF, PNG, JPG, WebP'ye dönüştürür ve görsellerden TIFF oluşturur.
 4.  **MikroTik Script Jeneratörü**: RouterOS v6 ve v7 için subnet hesaplama, port yönlendirme, DHCP sunucu kurulumu gibi otomasyon scriptleri üreten bağımsız yönetim paneli.
 
 ---
