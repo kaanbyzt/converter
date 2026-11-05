@@ -101,6 +101,7 @@
 
 {% block scripts %}
 {% include "_render_guard.html" %}
+{% include "_video_export.html" %}
 <script>
 let videoFile = null;
 let originalFileName = "";
@@ -143,15 +144,24 @@ function loadVideo(input) {
     canvasEl = document.getElementById('export-canvas');
     ctx = canvasEl.getContext('2d');
 
+    VideoExport.guardSource(videoEl, () => {
+        alert(VideoExport.badFileMessage);
+        resetConverter();
+    });
+
     videoEl.onloadedmetadata = () => {
         checkFormatSupport();
-        videoEl.play();
+        videoEl.play().catch(() => {});
     };
 }
 
 function checkFormatSupport() {
     const mp4Sel = document.querySelector('#target-format option[value="video/mp4;codecs=avc1"]');
     const warning = document.getElementById('support-warning');
+    if (!VideoExport.recorderAvailable()) {
+        warning.textContent = VideoExport.unsupportedMessage;
+        return;
+    }
     if (!MediaRecorder.isTypeSupported('video/mp4') && !MediaRecorder.isTypeSupported('video/mp4;codecs=avc1')) {
         if (mp4Sel) {
             mp4Sel.disabled = true;
@@ -164,30 +174,21 @@ function checkFormatSupport() {
 }
 
 function startConversion() {
-    if (isConverting) return;
+    if (isConverting || !videoEl || !videoEl.videoWidth) return;
+    if (!VideoExport.canvasSupported()) {
+        alert(VideoExport.unsupportedMessage);
+        return;
+    }
     isConverting = true;
 
     const targetFormat = document.getElementById('target-format').value;
     const resolution = document.getElementById('target-resolution').value;
-    
+
+    // Desteklenmeyen seçimde createRecorder tarayıcının kaydedebildiği formata düşer;
+    // dosya uzantısı kaydın gerçek formatından belirlenir.
     let mimeType = targetFormat;
-    let extension = '.webm';
-    
-    if (targetFormat.includes('video/mp4')) {
-        if (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1')) {
-            mimeType = 'video/mp4;codecs=avc1';
-            extension = '.mp4';
-        } else if (MediaRecorder.isTypeSupported('video/mp4')) {
-            mimeType = 'video/mp4';
-            extension = '.mp4';
-        } else {
-            mimeType = 'video/webm';
-            extension = '.webm';
-        }
-    } else {
-        if (!MediaRecorder.isTypeSupported(targetFormat)) {
-            mimeType = 'video/webm';
-        }
+    if (targetFormat.includes('video/mp4') && !MediaRecorder.isTypeSupported('video/mp4;codecs=avc1')) {
+        mimeType = 'video/mp4';
     }
 
     document.getElementById('processing-msg').classList.remove('d-none');
@@ -235,14 +236,9 @@ function startConversion() {
     }, 1000 / fps);
 
     stream = canvasEl.captureStream(fps);
-
-    try {
-        mediaRecorder = new MediaRecorder(stream, { mimeType: mimeType });
-    } catch (e) {
-        console.warn('Selected mimeType failed, falling back to default webm');
-        mediaRecorder = new MediaRecorder(stream);
-        extension = '.webm';
-    }
+    const audio = VideoExport.attachAudio(videoEl);
+    if (audio) stream.addTrack(audio.track);
+    mediaRecorder = VideoExport.createRecorder(stream, mimeType);
 
     mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
@@ -254,35 +250,25 @@ function startConversion() {
         RenderGuard.stop();
         clearInterval(loopInterval);
         canvasEl.classList.add('d-none');
+        VideoExport.releaseAudio(videoEl);
 
-        const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'video/webm' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = originalFileName + '-converted' + extension;
-        a.click();
-        URL.revokeObjectURL(url);
+        VideoExport.download(
+            VideoExport.blobFor(mediaRecorder, recordedChunks),
+            originalFileName + '-converted' + VideoExport.extensionFor(mediaRecorder)
+        );
 
         isConverting = false;
         document.getElementById('processing-msg').classList.add('d-none');
         document.getElementById('convert-btn').disabled = false;
+        videoEl.onended = null;
         videoEl.controls = true;
         videoEl.loop = true;
-        videoEl.play();
+        videoEl.play().catch(() => {});
     };
 
-    // Sync audio track if available
-    if (videoEl.captureStream) {
-        const videoStream = videoEl.captureStream();
-        const audioTracks = videoStream.getAudioTracks();
-        if (audioTracks.length > 0) {
-            stream.addTrack(audioTracks[0].clone());
-        }
-    }
-
-    videoEl.play();
+    videoEl.play().catch(console.error);
     mediaRecorder.start();
-    RenderGuard.start({ recorder: mediaRecorder, media: [videoEl] });
+    RenderGuard.start({ recorder: mediaRecorder, media: [videoEl], audioCtx: audio ? audio.ctx : null });
 
     videoEl.onended = () => {
         mediaRecorder.stop();

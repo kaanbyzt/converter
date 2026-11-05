@@ -19,9 +19,7 @@
         display: none;
     }
 </style>
-<!-- Load pdf-lib and pdf.js CDNs -->
 <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -57,9 +55,11 @@
             </select>
         </div>
 
-        <div class="alert alert-warning py-2 my-3 small" style="max-width: 420px; margin: 0 auto;">
-            {{ t('pdf_compress.warning_rasterized') }}
+        <div class="alert alert-info py-2 my-3 small" style="max-width: 420px; margin: 0 auto;">
+            {{ t('pdf_compress.note_text_kept') }}
         </div>
+
+        <div id="result-msg" class="text-success small mb-3 d-none" role="status"></div>
 
         <div id="processing-msg" class="text-warning small mb-3 d-none">{{ t('pdf_compress.processing_msg') }}</div>
 
@@ -79,8 +79,6 @@
 let pdfData = null;
 let originalFileName = "";
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
-
 function friendlyPdfErrorMessage(e, fallbackMsg) {
     const name = e && e.name ? e.name : '';
     const msg = (e && e.message ? String(e.message) : '').toLowerCase();
@@ -93,6 +91,7 @@ function friendlyPdfErrorMessage(e, fallbackMsg) {
 function resetEditor() {
     pdfData = null;
     originalFileName = "";
+    document.getElementById('result-msg').classList.add('d-none');
     document.getElementById('upload-stage').classList.remove('d-none');
     document.getElementById('editor-stage').classList.add('d-none');
     document.getElementById('pdf_file').value = '';
@@ -115,60 +114,247 @@ async function loadPDF(input) {
     }
 }
 
+function formatSize(bytes) {
+    if (bytes < 1024 * 1024) return Math.max(1, Math.round(bytes / 1024)) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function downloadBytes(bytes, name) {
+    const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+
+// Akışa uygulanan filtre adları (zincir olabilir: ASCII85 + Flate gibi). Okunamayan yapıda null.
+function filterNames(dict) {
+    const { PDFName, PDFArray } = PDFLib;
+    const filter = dict.lookup(PDFName.of('Filter'));
+    if (!filter) return [];
+    if (filter instanceof PDFName) return [filter.decodeText()];
+    if (filter instanceof PDFArray) {
+        const names = [];
+        for (let i = 0; i < filter.size(); i++) {
+            const item = filter.lookup(i);
+            if (!(item instanceof PDFName)) return null;
+            names.push(item.decodeText());
+        }
+        return names;
+    }
+    return null;
+}
+
+const TEXT_FILTERS = ['ASCII85Decode', 'ASCIIHexDecode', 'FlateDecode', 'LZWDecode', 'RunLengthDecode'];
+
+// Son filtre hariç (JPEG durumunda) veya tüm filtreleri çözer.
+function decodeFilters(stream, names, context) {
+    const { PDFName, PDFRawStream } = PDFLib;
+    if (!names.length) return stream.contents;
+    const dict = stream.dict.clone(context);
+    dict.set(PDFName.of('Filter'), context.obj(names.map((n) => PDFName.of(n))));
+    return PDFLib.decodePDFRawStream(PDFRawStream.of(dict, stream.contents)).decode();
+}
+
+// Flate/LZW için tahminleyici ayarları. { predictor, columns } veya desteklenmiyorsa null.
+function predictorOf(dict) {
+    const { PDFName, PDFArray, PDFDict, PDFNumber } = PDFLib;
+    let parms = dict.lookup(PDFName.of('DecodeParms'));
+    if (parms instanceof PDFArray) parms = parms.size() ? parms.lookup(parms.size() - 1) : null;
+    if (!(parms instanceof PDFDict)) return { predictor: 1, columns: 0 };
+    const read = (key, fallback) => {
+        const v = parms.lookup(PDFName.of(key));
+        return v instanceof PDFNumber ? v.asNumber() : fallback;
+    };
+    const predictor = read('Predictor', 1);
+    if (predictor === 2) return null;
+    return { predictor, columns: read('Columns', 1) };
+}
+
+// PNG tahminleyicisini geri alır (her satırın başında filtre türü baytı vardır).
+function undoPngPredictor(data, rowBytes, pixelBytes) {
+    const rows = Math.floor(data.length / (rowBytes + 1));
+    const out = new Uint8Array(rows * rowBytes);
+    for (let r = 0; r < rows; r++) {
+        const type = data[r * (rowBytes + 1)];
+        const src = r * (rowBytes + 1) + 1;
+        const dst = r * rowBytes;
+        for (let i = 0; i < rowBytes; i++) {
+            const left = i >= pixelBytes ? out[dst + i - pixelBytes] : 0;
+            const up = r > 0 ? out[dst + i - rowBytes] : 0;
+            const upLeft = r > 0 && i >= pixelBytes ? out[dst + i - rowBytes - pixelBytes] : 0;
+            let add = 0;
+            if (type === 1) add = left;
+            else if (type === 2) add = up;
+            else if (type === 3) add = (left + up) >> 1;
+            else if (type === 4) {
+                const est = left + up - upLeft;
+                const pa = Math.abs(est - left), pb = Math.abs(est - up), pc = Math.abs(est - upLeft);
+                add = pa <= pb && pa <= pc ? left : (pb <= pc ? up : upLeft);
+            }
+            out[dst + i] = (data[src + i] + add) & 255;
+        }
+    }
+    return out;
+}
+
+// Görselin renk kanalı sayısı: 1 (gri) veya 3 (RGB). Diğer renk uzayları (CMYK, paletli) atlanır.
+function colorChannels(dict) {
+    const { PDFName, PDFArray, PDFRawStream, PDFNumber } = PDFLib;
+    const cs = dict.lookup(PDFName.of('ColorSpace'));
+    if (cs instanceof PDFName) {
+        const name = cs.decodeText();
+        if (name === 'DeviceRGB') return 3;
+        if (name === 'DeviceGray') return 1;
+        return 0;
+    }
+    if (cs instanceof PDFArray && cs.size() >= 2) {
+        const kind = cs.lookup(0);
+        if (kind instanceof PDFName && kind.decodeText() === 'ICCBased') {
+            const profile = cs.lookup(1);
+            if (profile instanceof PDFRawStream) {
+                const n = profile.dict.lookup(PDFName.of('N'));
+                if (n instanceof PDFNumber && (n.asNumber() === 1 || n.asNumber() === 3)) return n.asNumber();
+            }
+        }
+    }
+    return 0;
+}
+
+function numberOf(dict, key) {
+    const { PDFName, PDFNumber } = PDFLib;
+    const value = dict.lookup(PDFName.of(key));
+    return value instanceof PDFNumber ? value.asNumber() : 0;
+}
+
+async function imageStreamToSource(stream, width, height, channels, names, context) {
+    if (names[names.length - 1] === 'DCTDecode') {
+        const jpeg = decodeFilters(stream, names.slice(0, -1), context);
+        return createImageBitmap(new Blob([jpeg], { type: 'image/jpeg' }));
+    }
+
+    const predictor = predictorOf(stream.dict);
+    if (!predictor) return null;
+    let raw = decodeFilters(stream, names, context);
+    if (predictor.predictor >= 10) raw = undoPngPredictor(raw, width * channels, channels);
+    if (raw.length < width * height * channels) return null;
+
+    const pixels = new ImageData(width, height);
+    for (let i = 0, j = 0; i < width * height; i++, j += channels) {
+        pixels.data[i * 4] = raw[j];
+        pixels.data[i * 4 + 1] = channels === 3 ? raw[j + 1] : raw[j];
+        pixels.data[i * 4 + 2] = channels === 3 ? raw[j + 2] : raw[j];
+        pixels.data[i * 4 + 3] = 255;
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    canvas.getContext('2d').putImageData(pixels, 0, 0);
+    return canvas;
+}
+
+// PDF'teki görselleri küçültüp JPEG olarak yeniden kodlar; metin ve vektörlere dokunmaz.
+async function recompressImages(doc, maxSide, quality) {
+    const { PDFName, PDFRawStream, PDFNumber } = PDFLib;
+    const context = doc.context;
+    const objects = context.enumerateIndirectObjects();
+
+    // Saydamlık maskeleri kayıplı kodlanmamalı
+    const maskRefs = new Set();
+    objects.forEach(([, obj]) => {
+        if (obj instanceof PDFRawStream) {
+            ['SMask', 'Mask'].forEach((key) => {
+                const ref = obj.dict.get(PDFName.of(key));
+                if (ref) maskRefs.add(ref.toString());
+            });
+        }
+    });
+
+    for (const [ref, obj] of objects) {
+        if (!(obj instanceof PDFRawStream) || maskRefs.has(ref.toString())) continue;
+        const dict = obj.dict;
+        if (dict.lookup(PDFName.of('Subtype')) !== PDFName.of('Image')) continue;
+        if (dict.has(PDFName.of('ImageMask')) || dict.has(PDFName.of('Decode'))) continue;
+
+        const names = filterNames(dict);
+        const width = numberOf(dict, 'Width');
+        const height = numberOf(dict, 'Height');
+        const channels = colorChannels(dict);
+        if (!names || !width || !height || !channels || obj.contents.length < 4096) continue;
+        const isJpeg = names[names.length - 1] === 'DCTDecode';
+        const textFilters = isJpeg ? names.slice(0, -1) : names;
+        if (!textFilters.every((n) => TEXT_FILTERS.includes(n))) continue;
+        if (!isJpeg && numberOf(dict, 'BitsPerComponent') !== 8) continue;
+
+        let source;
+        try {
+            source = await imageStreamToSource(obj, width, height, channels, names, context);
+        } catch (e) {
+            console.warn('Görsel atlandı', e);
+            continue;
+        }
+        if (!source) continue;
+
+        const scale = Math.min(1, maxSide / Math.max(width, height));
+        const newW = Math.max(1, Math.round(width * scale));
+        const newH = Math.max(1, Math.round(height * scale));
+        const canvas = document.createElement('canvas');
+        canvas.width = newW;
+        canvas.height = newH;
+        const c2d = canvas.getContext('2d');
+        c2d.fillStyle = '#ffffff';
+        c2d.fillRect(0, 0, newW, newH);
+        c2d.drawImage(source, 0, 0, newW, newH);
+        if (source.close) source.close();
+
+        const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality));
+        if (!blob) continue;
+        const bytes = new Uint8Array(await blob.arrayBuffer());
+        if (bytes.length >= obj.contents.length) continue;
+
+        const newDict = dict.clone(context);
+        newDict.set(PDFName.of('Filter'), PDFName.of('DCTDecode'));
+        newDict.delete(PDFName.of('DecodeParms'));
+        newDict.set(PDFName.of('ColorSpace'), PDFName.of('DeviceRGB'));
+        newDict.set(PDFName.of('BitsPerComponent'), PDFNumber.of(8));
+        newDict.set(PDFName.of('Width'), PDFNumber.of(newW));
+        newDict.set(PDFName.of('Height'), PDFNumber.of(newH));
+        context.assign(ref, PDFRawStream.of(newDict, bytes));
+    }
+}
+
 async function processAndDownload() {
     if (!pdfData) return;
-    
+
+    const resultEl = document.getElementById('result-msg');
+    resultEl.classList.add('d-none');
     document.getElementById('processing-msg').classList.remove('d-none');
     document.getElementById('process-btn').disabled = true;
 
     try {
         const level = document.getElementById('compress-level').value;
-        // "Yüksek" seviye daha düşük JPEG kalitesi ve daha düşük render ölçeği kullanarak
-        // dosya boyutunu daha fazla küçültür; "standart" görsel kaliteyi daha çok korur.
-        const jpegQuality = level === 'high' ? 0.35 : 0.65;
-        const renderScale = level === 'high' ? 1.0 : 1.5;
+        const maxSide = level === 'high' ? 1000 : 1600;
+        const quality = level === 'high' ? 0.4 : 0.7;
 
-        // Her sayfayı pdf.js ile canvas'a render edip seçilen kalitede JPEG'e
-        // yeniden kodluyoruz, ardından pdf-lib ile sıfırdan bir PDF paketliyoruz.
-        const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(pdfData.slice(0)) });
-        const sourcePdf = await loadingTask.promise;
-        const totalPages = sourcePdf.numPages;
+        const doc = await PDFLib.PDFDocument.load(pdfData.slice(0), { updateMetadata: false });
+        await recompressImages(doc, maxSide, quality);
+        const compressed = await doc.save({ useObjectStreams: true });
 
-        const { PDFDocument } = PDFLib;
-        const outputDoc = await PDFDocument.create();
-
-        for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
-            const page = await sourcePdf.getPage(pageNum);
-            const viewport = page.getViewport({ scale: renderScale });
-
-            const canvas = document.createElement('canvas');
-            canvas.width = viewport.width;
-            canvas.height = viewport.height;
-            const context = canvas.getContext('2d');
-            context.fillStyle = '#ffffff';
-            context.fillRect(0, 0, canvas.width, canvas.height);
-
-            await page.render({ canvasContext: context, viewport: viewport }).promise;
-
-            const dataUrl = canvas.toDataURL('image/jpeg', jpegQuality);
-            const jpegBase64 = dataUrl.split(',')[1];
-            const jpegBytes = Uint8Array.from(atob(jpegBase64), c => c.charCodeAt(0));
-
-            const embeddedImage = await outputDoc.embedJpg(jpegBytes);
-            const newPage = outputDoc.addPage([viewport.width, viewport.height]);
-            newPage.drawImage(embeddedImage, { x: 0, y: 0, width: viewport.width, height: viewport.height });
+        const before = pdfData.byteLength;
+        if (compressed.length < before) {
+            downloadBytes(compressed, originalFileName + '-compressed.pdf');
+            resultEl.textContent = {{ t('pdf_compress.result_saved')|tojson }}
+                .replace('{before}', formatSize(before))
+                .replace('{after}', formatSize(compressed.length))
+                .replace('{pct}', Math.round((1 - compressed.length / before) * 100));
+        } else {
+            downloadBytes(new Uint8Array(pdfData), originalFileName + '-compressed.pdf');
+            resultEl.textContent = {{ t('pdf_compress.result_none')|tojson }};
         }
-
-        const pdfBytes = await outputDoc.save({ useObjectStreams: true });
-
-        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-        const url = URL.createObjectURL(blob);
-
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = originalFileName + '-compressed.pdf';
-        a.click();
-        URL.revokeObjectURL(url);
+        resultEl.classList.remove('d-none');
     } catch (e) {
         alert(friendlyPdfErrorMessage(e, {{ t('pdf_compress.err_process_failed')|tojson }}));
         console.error(e);

@@ -57,7 +57,7 @@
 
         <img id="image-preview" class="preview-box" alt="{{ t('convert_image.preview_alt') }}">
 
-        <div class="mb-4" style="max-width: 300px; margin: 0 auto text-align: left;">
+        <div class="mb-4" style="max-width: 300px; margin: 0 auto; text-align: left;">
             <label class="form-label fw-semibold mb-2">{{ t('convert_image.target_format_label') }}</label>
             <select id="target-format" class="form-select" style="border-radius: 8px;">
                 <option value="image/png">{{ t('convert_image.opt_png') }}</option>
@@ -95,6 +95,12 @@ function resetConverter() {
 function loadImage(input) {
     if (!input.files || !input.files[0]) return;
     const file = input.files[0];
+    if (/\.tiff?$/i.test(file.name) || file.type === 'image/tiff') {
+        // Tarayıcılar TIFF açamaz; bu iş için ayrı araç var.
+        input.value = '';
+        if (confirm({{ t('convert_image.tiff_redirect')|tojson }})) window.location.href = '/convert/tiff';
+        return;
+    }
     const dotIdx = file.name.lastIndexOf('.');
     originalFileName = dotIdx > 0 ? file.name.substring(0, dotIdx) : file.name;
 
@@ -110,7 +116,7 @@ function loadImage(input) {
             document.getElementById('image-preview').src = e.target.result;
         };
         img.onerror = function() {
-            alert('Resim yüklenemedi, dosya bozuk veya desteklenmiyor.');
+            alert({{ t('convert_image.err_load')|tojson }});
             resetConverter();
         };
         img.src = e.target.result;

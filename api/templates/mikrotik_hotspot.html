@@ -24,7 +24,7 @@
 <script>
 function update(){
     const p=document.getElementById('profile').value,r=document.getElementById('rate').value,t=document.getElementById('timeout').value,u=document.getElementById('uname').value,pw=document.getElementById('pass').value;
-    let s=`# ${ {{ t('mk_hotspot.c1_title')|tojson }} }\n/ip hotspot user profile\nadd name="${p}" rate-limit="${r}" session-timeout=${t} shared-users=1 comment="${ {{ t('mk_hotspot.c1_comment')|tojson }} }"\n\n# ${ {{ t('mk_hotspot.c2_title')|tojson }} }\n/ip hotspot user\nadd name="${u}" password="${pw}" profile="${p}" comment="${ {{ t('mk_hotspot.c2_comment')|tojson }} }"\n`;
+    let s=`# ${ {{ t('mk_hotspot.c1_title')|tojson }} }\n/ip hotspot user profile\n# ${ {{ t('mk_hotspot.c1_comment')|tojson }} }\nadd name="${p}" rate-limit="${r}" session-timeout=${t} shared-users=1\n\n# ${ {{ t('mk_hotspot.c2_title')|tojson }} }\n/ip hotspot user\nadd name="${u}" password="${pw}" profile="${p}" comment="${ {{ t('mk_hotspot.c2_comment')|tojson }} }"\n`;
     document.getElementById('out').textContent=s;
 }
 function copy(){navigator.clipboard.writeText(document.getElementById('out').textContent);const b=document.querySelector('.copy-btn');b.textContent={{ t('mk_hotspot.copied')|tojson }};setTimeout(()=>b.textContent={{ t('mk_hotspot.copy')|tojson }},1500);}

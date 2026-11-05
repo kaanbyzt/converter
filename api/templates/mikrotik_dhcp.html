@@ -8,6 +8,7 @@
         <div><label class="form-label">{{ t('mk_dhcp.label_range') }}</label><input type="text" id="range" class="form-input" value="192.168.1.100-192.168.1.200" oninput="update()" placeholder="{{ t('mk_dhcp.placeholder_range') }}"></div>
         <div><label class="form-label">{{ t('mk_dhcp.label_iface') }}</label><input type="text" id="iface" class="form-input" value="bridge-local" oninput="update()"></div>
         <div><label class="form-label">{{ t('mk_dhcp.label_gw') }}</label><input type="text" id="gw" class="form-input" value="192.168.1.1" oninput="update()"></div>
+        <div><label class="form-label">{{ t('mk_dhcp.label_prefix') }}</label><input type="number" id="prefix" class="form-input" value="24" min="1" max="30" oninput="update()"></div>
         <div><label class="form-label">{{ t('mk_dhcp.label_dns') }}</label><input type="text" id="dns" class="form-input" value="8.8.8.8,1.1.1.1" oninput="update()"></div>
     </div>
     <div class="script-card">
@@ -25,7 +26,13 @@ const STEP3 = {{ t('mk_dhcp.comment_network_step')|tojson }};
 const LOCAL_LAN_COMMENT = {{ t('mk_dhcp.comment_local_lan')|tojson }};
 function update(){
     const pool=document.getElementById('pool').value,range=document.getElementById('range').value,iface=document.getElementById('iface').value,gw=document.getElementById('gw').value,dns=document.getElementById('dns').value;
-    const base=gw.substring(0,gw.lastIndexOf('.'))+'.0/24';
+    const prefix=Math.max(1,Math.min(30,parseInt(document.getElementById('prefix').value,10)||24));
+    const octets=gw.split('.').map(Number);
+    const ipInt=octets.reduce((a,o)=>(a*256)+o,0);
+    const blockSize=Math.pow(2,32-prefix);
+    const netInt=Math.floor(ipInt/blockSize)*blockSize;
+    const netAddr=[24,16,8,0].map(b=>Math.floor(netInt/Math.pow(2,b))%256).join('.');
+    const base=(octets.length===4&&octets.every(o=>Number.isInteger(o)&&o>=0&&o<=255)?netAddr:gw)+'/'+prefix;
     let s=`# ${STEP1}\n/ip pool\nadd name=${pool} ranges=${range}\n\n# ${STEP2}\n/ip dhcp-server\nadd address-pool=${pool} disabled=no interface=${iface} lease-time=10h name="DHCP_Sunucusu"\n\n# ${STEP3}\n/ip dhcp-server network\nadd address=${base} comment="${LOCAL_LAN_COMMENT}" dns-server=${dns} gateway=${gw}\n`;
     document.getElementById('out').textContent=s;
 }

@@ -665,7 +665,12 @@
                 if (!res.ok) throw new Error('lookup_failed');
                 return res.json();
             })
-            .then((data) => renderNearbyResults(data.results || []))
+            .then((data) => {
+                renderNearbyResults(data.results || []);
+                if (data.partial && (data.results || []).length) {
+                    setNearbyPartialNote();
+                }
+            })
             .catch(() => {
                 if (attempt < NEARBY_RETRY_DELAYS_MS.length) {
                     setListStatus({{ t('travel.nearby.list_retrying')|tojson }}, 'loading');
@@ -674,6 +679,14 @@
                     setListStatus({{ t('travel.nearby.list_error')|tojson }}, 'error');
                 }
             });
+    }
+
+    // Yedek kaynaktan gelen liste eksik olabilir, kullanıcı bunu bilmeli.
+    function setNearbyPartialNote() {
+        const status = document.getElementById('nearbyResultsStatus');
+        status.textContent = {{ t('travel.nearby.list_partial')|tojson }};
+        status.dataset.kind = '';
+        status.classList.remove('d-none');
     }
 
     function renderNearbyResults(results) {

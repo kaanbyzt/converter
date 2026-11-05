@@ -4,10 +4,12 @@ import json
 import math
 import os
 import sys
+import time
 import zipfile
 import uuid
 import tarfile
 import requests
+from concurrent.futures import ThreadPoolExecutor
 from functools import wraps
 from flask import Flask, Response, render_template, request, send_file, jsonify, session, redirect, url_for, g
 from werkzeug.utils import secure_filename
@@ -59,6 +61,29 @@ OVERPASS_CATEGORY_FILTERS = {
     ],
 }
 
+OVERPASS_ENDPOINTS = (
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://overpass.private.coffee/api/interpreter",
+)
+
+# Overpass yanıt vermezse kullanılan bağımsız yedek: (arama terimleri, OSM etiketleri).
+# Photon metin araması yaptığı için tek terim bazı dillerde/bölgelerde sonuç bulamıyor.
+PHOTON_CATEGORY_SEARCH = {
+    "hospital": (("hospital", "hastane"), ["amenity:hospital"]),
+    "pharmacy": (("pharmacy", "eczane", "chemist"), ["amenity:pharmacy"]),
+    "police": (("police", "polis", "karakol"), ["amenity:police"]),
+    "restaurant": (("restaurant", "restoran", "lokanta"), ["amenity:restaurant"]),
+    "atm": (("atm", "cash", "bank"), ["amenity:atm"]),
+    "gas": (("petrol", "gas station", "opet", "shell"), ["amenity:fuel"]),
+    "transit": (("station", "durak", "stop", "metro"),
+                ["highway:bus_stop", "amenity:bus_station", "railway:station", "railway:tram_stop"]),
+}
+_GEO_USER_AGENT = "toolboxquick-travel-assistant/1.0"
+_NEARBY_BUDGET_SECONDS = 9  # sunucusuz fonksiyonun süresi dolmadan cevap dönmeli
+_OVERPASS_TIMEOUT = 4
+_PHOTON_TIMEOUT = 4
+
 # category -> çeviri anahtarı (isimsiz OSM sonuçlarında yedek isim göstermek için)
 _CATEGORY_LABEL_KEYS = {key: label_key for key, _icon, label_key, _term in NEARBY_CATEGORIES}
 
@@ -93,6 +118,8 @@ ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD")
 app.config["SESSION_COOKIE_SECURE"] = IS_VERCEL
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+# Vercel 4,5 MB üstü istekleri zaten reddeder; yerelde de aynı davranış olsun.
+app.config["MAX_CONTENT_LENGTH"] = int(4.5 * 1024 * 1024)
 
 # Sitemap için site içindeki tüm statik/GET sayfa yolları
 SITEMAP_ROUTES = [
@@ -119,8 +146,6 @@ SITEMAP_ROUTES = [
     ("/mikrotik/wifi-channels", 0.5),
     ("/mikrotik/hardware-selector", 0.5),
     ("/mikrotik/hotspot", 0.5),
-    ("/video-tools", 0.7),
-    ("/audio-tools", 0.7),
     ("/ai-tools", 0.7),
     ("/guncelleme-notlari", 0.3),
     ("/pdf-tools", 0.8),
@@ -522,6 +547,51 @@ def _persist_visitor_cookie(response):
             secure=IS_VERCEL,
         )
     return response
+
+
+@app.after_request
+def _set_security_headers(response):
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    # Araçlar satır içi script ve CDN kullandığı için yalnızca bunlara dokunmayan kurallar var.
+    response.headers.setdefault(
+        "Content-Security-Policy",
+        "frame-ancestors 'self'; base-uri 'self'; object-src 'none'",
+    )
+    return response
+
+
+@app.errorhandler(404)
+def _not_found(_error):
+    return render_template(
+        "error.html",
+        error_icon="🔍",
+        error_title=t("error.404_title"),
+        error_message=t("error.404_message"),
+    ), 404
+
+
+@app.errorhandler(413)
+def _too_large(_error):
+    if request.path in ("/pdf-tools/pdf-to-word", "/pdf-tools/ppt-to-pdf"):
+        return jsonify({"error": t("upload.too_large")}), 413
+    return render_template(
+        "error.html",
+        error_icon="📦",
+        error_title=t("error.500_title"),
+        error_message=t("upload.too_large"),
+    ), 413
+
+
+@app.errorhandler(500)
+def _server_error(_error):
+    return render_template(
+        "error.html",
+        error_icon="⚠️",
+        error_title=t("error.500_title"),
+        error_message=t("error.500_message"),
+    ), 500
 
 
 @app.route("/sitemap.xml")
@@ -941,6 +1011,29 @@ _ZIP_MAX_RATIO = 100                       # sıkıştırma oranı üst sınır�
 _TAR_MAX_ENTRIES = 500  # klasör/link dahil taranacak en fazla kayıt
 
 
+def _safe_archive_name(name):
+    """Arşiv içi yolu güvenli hale getirir: '..', mutlak yol ve sürücü harfi atılır.
+    Klasör kaydının sondaki '/' işareti korunur. Geriye bir şey kalmazsa None döner."""
+    normalized = name.replace("\\", "/")
+    is_dir = normalized.endswith("/")
+    parts = [p for p in normalized.split("/") if p not in ("", ".", "..") and not p.endswith(":")]
+    if not parts:
+        return None
+    return "/".join(parts) + ("/" if is_dir else "")
+
+
+def _add_tar_entry(tf, name, data):
+    if name.endswith("/"):
+        info = tarfile.TarInfo(name=name.rstrip("/"))
+        info.type = tarfile.DIRTYPE
+        info.mode = 0o755
+        tf.addfile(info)
+        return
+    info = tarfile.TarInfo(name=name)
+    info.size = len(data)
+    tf.addfile(tarinfo=info, fileobj=BytesIO(data))
+
+
 def _read_tar_safely(in_buf, mode, compressed_size):
     """Tar/tar.gz içeriğini zip ile aynı sınırlarla okur (tar bomb koruması).
     Boyutlar okumadan önce başlıktan kontrol edilir. (dosyalar, hata) döner."""
@@ -965,7 +1058,9 @@ def _read_tar_safely(in_buf, mode, compressed_size):
                 return None, t("err.zip_suspicious_ratio", ratio=total // max(compressed_size, 1))
             f = tf.extractfile(member)
             if f:
-                files[member.name] = f.read()
+                safe_name = _safe_archive_name(member.name)
+                if safe_name:
+                    files[safe_name] = f.read()
     return None, t("err.zip_too_many_files", max_files=_ZIP_MAX_FILES, count=f"{_TAR_MAX_ENTRIES}+")
 
 
@@ -1202,6 +1297,82 @@ def travel_reverse_geocode():
     return jsonify({"address": address})
 
 
+def _overpass_query(query, deadline):
+    """Sırayla Overpass sunucularını dener; ilk geçerli cevabı döner, olmazsa None.
+    Sunucu yoğunken 200 ile birlikte 'remark' içinde hata döndürebilir.
+    Süre sınırı, sona kalan Photon yedeğine zaman bırakacak şekilde hesaplanır."""
+    for url in OVERPASS_ENDPOINTS:
+        remaining = deadline - time.monotonic() - _PHOTON_TIMEOUT
+        if remaining < 1:
+            return None
+        try:
+            resp = requests.post(
+                url,
+                data={"data": query},
+                headers={"User-Agent": _GEO_USER_AGENT},
+                timeout=min(_OVERPASS_TIMEOUT, remaining),
+            )
+            resp.raise_for_status()
+            data = resp.json()
+        except (requests.RequestException, ValueError):
+            continue
+        if not isinstance(data, dict):
+            continue
+        if not data.get("elements") and "error" in str(data.get("remark", "")).lower():
+            continue
+        return data
+    return None
+
+
+def _photon_search(term, tags, lat, lng):
+    try:
+        resp = requests.get(
+            "https://photon.komoot.io/api/",
+            params=[("q", term), ("lat", lat), ("lon", lng), ("limit", 30), ("zoom", 16),
+                    ("location_bias_scale", 0.1)] + [("osm_tag", tag) for tag in tags],
+            headers={"User-Agent": _GEO_USER_AGENT},
+            timeout=_PHOTON_TIMEOUT,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+    except (requests.RequestException, ValueError):
+        return []
+    return data.get("features", []) if isinstance(data, dict) else []
+
+
+def _photon_query(category, lat, lng, radius_m):
+    """Overpass erişilemezse aynı OpenStreetMap verisini Photon'dan alır ve Overpass
+    biçimine çevirir. Metin araması eksik sonuç verebildiği için hiçbir şey bulunamazsa
+    "yakında yok" denmez, None dönülür."""
+    search = PHOTON_CATEGORY_SEARCH.get(category)
+    if not search:
+        return None
+    terms, tags = search
+    with ThreadPoolExecutor(max_workers=len(terms)) as pool:
+        batches = list(pool.map(lambda term: _photon_search(term, tags, lat, lng), terms))
+
+    elements = {}
+    for feature in (f for batch in batches for f in batch):
+        coords = (feature.get("geometry") or {}).get("coordinates") or []
+        if len(coords) != 2 or not all(isinstance(c, (int, float)) for c in coords):
+            continue
+        if _haversine_m(lat, lng, coords[1], coords[0]) > radius_m:
+            continue
+        props = feature.get("properties") or {}
+        elements[(coords[0], coords[1])] = {
+            "type": "node",
+            "lat": coords[1],
+            "lon": coords[0],
+            "tags": {
+                "name": props.get("name"),
+                "addr:street": props.get("street"),
+                "addr:housenumber": props.get("housenumber"),
+                "addr:city": props.get("city") or props.get("district"),
+            },
+        }
+    return {"elements": list(elements.values())} if elements else None
+
+
 @app.route("/seyahat/nearby-places")
 def travel_nearby_places():
     """Bir kategori için yakındaki gerçek yerleri (OpenStreetMap/Overpass API)
@@ -1234,18 +1405,14 @@ def travel_nearby_places():
         f'node{f}(around:{radius_m},{lat},{lng});way{f}(around:{radius_m},{lat},{lng});'
         for f in filters
     )
-    query = f"[out:json][timeout:15];({clauses});out center 30;"
+    query = f"[out:json][timeout:8];({clauses});out center 30;"
 
-    try:
-        resp = requests.post(
-            "https://overpass-api.de/api/interpreter",
-            data={"data": query},
-            headers={"User-Agent": "toolboxquick-travel-assistant/1.0 (contact: kaanbyzt07@gmail.com)"},
-            timeout=16,
-        )
-        resp.raise_for_status()
-        data = resp.json()
-    except (requests.RequestException, ValueError):
+    deadline = time.monotonic() + _NEARBY_BUDGET_SECONDS
+    data = _overpass_query(query, deadline)
+    partial = data is None
+    if partial:
+        data = _photon_query(category, lat, lng, radius_m)
+    if data is None:
         return jsonify({"error": "lookup_failed"}), 502
 
     fallback_name = t(_CATEGORY_LABEL_KEYS.get(category, ""))
@@ -1279,17 +1446,17 @@ def travel_nearby_places():
         })
 
     results.sort(key=lambda r: r["distance_m"])
-    return jsonify({"results": results[:15]})
+    return jsonify({"results": results[:15], "partial": partial})
 
 
 @app.route("/video-tools")
 def video_tools():
-    return render_template("video_tools.html")
+    return redirect("/araclar#cat-video", code=301)
 
 
 @app.route("/audio-tools")
 def audio_tools():
-    return render_template("audio_tools.html")
+    return redirect("/araclar#cat-audio", code=301)
 
 
 @app.route("/ai-tools")
@@ -1304,7 +1471,7 @@ def changelog():
 
 @app.route("/pdf-tools", methods=["GET", "POST"])
 def pdf_tools():
-    if request.method == "GET":
+    if request.method != "POST":
         return render_template("pdf_tools.html", download_url=None, error=None)
 
     files = request.files.getlist("pdf_files")
@@ -1345,7 +1512,7 @@ def pdf_tools():
 
 @app.route("/pdf-tools/split", methods=["GET", "POST"])
 def pdf_split():
-    if request.method == "GET":
+    if request.method != "POST":
         return render_template("pdf_split.html", error=None)
 
     file = request.files.get("pdf_file")
@@ -1433,7 +1600,7 @@ def convert_tiff():
 # Temporary directory setup for ZIP extractor
 @app.route("/pdf-tools/protect", methods=["GET", "POST"])
 def pdf_protect():
-    if request.method == "GET":
+    if request.method != "POST":
         return render_template("pdf_protect.html", error=None)
 
     file = request.files.get("pdf_file")
@@ -1473,7 +1640,7 @@ def pdf_protect():
 
 @app.route("/pdf-tools/unlock", methods=["GET", "POST"])
 def pdf_unlock():
-    if request.method == "GET":
+    if request.method != "POST":
         return render_template("pdf_unlock.html", error=None)
 
     file = request.files.get("pdf_file")
@@ -1589,11 +1756,11 @@ def pdf_compress_page():
 
 @app.route("/pdf-tools/pdf-to-jpg")
 def pdf_to_jpg():
-    return render_template("pdf_to_img.html")
+    return render_template("pdf_to_img.html", default_format="image/jpeg")
 
 @app.route("/pdf-tools/pdf-to-png")
 def pdf_to_png():
-    return render_template("pdf_to_img.html")
+    return render_template("pdf_to_img.html", default_format="image/png")
 
 @app.route("/pdf-tools/jpg-to-pdf")
 def jpg_to_pdf():
@@ -1613,7 +1780,7 @@ def word_to_pdf():
 
 @app.route("/pdf-tools/pdf-to-word", methods=["GET", "POST"])
 def pdf_to_word():
-    if request.method == "GET":
+    if request.method != "POST":
         return render_template("pdf_office.html", tool_type="pdf-word", tool_title=t("office.pdf_to_word.title"), tool_desc=t("office.pdf_to_word.desc"), file_accept=".pdf")
 
     file = request.files.get("pdf_file")
@@ -1648,7 +1815,7 @@ def pdf_to_excel():
 
 @app.route("/pdf-tools/ppt-to-pdf", methods=["GET", "POST"])
 def ppt_to_pdf():
-    if request.method == "GET":
+    if request.method != "POST":
         return render_template("pdf_office.html", tool_type="ppt-pdf", tool_title=t("office.ppt_to_pdf.title"), tool_desc=t("office.ppt_to_pdf.desc"), file_accept=".pptx,.pptm,.ppt")
 
     file = request.files.get("pptx_file")
@@ -1679,6 +1846,31 @@ def ppt_to_pdf():
 
 
 # --- VIDEO TOOLS ---
+_VIDEO_TOOL_TITLES = {
+    "volume": "video_editor.tool_title_volume",
+    "speed": "video_editor.tool_title_speed",
+    "text": "video_editor.tool_title_text",
+    "image": "video_editor.tool_title_image",
+    "loop": "video_editor.tool_title_loop",
+    "crop": "video_editor.tool_title_crop",
+    "remove-logo": "video_editor.tool_title_remove_logo",
+    "add-audio": "video_editor.tool_title_add_audio",
+    "resize": "video_editor.tool_title_resize",
+    "stabilize": "video_editor.tool_title_stabilize",
+}
+_VIDEO_TOOL_DESCRIPTIONS = {
+    "volume": "home.video.volume.desc",
+    "speed": "home.video.speed.desc",
+    "text": "home.video.add_text.desc",
+    "image": "home.video.add_image.desc",
+    "loop": "home.video.loop.desc",
+    "crop": "home.video.crop.desc",
+    "remove-logo": "home.video.remove_logo.desc",
+    "add-audio": "home.video.add_audio.desc",
+    "resize": "home.video.resize.desc",
+    "stabilize": "home.video.stabilize.desc",
+}
+
 @app.route("/video-tools/editor")
 @app.route("/video-tools/crop")
 @app.route("/video-tools/loop")
@@ -1699,7 +1891,14 @@ def video_editor_tool():
     }
     slug = request.path.rsplit("/", 1)[-1]
     active_tool = path_to_tab.get(slug, slug)
-    return render_template("video_editor.html", active_tool=active_tool)
+    title_key = _VIDEO_TOOL_TITLES.get(active_tool, "video_editor.heading")
+    desc_key = _VIDEO_TOOL_DESCRIPTIONS.get(active_tool, "home.video.editor.desc")
+    return render_template(
+        "video_editor.html",
+        active_tool=active_tool,
+        tool_heading=t(title_key),
+        tool_description=t(desc_key),
+    )
 
 @app.route("/video-tools/text-to-speech")
 def video_text_to_speech():
@@ -1735,7 +1934,7 @@ def convert_font():
 
 @app.route("/convert/archive", methods=["GET", "POST"])
 def convert_archive():
-    if request.method == "GET":
+    if request.method != "POST":
         return render_template("convert_archive.html", error=None)
     
     file = request.files.get("archive_file")
@@ -1757,7 +1956,9 @@ def convert_archive():
                 if not ok:
                     return render_template("convert_archive.html", error=err)
                 for name in z.namelist():
-                    files_dict[name] = z.read(name)
+                    safe_name = _safe_archive_name(name)
+                    if safe_name:
+                        files_dict[safe_name] = z.read(name)
         elif filename.endswith(".tar") or filename.endswith(".gz") or filename.endswith(".tgz"):
             in_buf.seek(0)
             mode = "r:gz" if (filename.endswith(".gz") or filename.endswith(".tgz")) else "r:"
@@ -1777,17 +1978,13 @@ def convert_archive():
         elif target_format == "tar":
             with tarfile.open(fileobj=out_buf, mode="w:") as tf:
                 for name, data in files_dict.items():
-                    info = tarfile.TarInfo(name=name)
-                    info.size = len(data)
-                    tf.addfile(tarinfo=info, fileobj=BytesIO(data))
+                    _add_tar_entry(tf, name, data)
             download_name = "converted.tar"
             mimetype = "application/x-tar"
         elif target_format == "tgz":
             with tarfile.open(fileobj=out_buf, mode="w:gz") as tf:
                 for name, data in files_dict.items():
-                    info = tarfile.TarInfo(name=name)
-                    info.size = len(data)
-                    tf.addfile(tarinfo=info, fileobj=BytesIO(data))
+                    _add_tar_entry(tf, name, data)
             download_name = "converted.tar.gz"
             mimetype = "application/gzip"
         else:

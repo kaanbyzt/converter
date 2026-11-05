@@ -152,24 +152,74 @@ function bufferToWav(buffer) {
     return new Blob([view], { type: 'audio/wav' });
 }
 
-// Pitch shift via playback-rate resampling (this changes duration), followed by a linear
-// interpolation resample pass that restores the original sample count so the output duration
-// matches the input. This is NOT phase-vocoder quality (time-domain resampling introduces some
-// artifacts), but it is duration-preserving and functionally correct pitch shifting.
-function resampleLinear(inputData, outputLength) {
-    const output = new Float32Array(outputLength);
-    const inputLength = inputData.length;
-    if (inputLength === 0 || outputLength === 0) return output;
-    const scale = (inputLength - 1) / Math.max(1, outputLength - 1);
-    for (let i = 0; i < outputLength; i++) {
-        const srcPos = i * scale;
-        const srcIndex = Math.floor(srcPos);
-        const frac = srcPos - srcIndex;
-        const s0 = inputData[srcIndex];
-        const s1 = inputData[Math.min(srcIndex + 1, inputLength - 1)];
-        output[i] = s0 + (s1 - s0) * frac;
+// Perde değiştirme iki adımdır: önce ses WSOLA ile perdesi değişmeden `ratio` katı uzatılır,
+// sonra `ratio` hızında çalınarak eski uzunluğuna döner. Sonuçta süre aynı, perde `ratio` katı olur.
+// Tüm kanallar aynı kaydırmayı kullandığı için stereo görüntü bozulmaz.
+async function timeStretch(buffer, ratio) {
+    const channels = [];
+    for (let c = 0; c < buffer.numberOfChannels; c++) channels.push(buffer.getChannelData(c));
+    const guide = channels[0];
+    const inputLength = buffer.length;
+    const outputLength = Math.ceil(inputLength * ratio);
+
+    const frameSize = Math.round(buffer.sampleRate * 0.05);
+    const synthesisHop = Math.floor(frameSize / 2);
+    const analysisHop = synthesisHop / ratio;
+    const searchRange = Math.round(buffer.sampleRate * 0.012);
+
+    const window = new Float32Array(frameSize);
+    for (let i = 0; i < frameSize; i++) window[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / frameSize);
+
+    const outputs = channels.map(() => new Float32Array(outputLength + frameSize));
+    const weights = new Float32Array(outputLength + frameSize);
+    const compareStep = 4;
+
+    let lastOffset = 0;
+    let frameIndex = 0;
+    for (let outPos = 0; outPos < outputLength; outPos += synthesisHop, frameIndex++) {
+        const ideal = Math.round(frameIndex * analysisHop);
+        let best = ideal;
+
+        if (frameIndex > 0) {
+            // Bir önceki karenin devamına en çok benzeyen yeri bul ki dalgalar üst üste binerken sönmesin.
+            const natural = lastOffset + synthesisHop;
+            let bestScore = -Infinity;
+            const from = Math.max(0, ideal - searchRange);
+            const to = Math.min(inputLength - frameSize - 1, ideal + searchRange);
+            for (let cand = from; cand <= to; cand++) {
+                let score = 0;
+                for (let i = 0; i < frameSize; i += compareStep) {
+                    const a = natural + i < inputLength ? guide[natural + i] : 0;
+                    score += a * guide[cand + i];
+                }
+                if (score > bestScore) {
+                    bestScore = score;
+                    best = cand;
+                }
+            }
+        }
+
+        best = Math.max(0, Math.min(best, inputLength - 1));
+        for (let c = 0; c < channels.length; c++) {
+            const input = channels[c];
+            const output = outputs[c];
+            for (let i = 0; i < frameSize && best + i < inputLength; i++) {
+                output[outPos + i] += input[best + i] * window[i];
+            }
+        }
+        for (let i = 0; i < frameSize; i++) weights[outPos + i] += window[i];
+        lastOffset = best;
+
+        // Uzun dosyalarda sayfa donmasın
+        if (frameIndex % 400 === 0) await new Promise((r) => setTimeout(r));
     }
-    return output;
+
+    const stretched = audioCtx.createBuffer(channels.length, outputLength, buffer.sampleRate);
+    outputs.forEach((output, c) => {
+        const target = stretched.getChannelData(c);
+        for (let i = 0; i < outputLength; i++) target[i] = weights[i] > 1e-3 ? output[i] / weights[i] : 0;
+    });
+    return stretched;
 }
 
 async function processAndDownload() {
@@ -180,33 +230,24 @@ async function processAndDownload() {
 
     const ratio = Math.pow(2, semitones / 12);
 
-    const offlineCtx = new OfflineAudioContext(
-        audioBuffer.numberOfChannels,
-        audioBuffer.length / ratio,
-        audioBuffer.sampleRate
-    );
-
-    const source = offlineCtx.createBufferSource();
-    source.buffer = audioBuffer;
-    source.playbackRate.value = ratio;
-    source.connect(offlineCtx.destination);
-    source.start(0);
-
     try {
-        const renderedBuffer = await offlineCtx.startRendering();
-
-        // Resample back to the original sample count so output duration matches the input.
-        const stretchedBuffer = audioCtx.createBuffer(
-            renderedBuffer.numberOfChannels,
-            audioBuffer.length,
-            audioBuffer.sampleRate
-        );
-        for (let channel = 0; channel < renderedBuffer.numberOfChannels; channel++) {
-            const resampled = resampleLinear(renderedBuffer.getChannelData(channel), audioBuffer.length);
-            stretchedBuffer.getChannelData(channel).set(resampled);
+        let outputBuffer = audioBuffer;
+        if (semitones !== 0) {
+            const stretched = await timeStretch(audioBuffer, ratio);
+            const offlineCtx = new OfflineAudioContext(
+                audioBuffer.numberOfChannels,
+                audioBuffer.length,
+                audioBuffer.sampleRate
+            );
+            const source = offlineCtx.createBufferSource();
+            source.buffer = stretched;
+            source.playbackRate.value = ratio;
+            source.connect(offlineCtx.destination);
+            source.start(0);
+            outputBuffer = await offlineCtx.startRendering();
         }
 
-        const wavBlob = bufferToWav(stretchedBuffer);
+        const wavBlob = bufferToWav(outputBuffer);
         const url = URL.createObjectURL(wavBlob);
 
         const a = document.createElement('a');

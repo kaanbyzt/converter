@@ -1,5 +1,6 @@
 {% extends "base.html" %}
-{% block title %}{{ t('video_editor.page_title') }} | toolboxquick{% endblock %}
+{% block title %}{{ tool_heading }} | toolboxquick{% endblock %}
+{% block meta_description %}{{ tool_description }}{% endblock %}
 {% block head %}
 <style>
     .dropzone {
@@ -70,7 +71,7 @@
 {% block content %}
 <header class="mb-4">
     <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #a855f7 !important;">{{ t('video_editor.eyebrow') }}</p>
-    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;" id="studio-title">{{ t('video_editor.heading') }}</h1>
+    <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;" id="studio-title">{{ tool_heading }}</h1>
     <p class="text-secondary mb-0">
         {{ t('video_editor.description') }}
     </p>
@@ -244,7 +245,7 @@
                         <input class="form-check-input" type="checkbox" id="stabilize-toggle" onchange="drawFrame()">
                         <label class="form-check-label text-secondary small" for="stabilize-toggle">{{ t('video_editor.stabilize_toggle_label') }}</label>
                     </div>
-                    <div class="form-text text-secondary small mt-1">{{ t('video_editor.stabilize_note') }}</div>
+                    <div class="form-text text-secondary small mt-1">{{ t('video_editor.stabilize_note_v2') }}</div>
                 </div>
 
                 <hr class="my-3">
@@ -266,6 +267,7 @@
 
 {% block scripts %}
 {% include "_render_guard.html" %}
+{% include "_video_export.html" %}
 <script>
 let videoFile = null;
 let videoEl = null;
@@ -312,7 +314,13 @@ function loadVideo(input) {
     canvasEl = document.getElementById('output-canvas');
     ctx = canvasEl.getContext('2d');
 
+    VideoExport.guardSource(videoEl, () => {
+        alert(VideoExport.badFileMessage);
+        resetEditor();
+    });
+
     videoEl.onloadedmetadata = () => {
+        resetStabilizer();
         // Set default crop settings to full video sizes
         document.getElementById('crop-w').value = videoEl.videoWidth;
         document.getElementById('crop-h').value = videoEl.videoHeight;
@@ -383,33 +391,162 @@ async function loadAudioTrack(input) {
     }
 }
 
+// --- Sarsıntı azaltma ---
+// Ardışık küçük kareler karşılaştırılarak görüntünün kayması bulunur, kaymanın yumuşatılmış
+// hâli ile farkı kadar görüntü ters yöne kaydırılır. Kenarlar görünmesin diye hafif yakınlaştırılır.
+const STAB_WIDTH = 160;
+const STAB_SEARCH = 12;
+const STAB_SMOOTHING = 0.06;
+const STAB_MARGIN = 0.07;
+let stabCanvas = null;
+let stabCtx = null;
+let stabSnapshot = null;
+let stabPrev = null;
+let stabLastTime = -1;
+let stabRawX = 0, stabRawY = 0, stabSmoothX = 0, stabSmoothY = 0;
+
+function resetStabilizer() {
+    stabPrev = null;
+    stabLastTime = -1;
+    stabRawX = stabRawY = stabSmoothX = stabSmoothY = 0;
+}
+
+// Video kareyi analiz sürerken değiştirebilir; aynı kare hem ölçülsün hem çizilsin diye kopyası alınır.
+function snapshotFrame(w, h) {
+    if (!stabSnapshot) stabSnapshot = document.createElement('canvas');
+    if (stabSnapshot.width !== w) stabSnapshot.width = w;
+    if (stabSnapshot.height !== h) stabSnapshot.height = h;
+    stabSnapshot.getContext('2d').drawImage(videoEl, 0, 0, w, h);
+    return stabSnapshot;
+}
+
+function readStabilizerFrame(source, w, h) {
+    const smallH = Math.max(2, Math.round(STAB_WIDTH * h / w));
+    if (!stabCanvas || stabCanvas.height !== smallH) {
+        stabCanvas = document.createElement('canvas');
+        stabCanvas.width = STAB_WIDTH;
+        stabCanvas.height = smallH;
+        stabCtx = stabCanvas.getContext('2d', { willReadFrequently: true });
+        stabPrev = null;
+    }
+    stabCtx.drawImage(source, 0, 0, STAB_WIDTH, smallH);
+    const rgba = stabCtx.getImageData(0, 0, STAB_WIDTH, smallH).data;
+    const gray = new Uint8Array(STAB_WIDTH * smallH);
+    for (let i = 0; i < gray.length; i++) {
+        gray[i] = (rgba[i * 4] * 77 + rgba[i * 4 + 1] * 150 + rgba[i * 4 + 2] * 29) >> 8;
+    }
+    return { gray, height: smallH };
+}
+
+function estimateShift(prev, cur, height) {
+    const width = STAB_WIDTH;
+    const R = STAB_SEARCH;
+    const score = (dx, dy) => {
+        let sum = 0;
+        for (let y = R; y < height - R; y += 2) {
+            const row = y * width;
+            for (let x = R; x < width - R; x += 2) {
+                sum += Math.abs(prev[row + x] - cur[row + dy * width + x + dx]);
+            }
+        }
+        return sum;
+    };
+
+    let bestX = 0, bestY = 0, best = Infinity;
+    for (let dy = -R; dy <= R; dy++) {
+        for (let dx = -R; dx <= R; dx++) {
+            const s = score(dx, dy);
+            if (s < best) { best = s; bestX = dx; bestY = dy; }
+        }
+    }
+
+    // Piksel altı hassasiyet (kare düşük çözünürlüklü olduğu için önemli)
+    const refine = (minus, plus) => {
+        const denom = minus - 2 * best + plus;
+        return denom > 0 ? Math.max(-0.5, Math.min(0.5, (minus - plus) / (2 * denom))) : 0;
+    };
+    let subX = 0, subY = 0;
+    if (Math.abs(bestX) < R) subX = refine(score(bestX - 1, bestY), score(bestX + 1, bestY));
+    if (Math.abs(bestY) < R) subY = refine(score(bestX, bestY - 1), score(bestX, bestY + 1));
+    return { x: bestX + subX, y: bestY + subY };
+}
+
+function stabilizerOffset(source, w, h, marginX, marginY) {
+    // Başa dönüldüyse veya atlandıysa önceki kareyle karşılaştırma anlamsızdır
+    const now = videoEl.currentTime;
+    if (now < stabLastTime || now - stabLastTime > 1) resetStabilizer();
+
+    if (now !== stabLastTime) {
+        const frame = readStabilizerFrame(source, w, h);
+        if (stabPrev && frame.height > 2 * STAB_SEARCH + 2) {
+            const shift = estimateShift(stabPrev, frame.gray, frame.height);
+            const toSource = w / STAB_WIDTH;
+            stabRawX += shift.x * toSource;
+            stabRawY += shift.y * toSource;
+            stabSmoothX += (stabRawX - stabSmoothX) * STAB_SMOOTHING;
+            stabSmoothY += (stabRawY - stabSmoothY) * STAB_SMOOTHING;
+        }
+        stabPrev = frame.gray;
+        stabLastTime = now;
+    }
+    return {
+        x: Math.max(-marginX, Math.min(marginX, stabRawX - stabSmoothX)),
+        y: Math.max(-marginY, Math.min(marginY, stabRawY - stabSmoothY))
+    };
+}
+
 function drawFrame() {
-    if (!videoEl || videoEl.src === '') return;
+    if (!videoEl || !videoEl.videoWidth) return;
 
     const w = videoEl.videoWidth;
     const h = videoEl.videoHeight;
 
+    // Kırpma alanını videonun içinde tut
+    const readInt = (id, fallback) => {
+        const value = parseInt(document.getElementById(id).value, 10);
+        return Number.isFinite(value) ? value : fallback;
+    };
+    const cropX = Math.max(0, Math.min(w - 2, readInt('crop-x', 0)));
+    const cropY = Math.max(0, Math.min(h - 2, readInt('crop-y', 0)));
+    const cropW = Math.max(2, Math.min(w - cropX, readInt('crop-w', w) || w));
+    const cropH = Math.max(2, Math.min(h - cropY, readInt('crop-h', h) || h));
+
+    // Özel boyut seçilmediyse çıktı, kırpılan alan kadardır (kodlayıcılar çift sayı ister)
     const resize = document.getElementById('resize-select').value;
-    let targetW = w;
-    let targetH = h;
-    
+    let targetW = Math.max(2, cropW - (cropW % 2));
+    let targetH = Math.max(2, cropH - (cropH % 2));
     if (resize === '1080p') { targetW = 1920; targetH = 1080; }
     else if (resize === '720p') { targetW = 1280; targetH = 720; }
     else if (resize === '480p') { targetW = 854; targetH = 480; }
 
-    const cropX = parseInt(document.getElementById('crop-x').value) || 0;
-    const cropY = parseInt(document.getElementById('crop-y').value) || 0;
-    const cropW = parseInt(document.getElementById('crop-w').value) || w;
-    const cropH = parseInt(document.getElementById('crop-h').value) || h;
+    if (canvasEl.width !== targetW) canvasEl.width = targetW;
+    if (canvasEl.height !== targetH) canvasEl.height = targetH;
 
-    canvasEl.width = targetW;
-    canvasEl.height = targetH;
-
-    ctx.clearRect(0, 0, targetW, targetH);
     ctx.save();
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, targetW, targetH);
 
-    // Draw video frame (cropping + scaling)
-    ctx.drawImage(videoEl, cropX, cropY, cropW, cropH, 0, 0, targetW, targetH);
+    // Kaynak dikdörtgeni: kırpma alanı, sabitleme açıksa kaydırılmış ve yakınlaştırılmış hâliyle
+    let frameSource = videoEl;
+    let srcX = cropX, srcY = cropY, srcW = cropW, srcH = cropH;
+    if (document.getElementById('stabilize-toggle').checked) {
+        const marginX = cropW * STAB_MARGIN;
+        const marginY = cropH * STAB_MARGIN;
+        frameSource = snapshotFrame(w, h);
+        const offset = stabilizerOffset(frameSource, w, h, marginX, marginY);
+        srcX = cropX + marginX + offset.x;
+        srcY = cropY + marginY + offset.y;
+        srcW = cropW - 2 * marginX;
+        srcH = cropH - 2 * marginY;
+    } else {
+        resetStabilizer();
+    }
+
+    // En-boy oranı korunur; farklı oranlı hedefte siyah kenar eklenir, görüntü esnemez
+    const scale = Math.min(targetW / srcW, targetH / srcH);
+    const drawW = srcW * scale;
+    const drawH = srcH * scale;
+    ctx.drawImage(frameSource, srcX, srcY, srcW, srcH, (targetW - drawW) / 2, (targetH - drawH) / 2, drawW, drawH);
 
     // 2. Remove Logo (Blur rectangular box)
     const blurX = parseInt(document.getElementById('blur-x').value) || 0;
@@ -447,9 +584,14 @@ function drawFrame() {
 }
 
 function startExport() {
-    if (isExporting) return;
+    if (isExporting || !videoEl || !videoEl.videoWidth) return;
+    if (!VideoExport.canvasSupported()) {
+        alert(VideoExport.unsupportedMessage);
+        return;
+    }
     isExporting = true;
-    
+    resetStabilizer();
+
     document.getElementById('processing-msg').classList.remove('d-none');
     document.getElementById('export-btn').disabled = true;
 
@@ -469,37 +611,34 @@ function startExport() {
     // Setup audio combining (routed through a GainNode so the volume
     // setting, which can go above 100%, is actually baked into the export
     // instead of only affecting local <video> playback)
-    let audioStreamDestination = null;
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const gainNode = audioCtx.createGain();
-    gainNode.gain.value = volumeVal;
+    let guardCtx = null;
+    let bgSource = null;
+    let elementAudio = null;
 
     if (bgAudioBuffer) {
-        audioStreamDestination = audioCtx.createMediaStreamDestination();
-        const source = audioCtx.createBufferSource();
-        source.buffer = bgAudioBuffer;
-        source.loop = true;
-        source.connect(gainNode).connect(audioStreamDestination);
-        source.start(0);
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const gainNode = audioCtx.createGain();
+        gainNode.gain.value = volumeVal;
+        const audioStreamDestination = audioCtx.createMediaStreamDestination();
+        bgSource = audioCtx.createBufferSource();
+        bgSource.buffer = bgAudioBuffer;
+        bgSource.loop = true;
+        bgSource.connect(gainNode).connect(audioStreamDestination);
+        bgSource.start(0);
 
         // Add custom audio track
         stream.addTrack(audioStreamDestination.stream.getAudioTracks()[0]);
-    } else if (videoEl.captureStream) {
-        const videoStream = videoEl.captureStream();
-        const audioTracks = videoStream.getAudioTracks();
-        if (audioTracks.length > 0) {
-            audioStreamDestination = audioCtx.createMediaStreamDestination();
-            const sourceNode = audioCtx.createMediaStreamSource(new MediaStream([audioTracks[0]]));
-            sourceNode.connect(gainNode).connect(audioStreamDestination);
-            stream.addTrack(audioStreamDestination.stream.getAudioTracks()[0]);
+        guardCtx = audioCtx;
+    } else {
+        elementAudio = VideoExport.attachAudio(videoEl, volumeVal);
+        if (elementAudio) {
+            stream.addTrack(elementAudio.track);
+            guardCtx = elementAudio.ctx;
         }
     }
 
-    try {
-        mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
-    } catch(e) {
-        mediaRecorder = new MediaRecorder(stream);
-    }
+    mediaRecorder = VideoExport.createRecorder(stream);
 
     mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
@@ -509,34 +648,36 @@ function startExport() {
 
     mediaRecorder.onstop = () => {
         RenderGuard.stop();
-        const blob = new Blob(recordedChunks, { type: 'video/webm' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'toolboxquick-edited.webm';
-        a.click();
-        URL.revokeObjectURL(url);
-        
+        if (bgSource) {
+            try { bgSource.stop(); } catch (e) { /* zaten durmuş */ }
+        }
+        if (elementAudio) VideoExport.releaseAudio(videoEl);
+        VideoExport.download(
+            VideoExport.blobFor(mediaRecorder, recordedChunks),
+            'toolboxquick-edited' + VideoExport.extensionFor(mediaRecorder)
+        );
+
         isExporting = false;
         document.getElementById('processing-msg').classList.add('d-none');
         document.getElementById('export-btn').disabled = false;
+        videoEl.onended = null;
         videoEl.loop = true;
-        videoEl.play();
+        videoEl.play().catch(() => {});
     };
 
     videoEl.onended = () => {
         loopsRemaining--;
         if (loopsRemaining > 0) {
             videoEl.currentTime = 0;
-            videoEl.play();
+            videoEl.play().catch(console.error);
         } else {
             mediaRecorder.stop();
         }
     };
 
-    videoEl.play();
+    videoEl.play().catch(console.error);
     mediaRecorder.start();
-    RenderGuard.start({ recorder: mediaRecorder, media: [videoEl], audioCtx: audioCtx });
+    RenderGuard.start({ recorder: mediaRecorder, media: [videoEl], audioCtx: guardCtx });
 }
 
 // Check URL search parameters to automatically show the requested tool tab
@@ -565,8 +706,8 @@ window.onload = () => {
             document.getElementById('studio-title').textContent = titlesMap[tool];
         }
     } else {
-        // Fallback: show first tab (also covers the generic /video-tools/editor page)
-        document.getElementById('tab-volume').classList.add('active');
+        // Genel /video-tools/editor sayfası: tüm ayarlar birlikte görünür
+        document.querySelectorAll('.tool-tab-content').forEach((el) => el.classList.add('active'));
     }
 };
 </script>

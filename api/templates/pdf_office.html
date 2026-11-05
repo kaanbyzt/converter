@@ -32,7 +32,7 @@
     <p class="text-uppercase text-secondary mb-1" style="letter-spacing: .16em; font-size: .72rem; color: #f97316 !important;">{{ t('pdf_office.category') }}</p>
     <h1 class="mb-1" style="font-size: 1.8rem; font-weight: 700;">{{ tool_title }}</h1>
     <p class="text-secondary mb-0">
-        {{ tool_desc }} {{ t('pdf_office.desc_suffix') }}
+        {{ tool_desc }} {{ t('pdf_office.desc_server') if tool_type in ('pdf-word', 'ppt-pdf') else t('pdf_office.desc_suffix') }}
     </p>
 </header>
 
@@ -70,6 +70,7 @@
 {% endblock %}
 
 {% block scripts %}
+{% include "_upload_limit.html" %}
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
 
@@ -96,6 +97,11 @@ function resetEditor() {
 
 function loadOfficeFile(input) {
     if (!input.files || !input.files[0]) return;
+    if ((toolType === 'pdf-word' || toolType === 'ppt-pdf') && UploadLimit.exceeds(input.files)) {
+        alert(UploadLimit.message);
+        input.value = '';
+        return;
+    }
     selectedFile = input.files[0];
     originalFileName = selectedFile.name.substring(0, selectedFile.name.lastIndexOf('.'));
     document.getElementById('file-name').textContent = selectedFile.name;
@@ -123,8 +129,12 @@ async function processAndDownload() {
             await serverConvert('/pdf-tools/ppt-to-pdf', 'pptx_file', originalFileName + '.pdf');
         }
     } catch (e) {
-        const fallback = e && e.message ? e.message : {{ t('pdf_office.err_process_failed')|tojson }};
-        alert(friendlyPdfErrorMessage(e, fallback));
+        // Yalnızca sunucunun kendi (çevrilmiş) mesajı gösterilir; kütüphane hataları kullanıcıya anlamsızdır.
+        if (e && e.userFacing) {
+            alert(e.message);
+        } else {
+            alert(friendlyPdfErrorMessage(e, {{ t('pdf_office.err_invalid_file')|tojson }}));
+        }
         console.error(e);
     } finally {
         document.getElementById('processing-msg').classList.add('d-none');
@@ -145,7 +155,9 @@ async function serverConvert(url, fieldName, downloadName) {
             const data = await resp.json();
             if (data && data.error) message = data.error;
         } catch (e) { /* ignore parse error, use default message */ }
-        throw new Error(message);
+        const error = new Error(message);
+        error.userFacing = true;
+        throw error;
     }
 
     const blob = await resp.blob();
@@ -157,9 +169,18 @@ async function serverConvert(url, fieldName, downloadName) {
     URL.revokeObjectURL(blobUrl);
 }
 
+// Uzantı yerine dosya imzasına bakılır: .docx/.xlsx ZIP (PK), eski .xls ise OLE2 biçimindedir.
+function hasOfficeSignature(arrayBuffer, allowLegacy) {
+    const b = new Uint8Array(arrayBuffer.slice(0, 4));
+    const isZip = b[0] === 0x50 && b[1] === 0x4B;
+    const isOle = b[0] === 0xD0 && b[1] === 0xCF && b[2] === 0x11 && b[3] === 0xE0;
+    return isZip || (allowLegacy && isOle);
+}
+
 // 1. Word to PDF using mammoth.js to HTML, then jsPDF to render HTML layout
 async function convertWordToPDF() {
     const arrayBuffer = await selectedFile.arrayBuffer();
+    if (!hasOfficeSignature(arrayBuffer, false)) throw new Error('invalid_file');
     const result = await mammoth.convertToHtml({ arrayBuffer: arrayBuffer });
     const html = result.value; // Raw HTML
 
@@ -200,6 +221,7 @@ async function convertWordToPDF() {
 // 3. Excel to PDF using SheetJS to parse, then jsPDF to layout tabular grid
 async function convertExcelToPDF() {
     const arrayBuffer = await selectedFile.arrayBuffer();
+    if (!hasOfficeSignature(arrayBuffer, true)) throw new Error('invalid_file');
     const workbook = XLSX.read(arrayBuffer, { type: 'array' });
 
     const { jsPDF } = window.jspdf;

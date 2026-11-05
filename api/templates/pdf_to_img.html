@@ -53,8 +53,8 @@
             <div class="col-sm-6">
                 <label class="form-label fw-semibold mb-2">{{ t('pdf_to_img.format_label') }}</label>
                 <select id="target-format" class="form-select" style="border-radius: 8px;">
-                    <option value="image/jpeg">JPG (.jpg)</option>
-                    <option value="image/png">PNG (.png)</option>
+                    <option value="image/jpeg"{{ ' selected' if default_format == 'image/jpeg' else '' }}>JPG (.jpg)</option>
+                    <option value="image/png"{{ ' selected' if default_format == 'image/png' else '' }}>PNG (.png)</option>
                 </select>
             </div>
             <div class="col-sm-6">

@@ -548,7 +548,7 @@
                     progress(i);
                     await nextFrame();
                     const idx = picked[i];
-                    const prefix = baseName + '_sayfa_' + pad(idx + 1, total);
+                    const prefix = baseName + '_' + {{ t('convert_tiff.file_page')|tojson }} + '_' + pad(idx + 1, total);
                     try {
                         if (fmt === 'tiff') {
                             files.push({ name: prefix + '.tiff', blob: new Blob([TiffTools.copyPages(tiff, [idx])], { type: 'image/tiff' }) });
@@ -571,7 +571,7 @@
                 setStatus(status, errorText(lastPageError), true);
                 return;
             }
-            await deliver(files, baseName + '_sayfalar.zip');
+            await deliver(files, baseName + '_' + {{ t('convert_tiff.file_pages')|tojson }} + '.zip');
             setStatus(status, skipped.length
                 ? fill(MSG.doneSkipped, { pages: skipped.join(', ') })
                 : MSG.done, skipped.length > 0);

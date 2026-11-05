@@ -73,6 +73,7 @@
 {% endblock %}
 
 {% block scripts %}
+{% include "_video_export.html" %}
 <script>
 let captureStream = null;
 let mediaRecorder = null;
@@ -102,17 +103,23 @@ async function startCapture() {
         };
 
     } catch (err) {
-        alert({{ t('video_screen_record.share_start_failed')|tojson }} + ': ' + err.message);
+        console.error(err);
+        // Kullanıcı paylaşımı iptal ettiyse uyarıya gerek yok
+        if (!err || err.name !== 'NotAllowedError') {
+            alert({{ t('video_screen_record.share_start_failed')|tojson }});
+        }
     }
 }
 
 function startRecording() {
     if (!captureStream) return;
+    if (!VideoExport.recorderAvailable()) {
+        alert(VideoExport.unsupportedMessage);
+        return;
+    }
     videoChunks = [];
 
-    mediaRecorder = new MediaRecorder(captureStream, {
-        mimeType: 'video/webm; codecs=vp9'
-    });
+    mediaRecorder = VideoExport.createRecorder(captureStream);
 
     mediaRecorder.ondataavailable = event => {
         if (event.data.size > 0) {
@@ -121,7 +128,7 @@ function startRecording() {
     };
 
     mediaRecorder.onstop = () => {
-        const videoBlob = new Blob(videoChunks, { type: 'video/webm' });
+        const videoBlob = VideoExport.blobFor(mediaRecorder, videoChunks);
         const videoUrl = URL.createObjectURL(videoBlob);
         
         // Show video download section
@@ -171,14 +178,10 @@ function updateTimer() {
 
 function downloadVideo() {
     if (videoChunks.length === 0) return;
-    const videoBlob = new Blob(videoChunks, { type: 'video/webm' });
-    const url = URL.createObjectURL(videoBlob);
-    
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'toolboxquick-ekran-kaydi.webm';
-    a.click();
-    URL.revokeObjectURL(url);
+    VideoExport.download(
+        VideoExport.blobFor(mediaRecorder, videoChunks),
+        'toolboxquick-ekran-kaydi' + VideoExport.extensionFor(mediaRecorder)
+    );
 }
 
 function resetRecorder() {

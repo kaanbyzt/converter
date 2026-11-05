@@ -151,7 +151,9 @@ async function processAndDownload() {
             html = '<p>' + text.split('\n').map(escapeHtml).join('</p><p>') + '</p>';
         } else if (fileExtension === 'html' || fileExtension === 'htm') {
             html = await selectedFile.text();
-            text = new DOMParser().parseFromString(html, 'text/html').body.textContent || '';
+            const parsed = new DOMParser().parseFromString(html, 'text/html');
+            parsed.querySelectorAll('script, style, noscript, template').forEach((el) => el.remove());
+            text = parsed.body.textContent || '';
         } else {
             throw new Error({{ t('convert_document.err_unsupported')|tojson }});
         }

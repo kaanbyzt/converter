@@ -81,7 +81,10 @@
 
 {% block scripts %}
 {% include "_render_guard.html" %}
+{% include "_video_export.html" %}
 <script>
+let sourceUrl = null;
+let exportAborted = false;
 let videoFiles = [];
 let currentVideoIndex = 0;
 let videoEl = null;
@@ -119,6 +122,11 @@ function loadVideos(input) {
     videoEl = document.getElementById('source-video');
     canvasEl = document.getElementById('output-canvas');
     ctx = canvasEl.getContext('2d');
+    VideoExport.guardSource(videoEl, () => {
+        if (isExporting) abortExport();
+        alert(VideoExport.badFileMessage);
+        if (!isExporting) resetEditor();
+    });
 
     // Load first video for size initialization
     currentVideoIndex = 0;
@@ -127,50 +135,81 @@ function loadVideos(input) {
 
 function playVideoAtIndex(index) {
     const file = videoFiles[index];
-    videoEl.src = URL.createObjectURL(file);
-    
+    videoEl.onended = null;
+    setSource(file);
+
     videoEl.onloadedmetadata = () => {
         canvasEl.width = videoEl.videoWidth;
         canvasEl.height = videoEl.videoHeight;
-        videoEl.play();
+        videoEl.play().catch(() => {});
         startDrawLoop();
     };
+}
+
+function setSource(file) {
+    if (sourceUrl) URL.revokeObjectURL(sourceUrl);
+    sourceUrl = URL.createObjectURL(file);
+    videoEl.src = sourceUrl;
+}
+
+function drawCurrentFrame() {
+    // Klipler farklı boyutta olabilir: kare boyutu sabit kalır, klip siyah kenarlarla sığdırılır.
+    const srcW = videoEl.videoWidth;
+    const srcH = videoEl.videoHeight;
+    if (!srcW || !srcH) return;
+    const scale = Math.min(canvasEl.width / srcW, canvasEl.height / srcH);
+    const drawW = srcW * scale;
+    const drawH = srcH * scale;
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, canvasEl.width, canvasEl.height);
+    ctx.drawImage(videoEl, (canvasEl.width - drawW) / 2, (canvasEl.height - drawH) / 2, drawW, drawH);
 }
 
 function startDrawLoop() {
     if (loopInterval) clearInterval(loopInterval);
     loopInterval = setInterval(() => {
-        if (!videoEl.paused && !videoEl.ended) {
-            ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
-            ctx.drawImage(videoEl, 0, 0, canvasEl.width, canvasEl.height);
-        }
+        if (!videoEl.paused && !videoEl.ended) drawCurrentFrame();
     }, 1000 / 30); // 30 FPS
+}
+
+function restoreUi() {
+    isExporting = false;
+    document.getElementById('processing-msg').classList.add('d-none');
+    document.getElementById('download-btn').disabled = false;
 }
 
 function startExport() {
     if (isExporting) return;
+    if (!VideoExport.canvasSupported()) {
+        alert(VideoExport.unsupportedMessage);
+        return;
+    }
     isExporting = true;
-    
+    exportAborted = false;
+
     document.getElementById('processing-msg').classList.remove('d-none');
     document.getElementById('download-btn').disabled = true;
 
     // Reset loop
     videoEl.pause();
+    videoEl.onended = null;
     currentVideoIndex = 0;
-    
+
     recordedChunks = [];
-    const canvasStream = canvasEl.captureStream(30); // 30 FPS
-    const outputTracks = [...canvasStream.getVideoTracks()];
-    if (videoEl.captureStream) {
-        // Captured once on the shared <video> element; keeps reflecting
-        // whichever clip is currently playing as its src changes below.
-        const audioTracks = videoEl.captureStream().getAudioTracks();
-        if (audioTracks.length > 0) {
-            outputTracks.push(audioTracks[0]);
-        }
+    const stream = canvasEl.captureStream(30); // 30 FPS
+    // Web Audio üzerinden alınan ses izi, klipler arasında kaynak değişince kapanmaz.
+    const audio = VideoExport.attachAudio(videoEl);
+    if (audio) stream.addTrack(audio.track);
+
+    try {
+        mediaRecorder = VideoExport.createRecorder(stream);
+    } catch (e) {
+        console.error(e);
+        VideoExport.releaseAudio(videoEl);
+        restoreUi();
+        alert(VideoExport.unsupportedMessage);
+        return;
     }
-    const stream = new MediaStream(outputTracks);
-    mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
 
     mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
@@ -180,50 +219,55 @@ function startExport() {
 
     mediaRecorder.onstop = () => {
         RenderGuard.stop();
-        const blob = new Blob(recordedChunks, { type: 'video/webm' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'toolboxquick-merged.webm';
-        a.click();
-        URL.revokeObjectURL(url);
-        
-        isExporting = false;
-        document.getElementById('processing-msg').classList.add('d-none');
-        document.getElementById('download-btn').disabled = false;
-        
+        VideoExport.releaseAudio(videoEl);
+        if (!exportAborted) {
+            VideoExport.download(
+                VideoExport.blobFor(mediaRecorder, recordedChunks),
+                'toolboxquick-merged' + VideoExport.extensionFor(mediaRecorder)
+            );
+        }
+        restoreUi();
+
         // Replay first video
         currentVideoIndex = 0;
         playVideoAtIndex(currentVideoIndex);
     };
 
     mediaRecorder.start();
-    RenderGuard.start({ recorder: mediaRecorder, media: [videoEl] });
-    
+    RenderGuard.start({ recorder: mediaRecorder, media: [videoEl], audioCtx: audio ? audio.ctx : null });
+
     // Set up transition handling
     playNextVideoAndRecord();
 }
 
+function abortExport() {
+    exportAborted = true;
+    videoEl.onended = null;
+    videoEl.onloadedmetadata = null;
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+}
+
 function playNextVideoAndRecord() {
     if (currentVideoIndex >= videoFiles.length) {
+        videoEl.onended = null;
         mediaRecorder.stop();
         return;
     }
 
-    const file = videoFiles[currentVideoIndex];
-    videoEl.src = URL.createObjectURL(file);
-    
     videoEl.onloadedmetadata = () => {
-        // Adjust canvas dimension for each video in the playlist dynamically
-        canvasEl.width = videoEl.videoWidth;
-        canvasEl.height = videoEl.videoHeight;
-        videoEl.play();
+        videoEl.play().catch((e) => {
+            console.error(e);
+            abortExport();
+            alert({{ t('video_common.export_failed')|tojson }});
+        });
     };
 
     videoEl.onended = () => {
         currentVideoIndex++;
         playNextVideoAndRecord();
     };
+
+    setSource(videoFiles[currentVideoIndex]);
 }
 </script>
 {% endblock %}

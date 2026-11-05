@@ -67,6 +67,7 @@
 {% endblock %}
 
 {% block scripts %}
+{% include "_upload_limit.html" %}
 <script>
 function updateFileLabel(input) {
     const label = document.getElementById('file-label');

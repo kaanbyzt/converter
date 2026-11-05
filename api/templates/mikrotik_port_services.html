@@ -63,11 +63,11 @@ function update() {
     const subnet = document.getElementById('subnet').value;
     let s = `# ${ {{ t('mk_port.c_title')|tojson }} }\n/ip service\n`;
     if (act === 'change-port') {
-        s += `set ${svc} port=${port} disabled=no comment="${ {{ t('mk_port.c_change_port')|tojson }} }"\n`;
+        s += `# ${ {{ t('mk_port.c_change_port')|tojson }} }\nset ${svc} port=${port} disabled=no\n`;
     } else if (act === 'disable') {
-        s += `set ${svc} disabled=yes comment="${ {{ t('mk_port.c_disable')|tojson }} }"\n`;
+        s += `# ${ {{ t('mk_port.c_disable')|tojson }} }\nset ${svc} disabled=yes\n`;
     } else {
-        s += `set ${svc} address=${subnet} disabled=no comment="${ {{ t('mk_port.c_secure_subnet')|tojson }} }"\n`;
+        s += `# ${ {{ t('mk_port.c_secure_subnet')|tojson }} }\nset ${svc} address=${subnet} disabled=no\n`;
     }
     document.getElementById('out').textContent = s;
 }

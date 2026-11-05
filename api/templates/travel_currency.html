@@ -391,12 +391,42 @@
         return inUsd * curRates.rates[to];
     }
 
+    // "1.234,56", "1,234.56", "1.000" ve "1000,5" gibi yazımları doğru okur.
+    // Ayraç tek ve ardından tam 3 rakam varsa dile göre karar verilir: Türkçede 1.000 bin demektir.
+    function parseAmount(text) {
+        const value = String(text).trim().replace(/[\s\u00a0]/g, '');
+        if (!/^\d[\d.,]*$/.test(value)) return NaN;
+
+        const lastDot = value.lastIndexOf('.');
+        const lastComma = value.lastIndexOf(',');
+        const hasDot = lastDot !== -1;
+        const hasComma = lastComma !== -1;
+        let normalized = value;
+
+        if (hasDot && hasComma) {
+            const decimalSep = lastDot > lastComma ? '.' : ',';
+            const thousandSep = decimalSep === '.' ? ',' : '.';
+            normalized = value.split(thousandSep).join('').replace(decimalSep, '.');
+        } else if (hasDot || hasComma) {
+            const sep = hasDot ? '.' : ',';
+            const parts = value.split(sep);
+            const allGroups = parts.length > 1 && parts.slice(1).every((p) => p.length === 3);
+            const thousandsInLocale = {{ CURRENT_LANG|tojson }} === 'tr' ? sep === '.' : sep === ',';
+            if (parts.length > 2 || (allGroups && thousandsInLocale)) {
+                if (!allGroups) return NaN;
+                normalized = parts.join('');
+            } else {
+                normalized = parts.join('.');
+            }
+        }
+        return parseFloat(normalized);
+    }
+
     function computeAndRender() {
         if (!curRates) return;
         const from = document.getElementById('curFrom').value;
         const to = document.getElementById('curTo').value;
-        const rawAmount = document.getElementById('curAmount').value.replace(',', '.');
-        const amount = parseFloat(rawAmount);
+        const amount = parseAmount(document.getElementById('curAmount').value);
 
         const resultEl = document.getElementById('curResultValue');
         const rateLineEl = document.getElementById('curRateLine');

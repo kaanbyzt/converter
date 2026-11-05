@@ -16,6 +16,17 @@
             <label class="form-label">{{ t('mk_load_balance.label_lan') }}</label>
             <input type="text" id="lan" class="form-input" value="bridge-local" oninput="update()" placeholder="{{ t('mk_load_balance.placeholder_lan') }}">
         </div>
+        <div>
+            <label class="form-label">{{ t('mk_load_balance.label_gateways') }}</label>
+            <input type="text" id="gateways" class="form-input" value="192.168.1.1,192.168.2.1" oninput="update()">
+        </div>
+        <div>
+            <label class="form-label">{{ t('mk_load_balance.label_version') }}</label>
+            <select id="rosver" class="form-select" onchange="update()">
+                <option value="7">RouterOS v7</option>
+                <option value="6">RouterOS v6</option>
+            </select>
+        </div>
     </div>
     <div class="script-card">
         <div class="script-header"><div class="script-title"><span class="dot"></span>{{ t('mk_load_balance.script_title') }}</div><button class="copy-btn" onclick="copy()">{{ t('mk_load_balance.copy_btn') }}</button></div>
@@ -29,9 +40,21 @@
 function update() {
     const wc = parseInt(document.getElementById('wanc').value);
     const lan = document.getElementById('lan').value;
+    const v7 = document.getElementById('rosver').value === '7';
     const wans = Array.from({length:wc},(_,i)=>`ether${i+1}`);
-    let s = `/ip firewall mangle\nadd action=accept chain=prerouting in-interface=${lan}\n`;
-    wans.forEach(w => s += `add action=accept chain=prerouting in-interface=${w}\n`);
+    const entered = document.getElementById('gateways').value.split(',').map(g => g.trim()).filter(Boolean);
+    const gateways = wans.map((_,i) => entered[i] || `192.168.${i+1}.1`);
+    const subnetOf = g => g.includes('.') ? g.substring(0, g.lastIndexOf('.')) + '.0/24' : g;
+
+    let s = '';
+    if (v7) {
+        s += `# ${ {{ t('mk_load_balance.comment_tables')|tojson }} }\n/routing table\n`;
+        wans.forEach(w => s += `add disabled=no fib name=to_${w}\n`);
+        s += '\n';
+    }
+    // WAN ağlarına giden trafik işaretlenmesin; koşulsuz accept dengelemeyi tamamen kapatırdı.
+    s += `/ip firewall mangle\n`;
+    gateways.forEach(g => s += `add action=accept chain=prerouting dst-address=${subnetOf(g)} in-interface=${lan}\n`);
     s += '\n';
     wans.forEach(w => s += `add action=mark-connection chain=input in-interface=${w} new-connection-mark=${w}_conn passthrough=yes\n`);
     s += '\n';
@@ -41,7 +64,10 @@ function update() {
     s += '\n';
     wans.forEach(w => s += `add action=mark-routing chain=prerouting connection-mark=${w}_conn in-interface=${lan} new-routing-mark=to_${w} passthrough=yes\n`);
     s += '\n/ip route\n';
-    wans.forEach((w,i) => s += `add check-gateway=ping distance=1 gateway=192.168.${i+1}.1 routing-mark=to_${w}\n`);
+    const tableParam = v7 ? 'routing-table' : 'routing-mark';
+    wans.forEach((w,i) => s += `add check-gateway=ping distance=1 dst-address=0.0.0.0/0 gateway=${gateways[i]} ${tableParam}=to_${w}\n`);
+    s += `\n# ${ {{ t('mk_load_balance.comment_failover')|tojson }} }\n`;
+    wans.forEach((w,i) => s += `add check-gateway=ping distance=${i+1} dst-address=0.0.0.0/0 gateway=${gateways[i]}\n`);
     document.getElementById('out').textContent = s;
 }
 function copy() { navigator.clipboard.writeText(document.getElementById('out').textContent); const b=document.querySelector('.copy-btn');b.textContent={{ t('mk_load_balance.copied')|tojson }};setTimeout(()=>b.textContent={{ t('mk_load_balance.copy_btn')|tojson }},1500); }

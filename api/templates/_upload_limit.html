@@ -1,0 +1,50 @@
+{# Sunucuya dosya gönderen araçlar için boyut kontrolü: Vercel 4,5 MB üstü istekleri işleme almadan reddeder. #}
+<script>
+window.UploadLimit = (function () {
+    const MAX_BYTES = 4 * 1024 * 1024;
+    const MESSAGE = {{ t('upload.too_large')|tojson }};
+    const HINT = {{ t('upload.hint')|tojson }};
+
+    function exceeds(files) {
+        let total = 0;
+        Array.from(files || []).forEach((f) => { total += f.size; });
+        return total > MAX_BYTES;
+    }
+
+    function showFormError(form) {
+        let box = form.parentElement.querySelector('.upload-limit-error');
+        if (!box) {
+            box = document.createElement('div');
+            box.className = 'alert alert-danger py-2 mb-3 upload-limit-error';
+            box.setAttribute('role', 'alert');
+            box.textContent = MESSAGE;
+            form.parentElement.insertBefore(box, form);
+        }
+    }
+
+    function watchForm(form) {
+        const inputs = Array.from(form.querySelectorAll('input[type="file"]'));
+        inputs.forEach((input) => {
+            const hint = document.createElement('div');
+            hint.className = 'form-text upload-limit-hint';
+            hint.textContent = HINT;
+            input.insertAdjacentElement('afterend', hint);
+        });
+        form.addEventListener('submit', (e) => {
+            const files = inputs.flatMap((input) => Array.from(input.files || []));
+            if (exceeds(files)) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                showFormError(form);
+                return;
+            }
+            const box = form.parentElement.querySelector('.upload-limit-error');
+            if (box) box.remove();
+        }, true);
+    }
+
+    document.querySelectorAll('form[enctype="multipart/form-data"]').forEach(watchForm);
+
+    return { exceeds, message: MESSAGE, hint: HINT };
+})();
+</script>

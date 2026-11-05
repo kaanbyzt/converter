@@ -94,6 +94,7 @@
 
 {% block scripts %}
 {% include "_render_guard.html" %}
+{% include "_video_export.html" %}
 <script>
 let videoFile = null;
 let videoEl = null;
@@ -130,6 +131,11 @@ function loadVideo(input) {
     canvasEl = document.getElementById('output-canvas');
     ctx = canvasEl.getContext('2d');
 
+    VideoExport.guardSource(videoEl, () => {
+        alert(VideoExport.badFileMessage);
+        resetEditor();
+    });
+
     videoEl.onloadedmetadata = () => {
         canvasEl.width = videoEl.videoWidth;
         canvasEl.height = videoEl.videoHeight;
@@ -151,17 +157,15 @@ function drawFrame() {
     const w = videoEl.videoWidth;
     const h = videoEl.videoHeight;
 
+    // Adjust canvas dimensions depending on rotation (boyut her karede sıfırlanmasın, kayıt titrer)
+    const rotated = transform === 'rotate90' || transform === 'rotate270';
+    const targetW = rotated ? h : w;
+    const targetH = rotated ? w : h;
+    if (canvasEl.width !== targetW) canvasEl.width = targetW;
+    if (canvasEl.height !== targetH) canvasEl.height = targetH;
+
     ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
     ctx.save();
-
-    // Adjust canvas dimensions depending on rotation
-    if (transform === 'rotate90' || transform === 'rotate270') {
-        canvasEl.width = h;
-        canvasEl.height = w;
-    } else {
-        canvasEl.width = w;
-        canvasEl.height = h;
-    }
 
     // Apply canvas transformations
     if (transform === 'rotate90') {
@@ -199,9 +203,13 @@ function applyTransform() {
 }
 
 function startExport() {
-    if (isExporting) return;
+    if (isExporting || !videoEl || !videoEl.videoWidth) return;
+    if (!VideoExport.canvasSupported()) {
+        alert(VideoExport.unsupportedMessage);
+        return;
+    }
     isExporting = true;
-    
+
     document.getElementById('processing-msg').classList.remove('d-none');
     document.getElementById('download-btn').disabled = true;
 
@@ -209,18 +217,12 @@ function startExport() {
     videoEl.pause();
     videoEl.loop = false;
     videoEl.currentTime = 0;
-    
+
     recordedChunks = [];
-    const canvasStream = canvasEl.captureStream(30); // 30 FPS
-    const outputTracks = [...canvasStream.getVideoTracks()];
-    if (videoEl.captureStream) {
-        const audioTracks = videoEl.captureStream().getAudioTracks();
-        if (audioTracks.length > 0) {
-            outputTracks.push(audioTracks[0]);
-        }
-    }
-    const stream = new MediaStream(outputTracks);
-    mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
+    const stream = canvasEl.captureStream(30); // 30 FPS
+    const audio = VideoExport.attachAudio(videoEl);
+    if (audio) stream.addTrack(audio.track);
+    mediaRecorder = VideoExport.createRecorder(stream);
 
     mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
@@ -230,27 +232,26 @@ function startExport() {
 
     mediaRecorder.onstop = () => {
         RenderGuard.stop();
-        const blob = new Blob(recordedChunks, { type: 'video/webm' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'toolboxquick-rotated.webm';
-        a.click();
-        URL.revokeObjectURL(url);
-        
+        VideoExport.releaseAudio(videoEl);
+        VideoExport.download(
+            VideoExport.blobFor(mediaRecorder, recordedChunks),
+            'toolboxquick-rotated' + VideoExport.extensionFor(mediaRecorder)
+        );
+
         isExporting = false;
         document.getElementById('processing-msg').classList.add('d-none');
         document.getElementById('download-btn').disabled = false;
-        
+
         // Restore looping for preview
+        videoEl.onended = null;
         videoEl.loop = true;
-        videoEl.play();
+        videoEl.play().catch(() => {});
     };
 
     // Play video to capture it frame-by-frame
-    videoEl.play();
+    videoEl.play().catch(console.error);
     mediaRecorder.start();
-    RenderGuard.start({ recorder: mediaRecorder, media: [videoEl] });
+    RenderGuard.start({ recorder: mediaRecorder, media: [videoEl], audioCtx: audio ? audio.ctx : null });
 
     videoEl.onended = () => {
         mediaRecorder.stop();

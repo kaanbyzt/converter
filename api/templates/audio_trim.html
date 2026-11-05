@@ -81,9 +81,11 @@
             </div>
         </div>
 
+        <div id="range-error" class="text-danger small mb-3 d-none" role="alert">{{ t('common.range_invalid') }}</div>
+
         <div class="d-flex gap-2">
             <button id="play-btn" class="btn btn-secondary px-4" onclick="togglePlay()">{{ t('audio_trim.play_btn') }} ▶️</button>
-            <button class="btn btn-primary px-4" onclick="trimAndDownload()">{{ t('audio_trim.trim_btn') }} 💾</button>
+            <button id="trim-btn" class="btn btn-primary px-4" onclick="trimAndDownload()">{{ t('audio_trim.trim_btn') }} 💾</button>
         </div>
     </div>
 </section>
@@ -107,9 +109,13 @@ let playOffset = 0;
 
 function resetEditor() {
     isPlaying = false;
+    audioBuffer = null;
     if (sourceNode) {
         try { sourceNode.stop(); } catch(e) {}
     }
+    document.getElementById('range-error').classList.add('d-none');
+    document.getElementById('trim-btn').disabled = false;
+    document.getElementById('play-btn').disabled = false;
     document.getElementById('upload-stage').classList.remove('d-none');
     document.getElementById('editor-stage').classList.add('d-none');
     document.getElementById('audio_file').value = '';
@@ -154,6 +160,7 @@ async function loadAudio(input) {
 }
 
 function drawWaveform() {
+    if (!audioBuffer) return;
     const canvas = document.getElementById('waveform-canvas');
     // Ensure canvas dimensions match parent element
     canvas.width = canvas.parentElement.clientWidth;
@@ -203,13 +210,21 @@ function updateSliders() {
     const startInput = document.getElementById('start-time');
     const endInput = document.getElementById('end-time');
     
-    startTimeVal = parseFloat(startInput.value) || 0;
-    endTimeVal = parseFloat(endInput.value) || duration;
+    if (!audioBuffer) return;
 
-    if (startTimeVal < 0) startTimeVal = 0;
-    if (endTimeVal > duration) endTimeVal = duration;
-    if (startTimeVal >= endTimeVal) startTimeVal = endTimeVal - 0.5;
-    startTimeVal = Math.max(0, startTimeVal);
+    let start = parseFloat(startInput.value);
+    let end = parseFloat(endInput.value);
+    if (!Number.isFinite(start) || start < 0) start = 0;
+    if (!Number.isFinite(end) || end > duration) end = duration;
+
+    const valid = start < end;
+    document.getElementById('range-error').classList.toggle('d-none', valid);
+    document.getElementById('trim-btn').disabled = !valid;
+    document.getElementById('play-btn').disabled = !valid;
+    if (!valid) return;
+
+    startTimeVal = start;
+    endTimeVal = end;
 
     startInput.value = startTimeVal.toFixed(2);
     endInput.value = endTimeVal.toFixed(2);
@@ -218,6 +233,7 @@ function updateSliders() {
 }
 
 function togglePlay() {
+    if (!audioBuffer) return;
     const btn = document.getElementById('play-btn');
     if (isPlaying) {
         if (sourceNode) {
@@ -303,6 +319,7 @@ function writeString(view, offset, string) {
 }
 
 async function trimAndDownload() {
+    if (!audioBuffer) return;
     const startSample = Math.floor(startTimeVal * audioBuffer.sampleRate);
     const endSample = Math.floor(endTimeVal * audioBuffer.sampleRate);
     const frameCount = endSample - startSample;

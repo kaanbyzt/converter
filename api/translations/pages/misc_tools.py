@@ -552,7 +552,7 @@ PAGES = {
         "home.audio.trim.title": "Sound Cutter",
         "home.audio.volume.desc": "Increase or decrease the decibel (volume) rate of your audio files.",
         "home.audio.volume.title": "Volume Changer",
-        "home.badge.active": "active",
+        "home.badge.active": "Active",
         "home.badge.beta": "Beta",
         "home.beta_note": "Beta: these tools are operational, but full efficiency may not be achieved.",
         "home.cat.ai": "Artificial Intelligence Tools",

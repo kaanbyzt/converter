@@ -100,6 +100,8 @@
             </div>
         </div>
 
+        <div id="range-error" class="text-danger small mb-3 d-none" role="alert">{{ t('common.range_invalid') }}</div>
+
         <div id="processing-msg" class="text-warning small mb-3 d-none">{{ t('video_gif.processing') }} <span id="processing-pct"></span></div>
 
         <div class="d-flex justify-content-center gap-2">
@@ -115,6 +117,7 @@
 {% endblock %}
 
 {% block scripts %}
+{% include "_video_export.html" %}
 <script>
 const MAX_GIF_SECONDS = 12;
 
@@ -156,6 +159,11 @@ function loadVideo(input) {
     canvasEl = document.getElementById('output-canvas');
     ctx = canvasEl.getContext('2d');
 
+    VideoExport.guardSource(videoEl, () => {
+        alert(VideoExport.badFileMessage);
+        resetEditor();
+    });
+
     videoEl.onloadedmetadata = () => {
         canvasEl.width = videoEl.videoWidth;
         canvasEl.height = videoEl.videoHeight;
@@ -191,15 +199,23 @@ function drawFrame() {
 }
 
 function updateRange() {
-    startTimeVal = parseFloat(document.getElementById('start-time').value) || 0;
-    endTimeVal = parseFloat(document.getElementById('end-time').value) || duration;
+    const startInput = document.getElementById('start-time');
+    const endInput = document.getElementById('end-time');
+    let start = parseFloat(startInput.value);
+    let end = parseFloat(endInput.value);
+    if (!Number.isFinite(start) || start < 0) start = 0;
+    if (!Number.isFinite(end) || end > duration) end = duration;
 
-    if (startTimeVal < 0) startTimeVal = 0;
-    if (endTimeVal > duration) endTimeVal = duration;
-    if (startTimeVal >= endTimeVal) startTimeVal = Math.max(0, endTimeVal - 0.5);
+    const valid = start < end;
+    document.getElementById('range-error').classList.toggle('d-none', valid);
+    document.getElementById('download-btn').disabled = !valid;
+    document.getElementById('play-btn').disabled = !valid;
+    if (!valid) return;
 
-    document.getElementById('start-time').value = startTimeVal.toFixed(2);
-    document.getElementById('end-time').value = endTimeVal.toFixed(2);
+    startTimeVal = start;
+    endTimeVal = end;
+    startInput.value = startTimeVal.toFixed(2);
+    endInput.value = endTimeVal.toFixed(2);
 
     videoEl.currentTime = startTimeVal;
 }
@@ -282,6 +298,7 @@ async function startExport() {
     } catch (e) {
         console.error(e);
         finishExport();
+        alert({{ t('video_common.export_failed')|tojson }});
         return;
     }
 
@@ -321,6 +338,7 @@ async function startExport() {
     } catch (e) {
         console.error(e);
         finishExport();
+        alert({{ t('video_common.export_failed')|tojson }});
     }
 }
 

@@ -80,6 +80,7 @@
 {% endblock %}
 
 {% block scripts %}
+{% include "_video_export.html" %}
 <script>
 let stream = null;
 let mediaRecorder = null;
@@ -110,23 +111,24 @@ function toggleRecord() {
     
     if (!isRecording) {
         // Start recording
+        if (!VideoExport.recorderAvailable()) {
+            alert(VideoExport.unsupportedMessage);
+            return;
+        }
         recordedChunks = [];
-        mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
-        
+        mediaRecorder = VideoExport.createRecorder(stream);
+
         mediaRecorder.ondataavailable = (event) => {
             if (event.data.size > 0) {
                 recordedChunks.push(event.data);
             }
         };
-        
+
         mediaRecorder.onstop = () => {
-            const blob = new Blob(recordedChunks, { type: 'video/webm' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `video-kaydi-${Date.now()}.webm`;
-            a.click();
-            URL.revokeObjectURL(url);
+            VideoExport.download(
+                VideoExport.blobFor(mediaRecorder, recordedChunks),
+                `video-kaydi-${Date.now()}` + VideoExport.extensionFor(mediaRecorder)
+            );
         };
         
         mediaRecorder.start();

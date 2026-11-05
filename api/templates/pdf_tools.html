@@ -65,6 +65,7 @@
 {% endblock %}
 
 {% block scripts %}
+{% include "_upload_limit.html" %}
 <script>
 function showFiles(input) {
     const list = document.getElementById('files-list');
